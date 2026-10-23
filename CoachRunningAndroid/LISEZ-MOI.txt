@@ -1,0 +1,21 @@
+COACH RUNNING - PROJET ANDROID (WebView + Health Connect)
+
+1. Installer Android Studio (version récente), puis File > Open > dossier CoachRunningAndroid.
+2. Laisser Gradle synchroniser. Si Android Studio propose de mettre à jour le plugin Android
+   ou Gradle, accepter. Si une erreur signale "exerciseRouteResult" ou une version introuvable
+   de connect-client, remplacer la version dans app/build.gradle.kts par la dernière version
+   indiquée par Android Studio.
+3. Brancher le téléphone (débogage USB activé) puis Run, ou Build > Build APK(s) et installer l'APK.
+4. Dans l'appli COROS : Profil > Paramètres > Applications tierces > Synchronisation des données
+   > Health Connect, et cocher au minimum Exercice/Séances, Fréquence cardiaque, Distance, Dénivelé.
+5. Ouvrir Coach Running : accepter les autorisations Health Connect. Les séances des 30 derniers jours
+   arrivent dans l'onglet Activités (carte "Synchronisation automatique").
+
+Pour mettre à jour la page : remplacer app/src/main/assets/index.html puis relancer la compilation.
+Projet non testé : voir la notice pour les limites connues.
+
+CONSTRUIRE L'APK SANS ANDROID STUDIO (GitHub)
+1. Créer un dépôt GitHub (branche main) et y envoyer tout le contenu de ce dossier, y compris le dossier .github.
+2. Onglet Actions > "Build APK" > Run workflow. Attendre quelques minutes.
+3. Ouvrir l'exécution terminée, télécharger l'archive "coach-running-apk" (contient app-debug.apk).
+4. Copier l'APK sur le téléphone et l'ouvrir (autoriser l'installation depuis cette source).
