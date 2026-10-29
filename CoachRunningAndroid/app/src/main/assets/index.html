@@ -69,11 +69,16 @@ textarea{width:100%;margin-top:12px;font:14px/1.4 ui-monospace,monospace;backgro
 #map{height:320px;border-radius:14px;margin:12px 0;position:relative;z-index:0}
 h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4px}
 
+#lwrap.full{position:fixed;inset:0;height:100vh;min-height:0;margin:0;border-radius:0;border:0;z-index:3000}
+#lwrap:not(.full) #lend2{display:none}
+#lwrap.full #lrecap{bottom:64px}
 #lwrap{position:relative;height:calc(100vh - 360px);min-height:340px;border-radius:16px;overflow:hidden;margin-bottom:10px;border:1px solid var(--line)}
 #lmap{position:absolute;inset:0;background:#dfe6f3}
 #lov{position:absolute;top:8px;left:8px;z-index:1000;background:rgba(12,18,34,.84);color:#fff;border-radius:12px;padding:8px 12px;min-width:160px}
 #lov .timer2{font:800 34px/1 "Barlow Semi Condensed",system-ui,sans-serif;font-variant-numeric:tabular-nums}
-#lov .lg{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-top:6px}
+#lov{right:62px}
+#lov .lg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 10px;margin-top:6px}
+#lov i{display:none}
 #lov .lg>div{display:flex;flex-direction:column;line-height:1.05}
 #lov .lk{font-size:11px;opacity:.75;text-transform:uppercase}
 #lov b{font:700 23px "Barlow Semi Condensed",system-ui,sans-serif;font-variant-numeric:tabular-nums}
@@ -220,8 +225,11 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
         <div><span class="lk">FC</span><b id="hr">--</b><i>bpm</i></div>
       </div>
       <div class="lhz" id="hrz"></div>
+      <div class="lhz" id="lgps"></div>
     </div>
     <button id="lrec" class="lbtn" aria-label="Recentrer la carte">⌖</button>
+    <button id="lfull" class="lbtn" style="top:60px" aria-label="Réglages / plein écran">⚙</button>
+    <button id="lend2" class="stop" style="position:absolute;right:8px;bottom:8px;z-index:1001;width:auto;margin:0;padding:10px 16px">Terminer</button>
     <div id="lrecap" class="hidden" role="status"></div>
   </div>
   <p class="mute" id="livetgt" style="margin:0 0 6px"></p>
@@ -307,13 +315,13 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), zones cardio, allures de référence calculées sur vos meilleurs efforts, et test VMA facultatif qui débloque des séances de VMA. Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation.</p>
     <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance). Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
   <details class="card"><summary><b>Séance en direct</b></summary>
-    <p>« Démarrer la séance » lance le suivi GPS dans un service Android : il continue écran éteint, une notification reste affichée. La carte OpenStreetMap montre votre trace ; dans le coin : chrono, distance, D+, allure, allure moyenne, FC.</p>
+    <p>« Démarrer la séance » lance le suivi GPS dans un service Android : il continue écran éteint, une notification reste affichée. La carte plein écran (plan IGN) montre votre trace ; dans le coin : chrono, distance, D+, allure, allure moyenne, FC.</p>
     <p><b>Récap</b> tous les 1 km ou 5 km (ou aucun) : deux vibrations et un bandeau. <b>Alertes</b> : si vous dépassez l’allure max ou la FC max réglées, trois vibrations et l’indication passe en rouge. La FC demande une ceinture ou une montre qui diffuse la fréquence en Bluetooth (bouton « Connecter »).</p>
     <p><b>Terminer</b> demande toujours confirmation (bouton, retour Android, onglets). La séance est enregistrée avec sa carte, et copiée dans Téléchargements/Coach Running (GPX + image de la carte). Si l’appli est fermée en cours de route, elle reprend la séance.</p></details>
   <details class="card"><summary><b>Activités et montre COROS</b></summary>
     <p>« Synchroniser maintenant » (onglet Activités) lit Health Connect (30 jours) : synchronisez d’abord la montre vers COROS, qui doit écrire dans Health Connect. Une sortie déjà enregistrée par le téléphone est fusionnée avec celle de la montre : on garde les données en plus (FC, dénivelé, calories) et le doublon disparaît. Import et partage de fichiers FIT, GPX, TCX possibles. Garmin : uniquement via Health Connect ou export de fichier.</p></details>
   <details class="card"><summary><b>Courbes et détail</b></summary>
-    <p>Pour chaque activité : carte OpenStreetMap, plan IGN ou photos aériennes au choix (ou image enregistrée pendant la séance), courbes d’allure, FC et altitude. Le dénivelé est corrigé avec l’altimétrie IGN quand elle répond.</p></details>
+    <p>Pour chaque activité : plan IGN ou photos aériennes au choix (ou image enregistrée pendant la séance), courbes d’allure, FC et altitude. Le dénivelé est corrigé avec l’altimétrie IGN quand elle répond.</p></details>
   <details class="card" open><summary><b>Sauvegarde et mises à jour</b></summary>
     <p id="upd-st" class="mute">Version : vérification…</p><button class="alt" id="upd-chk">Vérifier les mises à jour</button>
     <p>Onglet Courbes, « Exporter l’historique » : sauvegarde complète (profil, séances, traces, cartes) dans Téléchargements. Restaurez-la après une désinstallation. Au lancement, l’appli compare sa version à la dernière Release GitHub et affiche « Mise à jour disponible » : touchez pour télécharger l’APK puis installez-le.</p></details>
@@ -805,6 +813,10 @@ function liveMap(){
     if(lmap){if(lline)lmap.removeLayer(lline);if(lmark)lmap.removeLayer(lmark);lline=lmark=null;follow=true;setTimeout(()=>lmap.invalidateSize(),200)}
   }catch(e){}
 }
+function setFull(f){$("lwrap").classList.toggle("full",f);$("lfull").textContent=f?"⚙":"⛶";setTimeout(()=>{try{lmap&&lmap.invalidateSize()}catch(e){}},150)}
+$("lfull").onclick=()=>setFull(!$("lwrap").classList.contains("full"));
+$("lend2").onclick=()=>openCfm();
+new MutationObserver(()=>{const t=$("gmsg").textContent;$("lgps").textContent=t.startsWith("GPS OK")?"":t}).observe($("gmsg"),{childList:true,characterData:true,subtree:true});
 $("lrec").onclick=()=>{follow=true;if(lmap&&lmark)lmap.setView(lmark.getLatLng(),Math.max(lmap.getZoom(),16))};
 
 function resetLive(){
@@ -901,7 +913,7 @@ function startSession(){
   t0=Date.now();liveOn=true;$("msg").textContent="";$("gmsg").textContent="GPS : recherche du signal…";
   recapKm=+$("l-recap").value;maxPaceS=0;liveCapHr=+$("l-cap").value||0;curPace=0;
   resetLive();
-  show("live");liveMap();
+  show("live");setFull(true);liveMap();
   const n=NAT();
   if(n){try{n.start(recapKm*1000,maxPaceS,liveCapHr)}catch(e){$("msg").textContent="Suivi impossible : "+e.message}}
   else if(navigator.geolocation){
@@ -927,7 +939,7 @@ function resumeLive(){
   $("l-recap").value=String(st.recap||0);$("l-maxpace").value=st.maxPace||"";$("l-cap").value=st.cap||"";$("livetgt").textContent=st.tgt||"";
   $("l-keep").checked=!!prefs.keep;
   recapKm=+st.recap||0;maxPaceS=parsePace(st.maxPace);liveCapHr=+st.cap||0;
-  resetLive();show("live");liveMap();poll();startTimers();
+  resetLive();show("live");setFull(true);liveMap();poll();startTimers();
 }
 
 /* Sortie : jamais sans confirmation */
@@ -951,7 +963,7 @@ function endLive(){
   const n=NAT();if(n){try{n.stop();n.disconnectHr();n.clear()}catch(e){}}
   keepScreen(false);
   try{localStorage.removeItem(LKEY)}catch(e){}
-  $("cfm").classList.add("hidden");
+  $("cfm").classList.add("hidden");setFull(false);
 }
 function gpxText(rec){
   const esc=x=>String(x).replace(/&/g,"&amp;");
@@ -979,7 +991,7 @@ async function snapshotMap(){
       const to=setTimeout(()=>res(false),8000);
       im.onload=()=>{clearTimeout(to);c.drawImage(im,x*256-ox,y*256-oy);res(true)};
       im.onerror=()=>{clearTimeout(to);res(false)};
-      im.src=OSM.replace("{s}","a").replace("{z}",z).replace("{y}",y).replace("{x}",x);
+      im.src=OSM.replace("{z}",z).replace("{y}",y).replace("{x}",x);
     }));
   }
   const ok=(await Promise.all(jobs)).filter(Boolean).length;
@@ -1676,8 +1688,8 @@ function renderActs(){
 
 /* Détail d’une activité : carte IGN et courbes */
 let detailId=null,carte=null,couche=null;
-/* Fond OpenStreetMap servi par CARTO (tuiles.openstreetmap.org refuse les requêtes sans Referer, ce qui est le cas dans l’appli) */
-const OSM="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",OSMA="© contributeurs OpenStreetMap © CARTO";
+/* Fond de carte par défaut : plan IGN (les serveurs OpenStreetMap et CARTO refusent ou limitent les requêtes d’une appli sans clé) */
+const OSM="https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&FORMAT=image/png",OSMA="© IGN / Géoplateforme";
 const IGN="https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&LAYER=";
 function renderDetailSel(){
   const sel=$("d-sel"),list=sessions.filter(s=>traces[s.id]).reverse();
@@ -1722,10 +1734,9 @@ function drawMap(pts){
   box.classList.remove("hidden");msg.textContent="";
   if(!carte){
     carte=L.map("map");
-    const osm=L.tileLayer(OSM,{maxZoom:19,attribution:OSMA});
-    const plan=L.tileLayer(IGN+"GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&FORMAT=image/png",{maxZoom:19,attribution:"© IGN / Géoplateforme"});
+    const plan=L.tileLayer(OSM,{maxZoom:19,attribution:OSMA});
     const photo=L.tileLayer(IGN+"ORTHOIMAGERY.ORTHOPHOTOS&FORMAT=image/jpeg",{maxZoom:19,attribution:"© IGN / Géoplateforme"});
-    osm.addTo(carte);L.control.layers({"OpenStreetMap":osm,"Plan IGN":plan,"Photos aériennes":photo}).addTo(carte);
+    plan.addTo(carte);L.control.layers({"Plan IGN":plan,"Photos aériennes":photo}).addTo(carte);
   }
   if(couche)carte.removeLayer(couche);
   const li=L.polyline(co,{color:"#E5484D",weight:4}),dot=(c,f)=>L.circleMarker(c,{radius:7,color:"#fff",weight:2,fillColor:f,fillOpacity:1});
