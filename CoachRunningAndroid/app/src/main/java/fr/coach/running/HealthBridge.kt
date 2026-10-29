@@ -106,6 +106,15 @@ class HealthBridge(
                 if (route != null && route.size > 2) {
                     o.put("route", routeJson(route))
                     o.put("hrS", hrJson(c, tr))
+                } else {
+                    // Pas de parcours GPS : on récupère au moins la distance cumulée et la FC pour tracer les courbes.
+                    try {
+                        val d = distJson(c, tr)
+                        if (d.length() > 2) {
+                            o.put("dS", d)
+                            o.put("hrS", hrJson(c, tr))
+                        }
+                    } catch (e: Exception) { }
                 }
                 out.put(o)
             }
@@ -113,6 +122,17 @@ class HealthBridge(
         } catch (e: Exception) {
             msg("Erreur de lecture : ${e.message}")
         }
+    }
+
+    private suspend fun distJson(c: HealthConnectClient, tr: TimeRangeFilter): JSONArray {
+        val recs = c.readRecords(ReadRecordsRequest(DistanceRecord::class, tr)).records.sortedBy { it.endTime }
+        val cum = ArrayList<Pair<Long, Double>>()
+        var total = 0.0
+        for (r in recs) {
+            total += r.distance.inMeters
+            cum.add(Pair(r.endTime.toEpochMilli(), total))
+        }
+        return thin(cum.size) { i -> JSONArray().put(cum[i].first).put(cum[i].second) }
     }
 
     private suspend fun hrJson(c: HealthConnectClient, tr: TimeRangeFilter): JSONArray {

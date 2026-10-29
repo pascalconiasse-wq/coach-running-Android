@@ -1794,6 +1794,15 @@ function drawMap(pts){
 }
 
 /* Synchronisation Health Connect (appli Android) */
+/* Health Connect sans parcours GPS : courbes construites avec la distance cumulée et la FC */
+function mkTraceN(h){
+  const hs=h.hrS||[];let j=0;
+  const raw=[{t:h.ts,d:0,lat:null,lon:null,ele:null,hr:null}].concat(h.dS.map(p=>{
+    while(j<hs.length-1&&Math.abs(hs[j+1][0]-p[0])<=Math.abs(hs[j][0]-p[0]))j++;
+    return {t:p[0],d:p[1],lat:null,lon:null,ele:null,hr:hs.length?hs[j][1]:null};
+  }));
+  return mkTrace(raw);
+}
 function mkTraceH(h){
   const hs=h.hrS||[];let j=0;
   return mkTrace(h.route.map(p=>{
@@ -1817,7 +1826,7 @@ window.onHealthData=json=>{
   const recu=list.length,dates=list.map(h=>iso(new Date(h.ts))).slice(-4).join(", ");
   list.forEach(h=>{try{
     const sec=Math.round(h.sec||0);if(!(sec>=30)){court++;return}
-    const r={sport:h.sport||"OTHER",date:iso(new Date(h.ts)),sec:sec,min:Math.max(1,Math.round(sec/60)),ts:h.ts,hr:h.hrAvg||0,km:(h.m||0)/1000,dplus:Math.round(h.gain||0),pts:h.route&&h.route.length>2?mkTraceH(h):null};
+    const r={sport:h.sport||"OTHER",date:iso(new Date(h.ts)),sec:sec,min:Math.max(1,Math.round(sec/60)),ts:h.ts,hr:h.hrAvg||0,km:(h.m||0)/1000,dplus:Math.round(h.gain||0),pts:h.route&&h.route.length>2?mkTraceH(h):(h.dS&&h.dS.length>2?mkTraceN(h):null)};
     const rec=recFromImport(r);rec.id=uid();
     const dd=isDup(rec,null);
     if(dd){if(mergeDup(dd,rec,r.pts))enr++;else dup++;return}
