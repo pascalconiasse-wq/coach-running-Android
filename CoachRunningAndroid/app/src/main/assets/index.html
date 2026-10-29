@@ -307,13 +307,13 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), zones cardio, allures de référence calculées sur vos meilleurs efforts, et test VMA facultatif qui débloque des séances de VMA. Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation.</p>
     <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance). Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
   <details class="card"><summary><b>Séance en direct</b></summary>
-    <p>« Démarrer la séance » lance le suivi GPS dans un service Android : il continue écran éteint, une notification reste affichée. La carte IGN montre votre trace ; dans le coin : chrono, distance, D+, allure, allure moyenne, FC.</p>
+    <p>« Démarrer la séance » lance le suivi GPS dans un service Android : il continue écran éteint, une notification reste affichée. La carte OpenStreetMap montre votre trace ; dans le coin : chrono, distance, D+, allure, allure moyenne, FC.</p>
     <p><b>Récap</b> tous les 1 km ou 5 km (ou aucun) : deux vibrations et un bandeau. <b>Alertes</b> : si vous dépassez l’allure max ou la FC max réglées, trois vibrations et l’indication passe en rouge. La FC demande une ceinture ou une montre qui diffuse la fréquence en Bluetooth (bouton « Connecter »).</p>
     <p><b>Terminer</b> demande toujours confirmation (bouton, retour Android, onglets). La séance est enregistrée avec sa carte, et copiée dans Téléchargements/Coach Running (GPX + image de la carte). Si l’appli est fermée en cours de route, elle reprend la séance.</p></details>
   <details class="card"><summary><b>Activités et montre COROS</b></summary>
     <p>« Synchroniser maintenant » (onglet Activités) lit Health Connect (30 jours) : synchronisez d’abord la montre vers COROS, qui doit écrire dans Health Connect. Une sortie déjà enregistrée par le téléphone est fusionnée avec celle de la montre : on garde les données en plus (FC, dénivelé, calories) et le doublon disparaît. Import et partage de fichiers FIT, GPX, TCX possibles. Garmin : uniquement via Health Connect ou export de fichier.</p></details>
   <details class="card"><summary><b>Courbes et détail</b></summary>
-    <p>Pour chaque activité : carte IGN (ou image enregistrée pendant la séance), courbes d’allure, FC et altitude. Le dénivelé est corrigé avec l’altimétrie IGN quand elle répond.</p></details>
+    <p>Pour chaque activité : carte OpenStreetMap, plan IGN ou photos aériennes au choix (ou image enregistrée pendant la séance), courbes d’allure, FC et altitude. Le dénivelé est corrigé avec l’altimétrie IGN quand elle répond.</p></details>
   <details class="card"><summary><b>Sauvegarde et mises à jour</b></summary>
     <p>Onglet Courbes, « Exporter l’historique » : sauvegarde complète (profil, séances, traces, cartes) dans Téléchargements. Restaurez-la après une désinstallation. Au lancement, l’appli compare sa version à la dernière Release GitHub et affiche « Mise à jour disponible » : touchez pour télécharger l’APK puis installez-le.</p></details>
   <details class="card"><summary><b>Problèmes fréquents</b></summary>
@@ -797,8 +797,8 @@ let liveSport="RUN_ROUTE";
 function liveMap(){
   try{
     if(!lmap&&typeof L!=="undefined"){
-      lmap=L.map("lmap",{zoomControl:false,attributionControl:false}).setView([46.6,2.4],6);
-      L.tileLayer(IGN+"GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&FORMAT=image/png",{maxZoom:18}).addTo(lmap);
+      lmap=L.map("lmap",{zoomControl:false,attributionControl:false}).addControl(L.control.attribution({prefix:false,position:"bottomleft"}));lmap=lmap.setView([46.6,2.4],6);
+      L.tileLayer(OSM,{maxZoom:19,attribution:OSMA}).addTo(lmap);
       lmap.on("dragstart",()=>{follow=false});
     }
     if(lmap){if(lline)lmap.removeLayer(lline);if(lmark)lmap.removeLayer(lmark);lline=lmark=null;follow=true;setTimeout(()=>lmap.invalidateSize(),200)}
@@ -958,7 +958,7 @@ function gpxText(rec){
   gRaw.forEach(p=>{g+='<trkpt lat="'+p.lat.toFixed(6)+'" lon="'+p.lon.toFixed(6)+'">'+(p.ele!=null?'<ele>'+p.ele.toFixed(1)+'</ele>':'')+'<time>'+new Date(p.t).toISOString()+'</time>'+(p.hr?'<extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>'+Math.round(p.hr)+'</gpxtpx:hr></gpxtpx:TrackPointExtension></extensions>':'')+'</trkpt>\n'});
   return g+'</trkseg></trk></gpx>';
 }
-/* Image de la carte IGN avec le parcours, dessinée sans Leaflet */
+/* Image de la carte OpenStreetMap avec le parcours, dessinée sans Leaflet */
 async function snapshotMap(){
   const pts=gRaw.map(p=>[p.lat,p.lon]);if(pts.length<2)return null;
   const W=900,H=600;
@@ -978,7 +978,7 @@ async function snapshotMap(){
       const to=setTimeout(()=>res(false),8000);
       im.onload=()=>{clearTimeout(to);c.drawImage(im,x*256-ox,y*256-oy);res(true)};
       im.onerror=()=>{clearTimeout(to);res(false)};
-      im.src=(IGN+"GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&FORMAT=image/png").replace("{z}",z).replace("{y}",y).replace("{x}",x);
+      im.src=OSM.replace("{z}",z).replace("{y}",y).replace("{x}",x);
     }));
   }
   const ok=(await Promise.all(jobs)).filter(Boolean).length;
@@ -987,6 +987,7 @@ async function snapshotMap(){
   c.strokeStyle="#fff";c.lineWidth=9;c.beginPath();pts.forEach((p,i)=>i?c.lineTo(X(p[1]),Y(p[0])):c.moveTo(X(p[1]),Y(p[0])));c.stroke();
   c.strokeStyle="#E5484D";c.lineWidth=5;c.stroke();
   const dot=(p,col)=>{c.fillStyle=col;c.strokeStyle="#fff";c.lineWidth=3;c.beginPath();c.arc(X(p[1]),Y(p[0]),9,0,7);c.fill();c.stroke()};
+  c.font="12px sans-serif";c.fillStyle="rgba(255,255,255,.8)";c.fillRect(W-170,H-18,170,18);c.fillStyle="#333";c.fillText(OSMA,W-166,H-5);
   dot(pts[0],"#2EA043");dot(pts[pts.length-1],"#111");
   try{return {url:cv.toDataURL("image/jpeg",0.82),tiles:ok}}catch(e){return null}
 }
@@ -1012,7 +1013,7 @@ $("cfm-save").onclick=async()=>{
       if(snap&&A.saveBase64){try{if(A.saveBase64("Coach-Running_"+stamp+"_carte.jpg","image/jpeg",snap.url.split(",")[1]))saved++}catch(e){}}
       note+=saved?" Fichiers enregistrés dans Téléchargements/Coach Running.":" Copie dans Téléchargements impossible (la séance reste dans l’appli).";
     }
-    if(snap&&snap.tiles===0)note+=" Fond IGN indisponible : trace seule sur la carte.";
+    if(snap&&snap.tiles===0)note+=" Fond de carte indisponible : trace seule sur la carte.";
   }
   endLive();persistM();
   if(hasG)ignAlti(rec.id);
@@ -1651,6 +1652,7 @@ function renderActs(){
 
 /* Détail d’une activité : carte IGN et courbes */
 let detailId=null,carte=null,couche=null;
+const OSM="https://tile.openstreetmap.org/{z}/{x}/{y}.png",OSMA="© contributeurs OpenStreetMap";
 const IGN="https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&LAYER=";
 function renderDetailSel(){
   const sel=$("d-sel"),list=sessions.filter(s=>traces[s.id]).reverse();
@@ -1695,9 +1697,10 @@ function drawMap(pts){
   box.classList.remove("hidden");msg.textContent="";
   if(!carte){
     carte=L.map("map");
+    const osm=L.tileLayer(OSM,{maxZoom:19,attribution:OSMA});
     const plan=L.tileLayer(IGN+"GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&FORMAT=image/png",{maxZoom:19,attribution:"© IGN / Géoplateforme"});
     const photo=L.tileLayer(IGN+"ORTHOIMAGERY.ORTHOPHOTOS&FORMAT=image/jpeg",{maxZoom:19,attribution:"© IGN / Géoplateforme"});
-    plan.addTo(carte);L.control.layers({"Plan IGN":plan,"Photos aériennes":photo}).addTo(carte);
+    osm.addTo(carte);L.control.layers({"OpenStreetMap":osm,"Plan IGN":plan,"Photos aériennes":photo}).addTo(carte);
   }
   if(couche)carte.removeLayer(couche);
   const li=L.polyline(co,{color:"#E5484D",weight:4}),dot=(c,f)=>L.circleMarker(c,{radius:7,color:"#fff",weight:2,fillColor:f,fillOpacity:1});
