@@ -1285,9 +1285,9 @@ const hmsg=t=>{const e=$("h-msg");if(e)e.textContent=t};
 const HKEY="coach_hsync";
 function healthSync(){
   if(!window.AndroidHealth)return;
-  let since=0;try{since=+localStorage.getItem(HKEY)||0}catch(e){}
   hmsg("Synchronisation en cours…");
-  try{AndroidHealth.sync(since?since-86400000:0)}catch(e){hmsg("Synchronisation impossible.")}
+  /* toujours 30 jours : les doublons sont ignorés ou fusionnés, et une synchro à vide ne peut plus masquer d'anciennes sorties */
+  try{AndroidHealth.sync(0)}catch(e){hmsg("Synchronisation impossible.")}
 }
 window.onHealthMsg=t=>hmsg(t);
 window.onHealthData=json=>{
