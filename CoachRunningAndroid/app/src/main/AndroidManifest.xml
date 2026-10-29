@@ -21,6 +21,8 @@
     <queries><package android:name="com.google.android.apps.healthdata" /></queries>
  
     <application
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="Coach Running"
         android:allowBackup="true"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar">

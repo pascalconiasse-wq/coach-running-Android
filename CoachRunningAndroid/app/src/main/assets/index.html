@@ -88,7 +88,7 @@ h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4
 .chk{display:flex;gap:8px;align-items:center;margin:10px 0}
 .chk input{width:auto}
 #d-snap{width:100%;border-radius:12px;margin-bottom:8px}
-</style>
+details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}</style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -299,6 +299,26 @@ h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4
   <div class="card"><h2>Toutes les activités</h2><div id="a-list"></div></div>
 </section>
 
+<section id="help" class="hidden">
+  <div class="card"><h2>Notice</h2><p class="mute">Touchez un titre pour l’ouvrir.</p></div>
+  <details class="card"><summary><b>Premiers pas</b></summary>
+    <p>Au premier lancement, renseignez âge, poids, niveau, jours disponibles et votre objectif principal (distance, date, dénivelé). L’appli construit le plan jusqu’à la course : fondation, développement, spécifique, affûtage. Elle recalcule seule quand vous courez ailleurs (montre, import).</p></details>
+  <details class="card"><summary><b>Onglet Plan</b></summary>
+    <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), zones cardio, allures de référence calculées sur vos meilleurs efforts, et test VMA facultatif qui débloque des séances de VMA. Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation.</p>
+    <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance). Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
+  <details class="card"><summary><b>Séance en direct</b></summary>
+    <p>« Démarrer la séance » lance le suivi GPS dans un service Android : il continue écran éteint, une notification reste affichée. La carte IGN montre votre trace ; dans le coin : chrono, distance, D+, allure, allure moyenne, FC.</p>
+    <p><b>Récap</b> tous les 1 km ou 5 km (ou aucun) : deux vibrations et un bandeau. <b>Alertes</b> : si vous dépassez l’allure max ou la FC max réglées, trois vibrations et l’indication passe en rouge. La FC demande une ceinture ou une montre qui diffuse la fréquence en Bluetooth (bouton « Connecter »).</p>
+    <p><b>Terminer</b> demande toujours confirmation (bouton, retour Android, onglets). La séance est enregistrée avec sa carte, et copiée dans Téléchargements/Coach Running (GPX + image de la carte). Si l’appli est fermée en cours de route, elle reprend la séance.</p></details>
+  <details class="card"><summary><b>Activités et montre COROS</b></summary>
+    <p>« Synchroniser maintenant » (onglet Activités) lit Health Connect (30 jours) : synchronisez d’abord la montre vers COROS, qui doit écrire dans Health Connect. Une sortie déjà enregistrée par le téléphone est fusionnée avec celle de la montre : on garde les données en plus (FC, dénivelé, calories) et le doublon disparaît. Import et partage de fichiers FIT, GPX, TCX possibles. Garmin : uniquement via Health Connect ou export de fichier.</p></details>
+  <details class="card"><summary><b>Courbes et détail</b></summary>
+    <p>Pour chaque activité : carte IGN (ou image enregistrée pendant la séance), courbes d’allure, FC et altitude. Le dénivelé est corrigé avec l’altimétrie IGN quand elle répond.</p></details>
+  <details class="card"><summary><b>Sauvegarde et mises à jour</b></summary>
+    <p>Onglet Courbes, « Exporter l’historique » : sauvegarde complète (profil, séances, traces, cartes) dans Téléchargements. Restaurez-la après une désinstallation. Au lancement, l’appli compare sa version à la dernière Release GitHub et affiche « Mise à jour disponible » : touchez pour télécharger l’APK puis installez-le.</p></details>
+  <details class="card"><summary><b>Problèmes fréquents</b></summary>
+    <p>Km ou D+ manquants : autorisez la position « tout le temps » et ne limitez pas la batterie de l’appli. Pas de GPS : sortez, attendez « GPS OK ». Pas de FC : activez la diffusion cardio de la montre. Séance absente après synchro : vérifiez les autorisations Health Connect.</p></details>
+</section>
 <section id="stats" class="hidden">
   <div class="card">
     <h2 id="ch-title">Charge hebdomadaire</h2>
@@ -341,6 +361,7 @@ h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4
   <button class="tab" role="tab" data-t="prog" aria-selected="false"><span class="ti">🗓️</span>Programme</button>
   <button class="tab" role="tab" data-t="acts" aria-selected="false"><span class="ti">🚴</span>Activités</button>
   <button class="tab" role="tab" data-t="stats" aria-selected="false"><span class="ti">📈</span>Courbes</button>
+  <button class="tab" role="tab" data-t="help" aria-selected="false"><span class="ti">ℹ️</span>Notice</button>
 </nav>
 
 <script>
@@ -733,7 +754,7 @@ function renderPlan(){
 
 function show(id){
   if((id==="plan"||id==="prog")&&!profile){openSetup();return}
-  for(const s of ["setup","plan","prog","acts","live","stats"])$(s).classList.toggle("hidden",s!==id);
+  for(const s of ["setup","plan","prog","acts","live","stats","help"])$(s).classList.toggle("hidden",s!==id);
   document.querySelector("nav").classList.toggle("hidden",id==="setup");
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.t===id)));
   if(id==="plan")renderPlan();
