@@ -74,6 +74,7 @@ h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4
 </head>
 <body>
 <header class="hero"><div class="logo" aria-hidden="true">🏃</div><div><h1>Coach Running</h1><div class="sub" id="sub">Votre coach au quotidien</div></div></header>
+<div class="card hidden" id="upd" style="border-color:var(--acc)"><b>Mise à jour disponible : <span id="upd-v"></span></b><p class="mute" style="margin:4px 0 0">Vos données sont conservées. Téléchargez l’APK puis ouvrez-le pour installer.</p><button id="upd-go" style="margin-top:10px">Télécharger la mise à jour</button></div>
 
 <section id="setup" class="hidden">
   <div class="card">
@@ -156,6 +157,15 @@ h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4
   <div class="row">
     <div class="card"><div class="mute">Cardio</div><div class="num" id="hr">--</div><div class="mute" id="hrz"></div></div>
     <div class="card"><div class="mute">Vitesse (km/h)</div><div class="num" id="spd">--</div></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="row" style="margin-bottom:8px">
+      <div><div class="mute">Distance (km)</div><div class="num" id="gdist">0,00</div></div>
+      <div><div class="mute">Allure (min/km)</div><div class="num" id="gpace">--</div></div>
+      <div><div class="mute">D+ (m)</div><div class="num" id="gdp">0</div></div>
+    </div>
+    <div id="lmap" style="height:220px;border-radius:12px;overflow:hidden"></div>
+    <p class="mute" id="gmsg" role="status" style="margin:8px 0 0">GPS : recherche du signal…</p>
   </div>
   <div class="card" style="margin-top:12px">
     <button class="alt" id="bhr" style="margin-top:0">Connecter la ceinture ou montre (FC)</button>
@@ -505,10 +515,10 @@ function startSession(){
   $("timer").textContent="00:00";
   try{navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>lock=l).catch(()=>{})}catch(e){}
   try{window.AndroidBle&&AndroidBle.keepScreen(true)}catch(e){}
-  show("live");
+  show("live");gpsStart();
 }
 function stopSession(){
-  clearInterval(timerId);timerId=null;
+  clearInterval(timerId);timerId=null;gpsStop();
   devices.forEach(d=>{try{d.gatt.disconnect()}catch(e){}});devices=[];
   try{lock&&lock.release()}catch(e){}lock=null;
   try{if(window.AndroidBle){AndroidBle.disconnect();AndroidBle.keepScreen(false)}}catch(e){}
@@ -519,8 +529,11 @@ $("end").onclick=()=>{
   const min=Math.floor((Date.now()-t0)/60000);
   const avg=hrSamples.length?Math.round(hrSamples.reduce((a,b)=>a+b,0)/hrSamples.length):0;
   const rpe=+$("rpe").value,spd=spdSamples.length?spdSamples.reduce((a,b)=>a+b,0)/spdSamples.length:0;
-  sessions.push({date:today(),sport:weekPlan(0).ctx.kind==="trail"?"RUN_TRAIL":"RUN_ROUTE",min:min,sec:Math.round((Date.now()-t0)/1000),ts:t0,rpe:rpe,hr:avg,kcal:kcalFor(min,rpe,spd)});
-  persist();stopSession();show("stats");
+  const g=gpsResult(),rec={id:uid(),date:today(),sport:weekPlan(0).ctx.kind==="trail"?"RUN_TRAIL":"RUN_ROUTE",min:min,sec:Math.round((Date.now()-t0)/1000),ts:t0,rpe:rpe,hr:avg,kcal:kcalFor(min,rpe,g?g.km/(Math.max(1,min)/60):spd)};
+  if(g){rec.km=Math.round(g.km*10)/10;rec.dplus=g.dplus;traces[rec.id]=g.pts}
+  sessions.push(rec);
+  persist();persistT();stopSession();show("stats");
+  if(g)ignAlti(rec.id);
 };
 
 async function connect(kind){
@@ -537,17 +550,119 @@ async function connect(kind){
     ch.addEventListener("characteristicvaluechanged",e=>{
       const v=e.target.value;
       if(hr){const bpm=(v.getUint8(0)&1)?v.getUint16(1,true):v.getUint8(1);if(bpm>0){$("hr").textContent=bpm;hrSamples.push(bpm);hrCheck(bpm)}}
-      else{const kmh=v.getUint16(1,true)/256*3.6;$("spd").textContent=kmh.toFixed(1).replace(".",",");if(kmh>0)spdSamples.push(kmh)}
+      else{gLastBle=Date.now();const kmh=v.getUint16(1,true)/256*3.6;$("spd").textContent=kmh.toFixed(1).replace(".",",");if(kmh>0)spdSamples.push(kmh)}
     });
     devices.push(dev);msg.textContent="";
   }catch(err){msg.textContent="Connexion impossible : "+err.message}
 }
 window.onNativeHr=b=>{if(b>0){$("msg").textContent="";$("hr").textContent=b;hrSamples.push(b);hrCheck(b)}};
-window.onNativeSpd=k=>{if(k>0){$("msg").textContent="";$("spd").textContent=k.toFixed(1).replace(".",",");spdSamples.push(k)}};
+window.onNativeSpd=k=>{if(k>0){gLastBle=Date.now();$("msg").textContent="";$("spd").textContent=k.toFixed(1).replace(".",",");spdSamples.push(k)}};
 window.onNativeMsg=t=>{$("msg").textContent=t};
 $("bhr").onclick=()=>connect("hr");
 $("bspd").onclick=()=>connect("rsc");
 
+
+/* Suivi GPS en direct (vitesse, distance, dénivelé, carte IGN) */
+let gWatch=null,gRaw=[],gDist=0,gGain=0,gBase=null,gEle=[],lmap=null,lline=null,lmark=null,gLastBle=0;
+function gpsStart(){
+  gRaw=[];gDist=0;gGain=0;gBase=null;gEle=[];
+  $("gdist").textContent="0,00";$("gpace").textContent="--";$("gdp").textContent="0";
+  const m=$("gmsg");
+  if(!navigator.geolocation){m.textContent="GPS indisponible sur cet appareil.";return}
+  m.textContent="GPS : recherche du signal…";
+  try{
+    if(!lmap&&typeof L!=="undefined"){
+      lmap=L.map("lmap",{zoomControl:false,attributionControl:false}).setView([46.6,2.4],6);
+      L.tileLayer(IGN+"GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&FORMAT=image/png",{maxZoom:19}).addTo(lmap);
+    }
+    if(lmap){if(lline)lmap.removeLayer(lline);if(lmark)lmap.removeLayer(lmark);lline=lmark=null;setTimeout(()=>lmap.invalidateSize(),150)}
+  }catch(e){}
+  gWatch=navigator.geolocation.watchPosition(onPos,err=>{
+    m.textContent=err.code===1?"GPS refusé : Réglages Android > Applications > Coach Running > Autorisations > Position.":"GPS : signal faible…";
+  },{enableHighAccuracy:true,maximumAge:1000,timeout:30000});
+}
+function gpsStop(){if(gWatch!==null){try{navigator.geolocation.clearWatch(gWatch)}catch(e){}gWatch=null}}
+function onPos(p){
+  const c=p.coords,m=$("gmsg");
+  if(c.accuracy>30){m.textContent="GPS : précision faible (±"+Math.round(c.accuracy)+" m)…";return}
+  m.textContent="GPS OK (±"+Math.round(c.accuracy)+" m)";
+  const t=p.timestamp,last=gRaw[gRaw.length-1];
+  let ele=null;
+  if(c.altitude!=null&&isFinite(c.altitude)){gEle.push(c.altitude);if(gEle.length>7)gEle.shift();ele=gEle.reduce((a,b)=>a+b,0)/gEle.length}
+  if(last){
+    const d=hav(last.lat,last.lon,c.latitude,c.longitude)*1000,dt=(t-last.t)/1000;
+    if(dt<=0||d<Math.max(3,c.accuracy/4)||d/dt>25)return;   /* bruit à l'arrêt ou saut GPS */
+    gDist+=d;
+  }
+  if(ele!=null){
+    if(gBase===null)gBase=ele;else if(ele>gBase+4){gGain+=ele-gBase;gBase=ele}else if(ele<gBase)gBase=ele;
+  }
+  const hr=hrSamples.length?hrSamples[hrSamples.length-1]:null;
+  gRaw.push({t:t,lat:c.latitude,lon:c.longitude,ele:ele,hr:hr});
+  $("gdist").textContent=(gDist/1000).toFixed(2).replace(".",",");
+  $("gdp").textContent=String(Math.round(gGain));
+  /* allure sur ~15 s glissantes */
+  let j=gRaw.length-1;while(j>0&&t-gRaw[j].t<15000)j--;
+  if(j<gRaw.length-1){
+    let dd=0;for(let k=j+1;k<gRaw.length;k++)dd+=hav(gRaw[k-1].lat,gRaw[k-1].lon,gRaw[k].lat,gRaw[k].lon)*1000;
+    const v=dd/((t-gRaw[j].t)/1000);
+    if(v>0.3){
+      const kmh=v*3.6,sk=1000/v;
+      $("gpace").textContent=sk>1200?"--":Math.floor(sk/60)+":"+String(Math.round(sk%60)).padStart(2,"0").replace(/^60$/,"59");
+      if(Date.now()-gLastBle>5000)$("spd").textContent=kmh.toFixed(1).replace(".",",");
+      spdSamples.push(kmh);
+    }
+  }
+  if(lmap){
+    const ll=[c.latitude,c.longitude];
+    if(!lline){lline=L.polyline([ll],{color:"#E5484D",weight:4}).addTo(lmap);lmark=L.circleMarker(ll,{radius:7,color:"#fff",weight:2,fillColor:"#2F6BFF",fillOpacity:1}).addTo(lmap);lmap.setView(ll,16)}
+    else{lline.addLatLng(ll);lmark.setLatLng(ll);lmap.panTo(ll)}
+  }
+}
+function gpsResult(){
+  if(gRaw.length<5||gDist<50)return null;
+  const pts=mkTrace(gRaw.map(p=>({t:p.t,lat:p.lat,lon:p.lon,ele:p.ele,hr:p.hr})));
+  return pts?{pts:pts,km:gDist/1000,dplus:Math.round(gGain)}:null;
+}
+/* Correction du dénivelé avec l'altimétrie IGN (RGE ALTI), plus fiable que l'altitude GPS du téléphone */
+async function ignAlti(id){
+  try{
+    const pts=traces[id];if(!pts)return;
+    const ix=[];pts.forEach((p,i)=>{if(p[5]!=null&&p[6]!=null)ix.push(i)});
+    if(ix.length<3||ix.length>4000)return;
+    const lon=ix.map(i=>pts[i][6]).join("|"),lat=ix.map(i=>pts[i][5]).join("|");
+    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),15000);
+    const r=await fetch("https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json?resource=ign_rge_alti_wld&delimiter=%7C&indent=false&measures=false&zonly=true&lon="+encodeURIComponent(lon)+"&lat="+encodeURIComponent(lat),{signal:ctl.signal});
+    clearTimeout(to);if(!r.ok)return;
+    const j=await r.json(),arr=j.elevations;
+    if(!Array.isArray(arr)||arr.length!==ix.length)return;
+    const z=arr.map(e=>typeof e==="number"?e:(e&&e.z));
+    if(z.some(v=>v==null||!isFinite(v)||v<-500))return;
+    /* lissage puis cumul avec seuil de 3 m */
+    const sm=z.map((_,i)=>{let a=0,c=0;for(let k=Math.max(0,i-2);k<=Math.min(z.length-1,i+2);k++){a+=z[k];c++}return a/c});
+    ix.forEach((pi,k)=>{pts[pi][2]=Math.round(sm[k]*10)/10});
+    const s=sessions.find(x=>x.id===id);
+    if(s){s.dplus=gainOf(sm);persist()}
+    persistT();
+    if(!$("stats").classList.contains("hidden"))renderStats();
+  }catch(e){/* hors ligne : on garde l'altitude GPS */}
+}
+
+/* Mise à jour de l'appli (APK publié dans les Releases GitHub) */
+const GH_REPO="pascalconiasse-wq/coach-running-Android";
+async function checkUpdate(){
+  if(!window.AndroidApp)return;
+  try{
+    const cur=AndroidApp.version(),n=v=>parseInt(String(v).split(".").pop(),10)||0;
+    if(!cur)return;
+    const r=await fetch("https://api.github.com/repos/"+GH_REPO+"/releases/latest");
+    if(!r.ok)return;
+    const j=await r.json(),v=String(j.tag_name||"").replace(/^v/,"");
+    if(v&&n(v)>n(cur)){$("upd-v").textContent=v+" (installée : "+cur+")";$("upd").classList.remove("hidden")}
+  }catch(e){/* hors ligne : on réessaiera au prochain lancement */}
+}
+$("upd-go").onclick=()=>{try{AndroidApp.open("https://github.com/"+GH_REPO+"/releases/latest/download/coach-running.apk")}catch(e){}};
+setTimeout(checkUpdate,1500);
 /* Courbes */
 /* Courbes */
 let chartKind="charge";
@@ -945,10 +1060,36 @@ function setDur(sec){$("a-h").value=sec?Math.floor(sec/3600):"";$("a-m").value=s
 const fmtHMS=s=>Math.floor(s/3600)+":"+pad2(Math.floor(s%3600/60))+":"+pad2(Math.round(s%60));
 const durText=s=>s.sec?fmtHMS(s.sec):s.min+" min";
 const sameFam=(x,y)=>{const r=v=>!v||v==="RUN_ROUTE"||v==="RUN_TRAIL";return x===y||(r(x)&&r(y))};
+/* Doublon : la sortie existe déjà (ex. enregistrée avec le GPS du téléphone) et la montre apporte plus de données.
+   On complète la sortie existante (même id, même RPE) puis le doublon n'est pas créé. Renvoie true si quelque chose a changé. */
+function mergeDup(ex,rec,pts){
+  let ch=false;
+  const has=(t,i)=>!!t&&t.some(p=>p[i]!=null);
+  if(rec.hr>0&&rec.hr!==ex.hr){ex.hr=rec.hr;ch=true}
+  if(rec.km>0&&Math.abs((ex.km||0)-rec.km)>0.05){ex.km=rec.km;ch=true}
+  if(rec.dplus>0&&rec.dplus!==ex.dplus){ex.dplus=rec.dplus;ch=true}
+  if(rec.sec>0&&rec.sec!==ex.sec&&Math.abs(rec.sec-(ex.sec||0))<=Math.max(120,rec.sec*0.1)){ex.sec=rec.sec;ex.min=rec.min;ch=true}
+  if(rec.kcal>0&&rec.hr>0&&ex.kcal!==rec.kcal){ex.kcal=rec.kcal;ch=true}
+  if(pts){
+    const old=traces[ex.id];
+    const better=!old||(has(pts,3)&&!has(old,3))||(has(pts,4)&&!has(old,4))||(has(pts,2)&&!has(old,2));
+    /* on garde les positions GPS du téléphone si la montre n'en a pas */
+    if(better&&(has(pts,5)||!has(old,5))){traces[ex.id]=pts;ch=true}
+    else if(better&&old){
+      /* la montre n'a pas de GPS : on injecte FC, cadence, altitude dans la trace du téléphone, à la même distance */
+      const L=old[old.length-1][1]||1,M=pts[pts.length-1][1]||1;
+      old.forEach(o=>{
+        const q=pts.reduce((b,x)=>Math.abs(x[1]/M-o[1]/L)<Math.abs(b[1]/M-o[1]/L)?x:b,pts[0]);
+        if(q[3]!=null)o[3]=q[3];if(q[4]!=null)o[4]=q[4];if(q[2]!=null)o[2]=q[2];
+      });ch=true;
+    }
+  }
+  return ch;
+}
 function isDup(a,ignore){
   return sessions.find(s=>{
     if(s===ignore)return false;
-    if(a.ts&&s.ts)return Math.abs(a.ts-s.ts)<600000&&Math.abs(s.min-a.min)<=Math.max(3,a.min*0.1);
+    if(a.ts&&s.ts)return Math.abs(a.ts-s.ts)<900000&&Math.abs(s.min-a.min)<=Math.max(4,a.min*0.15);
     return s.date===a.date&&sameFam(s.sport,a.sport)&&Math.abs(s.min-a.min)<=Math.max(2,a.min*0.05);
   });
 }
@@ -978,13 +1119,27 @@ async function importMany(files){
     if(!r||!(r.min>0)){bad++;continue}
     const rec=recFromImport(r);
     rec.id=uid();const dd=isDup(rec,null);
-    if(dd){if(r.pts&&!traces[dd.id]){traces[dd.id]=r.pts;enr++}else dup++;continue}
+    if(dd){if(mergeDup(dd,rec,r.pts))enr++;else dup++;continue}
     sessions.push(rec);if(r.pts)traces[rec.id]=r.pts;added++;
   }
   sessions.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   persist();persistT();renderActs();
-  amsg((enr?enr+" mise(s) à jour avec la trace, ":"")+added+" activité"+(added>1?"s":"")+" ajoutée"+(added>1?"s":"")+", "+dup+" doublon"+(dup>1?"s":"")+" ignoré"+(dup>1?"s":"")+(bad?", "+bad+" fichier"+(bad>1?"s":"")+" non reconnu"+(bad>1?"s":""):"")+".");
+  amsg((enr?enr+" sortie(s) existante(s) complétée(s) avec les données de la montre, ":"")+added+" activité"+(added>1?"s":"")+" ajoutée"+(added>1?"s":"")+", "+dup+" doublon"+(dup>1?"s":"")+" ignoré"+(dup>1?"s":"")+(bad?", "+bad+" fichier"+(bad>1?"s":"")+" non reconnu"+(bad>1?"s":""):"")+".");
 }
+/* Fichiers partagés depuis une autre appli (appli Android : Partager > Coach Running) */
+window.onSharedFiles=async list=>{
+  const files=list.map(o=>{
+    const bin=atob(o.b64),u=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    let n=o.name||"sortie";
+    if(!/\.(fit|gpx|tcx)$/i.test(n)){
+      if(String.fromCharCode(...u.slice(8,12))===".FIT")n+=".fit";
+      else n+=/TrainingCenterDatabase/.test(new TextDecoder().decode(u.slice(0,3000)))?".tcx":".gpx";
+    }
+    return new File([u],n);
+  });
+  show("acts");await importMany(files);
+};
 function endEdit(){editing=null;$("a-add").textContent="Ajouter l’activité";$("a-cancel").classList.add("hidden")}
 $("a-cancel").onclick=()=>{endEdit();pending={};setDur(0);$("a-km").value="";$("a-dp").value="";amsg("")};
 function startEdit(s){
@@ -1130,26 +1285,28 @@ const hmsg=t=>{const e=$("h-msg");if(e)e.textContent=t};
 const HKEY="coach_hsync";
 function healthSync(){
   if(!window.AndroidHealth)return;
-  let since=0;try{since=+localStorage.getItem(HKEY)||0}catch(e){}
   hmsg("Synchronisation en cours…");
-  try{AndroidHealth.sync(since?since-86400000:0)}catch(e){hmsg("Synchronisation impossible.")}
+  /* toujours 30 jours : les doublons sont ignorés ou fusionnés, et une synchro à vide ne peut plus masquer d'anciennes sorties */
+  try{AndroidHealth.sync(0)}catch(e){hmsg("Synchronisation impossible.")}
 }
+let lastErr="";
 window.onHealthMsg=t=>hmsg(t);
 window.onHealthData=json=>{
   let list;try{list=JSON.parse(json)}catch(e){hmsg("Données illisibles.");return}
-  let added=0,dup=0,enr=0;
-  list.forEach(h=>{
-    const sec=Math.round(h.sec||0);if(!(sec>=30))return;
+  let added=0,dup=0,enr=0,court=0,err=0;
+  const recu=list.length,dates=list.map(h=>iso(new Date(h.ts))).slice(-4).join(", ");
+  list.forEach(h=>{try{
+    const sec=Math.round(h.sec||0);if(!(sec>=30)){court++;return}
     const r={sport:h.sport||"OTHER",date:iso(new Date(h.ts)),sec:sec,min:Math.max(1,Math.round(sec/60)),ts:h.ts,hr:h.hrAvg||0,km:(h.m||0)/1000,dplus:Math.round(h.gain||0),pts:h.route&&h.route.length>2?mkTraceH(h):null};
     const rec=recFromImport(r);rec.id=uid();
     const dd=isDup(rec,null);
-    if(dd){if(r.pts&&!traces[dd.id]){traces[dd.id]=r.pts;enr++}else dup++;return}
+    if(dd){if(mergeDup(dd,rec,r.pts))enr++;else dup++;return}
     sessions.push(rec);if(r.pts)traces[rec.id]=r.pts;added++;
-  });
+  }catch(e){err++;lastErr=String(e&&e.message||e)}});
   sessions.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
   persist();persistT();
   try{localStorage.setItem(HKEY,String(Date.now()))}catch(e){}
-  hmsg(added+" activité(s) ajoutée(s), "+dup+" doublon(s) ignoré(s)"+(enr?", "+enr+" trace(s) ajoutée(s)":"")+".");
+  hmsg(recu+" séance(s) lue(s) dans Health Connect"+(recu?" (dernières : "+dates+")":"")+" → "+added+" ajoutée(s), "+dup+" doublon(s) ignoré(s)"+(enr?", "+enr+" complétée(s) par la montre":"")+(court?", "+court+" trop courte(s)":"")+(err?", "+err+" erreur(s) : "+lastErr:"")+".");
   if(!$("acts").classList.contains("hidden"))renderActs();
 };
 $("h-go").onclick=healthSync;
