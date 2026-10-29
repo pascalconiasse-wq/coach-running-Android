@@ -401,8 +401,8 @@ const validProfile=p=>p&&p.age>=12&&p.age<=90&&p.weight>=30&&p.weight<=200&&p.da
 if(!validProfile(profile))profile=null;
 const DN=["","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
 const WEEK={1:[7],2:[2,7],3:[2,4,7],4:[1,3,5,7],5:[1,2,4,5,7],6:[1,2,3,5,6,7],7:[1,2,3,4,5,6,7]};
-const E="EASY_RUN",L="LONG_RUN",I="INTERVALS",T="THRESHOLD";
-const SEQ={1:[L],2:[E,L],3:[I,E,L],4:[E,I,E,L],5:[E,I,E,T,L],6:[E,I,E,T,E,L],7:[E,I,E,T,E,E,L]};
+const E="EASY_RUN",LG="LONG_RUN",I="INTERVALS",T="THRESHOLD";
+const SEQ={1:[LG],2:[E,LG],3:[I,E,LG],4:[E,I,E,LG],5:[E,I,E,T,LG],6:[E,I,E,T,E,LG],7:[E,I,E,T,E,E,LG]};
 const todayIdx=()=>{const d=new Date().getDay();return d===0?7:d};
 const SPORTS={RUN_ROUTE:"Course route",RUN_TRAIL:"Trail",CYCLING:"Vélo",SWIMMING:"Natation",OTHER:"Autre"};
 const COEF={RUN_ROUTE:1,RUN_TRAIL:1,CYCLING:.7,SWIMMING:.6,OTHER:.5};
@@ -440,7 +440,7 @@ const goalName=()=>{const g=profile&&profile.goal;if(!g)return "";if(!g.custom)r
 const vk=f=>dec(profile.vma*f),vp=f=>fmtP(3600/(profile.vma*f));
 function sessInfo(t,c){
   if(t==="REST")return {t:t};
-  if(t===L)return {t:t,m:c.longMin,d:c.kind==="trail"?"Sortie longue en terrain varié"+(c.dpl?", environ "+c.dpl+" m D+":"")+", marche rapide dans les fortes pentes, testez votre ravitaillement":"Sortie longue à allure facile, pensez à vous hydrater"+(c.spec?", dont "+roundTo(c.longMin*0.3,5)+" min à allure course":"")};
+  if(t===LG)return {t:t,m:c.longMin,d:c.kind==="trail"?"Sortie longue en terrain varié"+(c.dpl?", environ "+c.dpl+" m D+":"")+", marche rapide dans les fortes pentes, testez votre ravitaillement":"Sortie longue à allure facile, pensez à vous hydrater"+(c.spec?", dont "+roundTo(c.longMin*0.3,5)+" min à allure course":"")};
   if(t===E)return {t:t,m:c.easyMin,d:c.kind==="trail"?"Footing facile sur chemin, terrain varié":"Allure conversationnelle"};
   if(t===T&&profile&&profile.vma&&c.kind!=="trail"&&!c.spec)return {t:t,m:25+c.tMin,d:"15 min d’échauffement, "+c.tMin+" min à 85–88 % de la VMA ("+vk(.85)+"–"+vk(.88)+" km/h, soit "+vp(.88)+"–"+vp(.85)+" /km), retour au calme"};
   if(t===I&&profile&&profile.vma&&c.kind!=="trail"){
@@ -498,7 +498,7 @@ function adaptInfo(){
   let out={f:1};
   try{
     const mon=mondayOf(new Date()),oldest=sessions.length?sessions.reduce((m,x)=>x.date<m?x.date:m,"9999-99-99"):"9999-99-99";
-    const RUNT=[E,L,I,T];let planned=0,actual=0;
+    const RUNT=[E,LG,I,T];let planned=0,actual=0;
     for(let k=1;k<=2;k++){
       const W=weekPlan(-k,true),a=iso(W.mon),e=new Date(W.mon);e.setDate(e.getDate()+6);
       planned+=Object.values(W.days).filter(x=>RUNT.includes(x.t)).reduce((s,x)=>s+(x.m||0),0);
@@ -545,7 +545,7 @@ function weekPlan(off,raw){
     const es=Object.keys(days).filter(d=>days[d].t===E);
     if(es.length>=2)days[es[es.length-1]]=sessInfo("STRENGTH",c);
   }
-  const td=moves[iso(mon)],ld=Object.keys(days).find(d=>days[d].t===L);
+  const td=moves[iso(mon)],ld=Object.keys(days).find(d=>days[d].t===LG);
   if(ld&&td&&td!==+ld){const tmp=days[td];days[td]=days[ld];days[ld]=tmp}
   if(c.phase!=="Course"&&Array.isArray(swaps[iso(mon)]))swaps[iso(mon)].forEach(pr=>{
     const a=pr[0],b=pr[1];
@@ -797,7 +797,7 @@ let liveSport="RUN_ROUTE";
 
 function liveMap(){
   try{
-    if(!lmap&&typeof L!=="undefined"){
+    if(!lmap&&typeof L!=="undefined"&&L.map){
       lmap=L.map("lmap",{zoomControl:false,attributionControl:false}).addControl(L.control.attribution({prefix:false,position:"bottomleft"}));lmap=lmap.setView([46.6,2.4],6);
       L.tileLayer(OSM,{maxZoom:19,attribution:OSMA}).addTo(lmap);
       lmap.on("dragstart",()=>{follow=false});
@@ -1718,7 +1718,7 @@ function renderDetail(){
 function drawMap(pts){
   const co=pts.filter(p=>p[5]!=null&&p[6]!=null).map(p=>[p[5],p[6]]),box=$("map"),msg=$("d-mapmsg");
   if(co.length<2){box.classList.add("hidden");msg.textContent="Pas de position GPS dans cette activité.";return}
-  if(typeof L==="undefined"){box.classList.add("hidden");msg.textContent="Carte indisponible : Leaflet n’a pas pu être chargé (connexion internet requise).";return}
+  if(typeof L==="undefined"||!L.map){box.classList.add("hidden");msg.textContent="Carte indisponible : Leaflet n’a pas pu être chargé (connexion internet requise).";return}
   box.classList.remove("hidden");msg.textContent="";
   if(!carte){
     carte=L.map("map");
