@@ -140,6 +140,29 @@ h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4
     <ul id="zones"></ul>
     <button class="alt" id="zedit">Renseigner ma FC max et ma FC de repos</button>
   </div>
+  <div class="card" id="vma-card">
+    <h2>Test VMA (facultatif)</h2>
+    <p class="mute" id="vma-info"></p>
+    <div id="vma-run" class="hidden">
+      <p class="mute" id="vma-help">Échauffe-toi 15 minutes, place-toi sur un terrain plat, puis touche « Lancer ». Cours 6 minutes à fond, de façon régulière.</p>
+      <div class="row">
+        <div class="card"><div class="mute">Temps restant</div><div class="num" id="vma-t">6:00</div></div>
+        <div class="card"><div class="mute">Distance (m)</div><div class="num" id="vma-m">0</div></div>
+      </div>
+      <button id="vma-start">Lancer les 6 minutes</button>
+      <button class="alt" id="vma-cancel">Annuler</button>
+    </div>
+    <div id="vma-man" class="hidden">
+      <label class="f" for="vma-d">Distance parcourue en 6 minutes (mètres)</label>
+      <input type="number" id="vma-d" inputmode="numeric" min="600" max="2500" placeholder="ex. 1500">
+      <button id="vma-ok">Calculer ma VMA</button>
+    </div>
+    <div id="vma-res" class="hidden"><button id="vma-save">Enregistrer cette VMA</button></div>
+    <button class="alt" id="vma-go">Faire le test avec le GPS</button>
+    <button class="alt" id="vma-hand">Saisir un résultat</button>
+    <button class="alt hidden" id="vma-del">Effacer ma VMA</button>
+    <p class="mute" id="vma-msg" role="status"></p>
+  </div>
   <div class="card">
     <h2 id="wk-title">Votre semaine</h2>
     <ul id="week"></ul>
@@ -337,10 +360,18 @@ function interp(tb,k){
 }
 const GNAMES={5:"5 km",10:"10 km",21.0975:"semi-marathon",42.195:"marathon"};
 const goalName=()=>{const g=profile&&profile.goal;if(!g)return "";if(!g.custom)return GNAMES[g.km]||"course";return (g.dplus?"trail ":"course de ")+g.km+" km"+(g.dplus?" · "+g.dplus+" m D+":"")};
+const vk=f=>dec(profile.vma*f),vp=f=>fmtP(3600/(profile.vma*f));
 function sessInfo(t,c){
   if(t==="REST")return {t:t};
   if(t===L)return {t:t,m:c.longMin,d:c.kind==="trail"?"Sortie longue en terrain varié"+(c.dpl?", environ "+c.dpl+" m D+":"")+", marche rapide dans les fortes pentes, testez votre ravitaillement":"Sortie longue à allure facile, pensez à vous hydrater"+(c.spec?", dont "+roundTo(c.longMin*0.3,5)+" min à allure course":"")};
   if(t===E)return {t:t,m:c.easyMin,d:c.kind==="trail"?"Footing facile sur chemin, terrain varié":"Allure conversationnelle"};
+  if(t===T&&profile&&profile.vma&&c.kind!=="trail"&&!c.spec)return {t:t,m:25+c.tMin,d:"15 min d’échauffement, "+c.tMin+" min à 85–88 % de la VMA ("+vk(.85)+"–"+vk(.88)+" km/h, soit "+vp(.88)+"–"+vp(.85)+" /km), retour au calme"};
+  if(t===I&&profile&&profile.vma&&c.kind!=="trail"){
+    if(profile.level==="debutant")return {t:t,m:40,d:"15 min d’échauffement, 6 × 1 min à 95 % de la VMA ("+vk(.95)+" km/h, soit "+vp(.95)+" /km), 1 min 30 de trot entre les fractions, retour au calme"};
+    return c.wl%2===0
+      ?{t:t,m:45,d:"15 min d’échauffement, 2 séries de 8 × 30 s à 100–105 % de la VMA ("+vk(1)+"–"+vk(1.05)+" km/h, soit "+vp(1.05)+"–"+vp(1)+" /km) avec 30 s de trot, 3 min de récupération entre les séries, retour au calme"}
+      :{t:t,m:25+c.reps*5,d:"15 min d’échauffement, "+Math.min(c.reps,6)+" × 3 min à 95 % de la VMA ("+vk(.95)+" km/h, soit "+vp(.95)+" /km), 2 min de trot, retour au calme"};
+  }
   if(t===T)return {t:t,m:25+c.tMin,d:"15 min d’échauffement, "+c.tMin+(c.kind==="trail"?" min en montée soutenue à effort constant":c.spec?" min à allure course":" min à allure seuil")+", retour au calme"};
   if(t===I)return {t:t,m:25+c.reps*5,d:c.kind==="trail"?"15 min d’échauffement, "+c.reps+" côtes de 1 min 30 en montée soutenue, descente en trottinant, retour au calme":"15 min d’échauffement, "+c.reps+" × 3 min rapide / 2 min trot, retour au calme"};
   if(t==="STRENGTH")return {t:t,m:30,d:"Gainage, squats, fentes, montées de marche, travail des descentes (quadriceps)"};
@@ -420,8 +451,9 @@ function weekPlan(off,raw){
   for(let d=1;d<=7;d++)days[d]={t:"REST"};
   WEEK[n].forEach((d,i)=>{
     let s=SEQ[n][i];
-    if(profile.level==="debutant"&&(s===I||s===T))s=E;
-    if(profile.level==="inter"&&s===T)s=E;
+    const V=!!profile.vma&&(c.phase==="Développement"||c.phase==="Spécifique");
+    if(profile.level==="debutant"&&(s===T||(s===I&&!V)))s=E;
+    if(profile.level==="inter"&&s===T&&!(V&&c.phase==="Spécifique"))s=E;
     if(c.phase==="Fondation"&&s===I)s=E;
     if(c.phase==="Affûtage"&&s===T)s=E;
     if(c.phase==="Course"&&s!==E)s=E;
@@ -488,9 +520,12 @@ function paces(){
   /* la référence ne fait que s'améliorer : une sortie récente plus rapide que ton résultat de référence la remplace */
   const useAuto=au&&(!tm||au.t10<tm*0.99);
   const t10=useAuto?au.t10:tm;
-  if(!t10)return null;
-  const p10=t10/10;
-  return {p10:p10,auto:useAuto?au:null,INTERVALS:p10*0.95,THRESHOLD:p10*1.03,EASY_RUN:p10*1.25,LONG_RUN:p10*1.28};
+  const vm=profile&&profile.vma>0?profile.vma:0;
+  if(!t10&&!vm)return null;
+  const p10=t10?t10/10:3600/(vm*0.86);
+  const o={p10:p10,auto:useAuto?au:null,INTERVALS:p10*0.95,THRESHOLD:p10*1.03,EASY_RUN:p10*1.25,LONG_RUN:p10*1.28};
+  if(vm){o.INTERVALS=3600/(vm*0.97);o.THRESHOLD=3600/(vm*0.87);if(!t10){o.EASY_RUN=3600/(vm*0.65);o.LONG_RUN=3600/(vm*0.62)}}
+  return o;
 }
 function target(s,kind){
   if(s==="REST"||s==="RACE"||s==="STRENGTH")return "";
@@ -529,6 +564,77 @@ function hrCheck(b){
   $("hrz").style.color=over?"var(--bad)":"";
   if(over&&Date.now()-lastBuzz>20000){lastBuzz=Date.now();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(x){}}
 }
+
+/* Test VMA facultatif : une fois enregistré, il cale le fractionné et le seuil et débloque des séances de VMA */
+let vmaWatch=null,vmaTimer=null,vmaT0=0,vmaDist=0,vmaLast=null,vmaPending=0;
+const vmaMsg=t=>{$("vma-msg").textContent=t};
+function vmaStopGps(){
+  if(vmaWatch!==null){try{navigator.geolocation.clearWatch(vmaWatch)}catch(e){}vmaWatch=null}
+  clearInterval(vmaTimer);vmaTimer=null;
+  try{window.AndroidBle&&AndroidBle.keepScreen(false)}catch(e){}
+}
+function renderVma(){
+  if(!profile||!$("vma-card"))return;
+  const v=profile.vma;
+  $("vma-del").classList.toggle("hidden",!v);
+  if(!v){$("vma-info").textContent="Pas obligatoire. Si tu le fais, le fractionné et le seuil sont calés sur ta vitesse maximale aérobie, et des séances de VMA sont ajoutées à ton plan. Protocole : 6 minutes de course à fond sur terrain plat, après un échauffement."}
+  else{
+    const old=profile.vmaDate&&(Date.now()-new Date(profile.vmaDate+"T00:00:00"))>56*DAY;
+    $("vma-info").textContent="VMA "+dec(v)+" km/h (test du "+(profile.vmaDate?fmtDate(profile.vmaDate):"?")+") · allure à 100 % : "+fmtP(3600/v)+" /km."+(old?" Test vieux de plus de 8 semaines : refais-le pour mettre ton plan à jour.":"");
+  }
+  $("vma-go").textContent=v?"Refaire le test avec le GPS":"Faire le test avec le GPS";
+}
+function vmaResult(distM){
+  const v=distM/100;
+  if(!(v>=8&&v<=25)){vmaMsg("Résultat peu crédible ("+dec(v)+" km/h) : vérifie la distance ou recommence le test.");$("vma-res").classList.add("hidden");return}
+  vmaPending=Math.round(v*10)/10;
+  $("vma-save").textContent="Enregistrer ma VMA : "+dec(vmaPending)+" km/h";
+  $("vma-res").classList.remove("hidden");
+  vmaMsg("Résultat : "+dec(vmaPending)+" km/h ("+Math.round(distM)+" m en 6 min). Enregistre-le pour recalculer ton plan.");
+}
+function vmaFinish(){
+  vmaStopGps();
+  try{navigator.vibrate&&navigator.vibrate([400,150,400])}catch(e){}
+  $("vma-t").textContent="0:00";
+  $("vma-start").classList.add("hidden");
+  vmaResult(vmaDist);
+}
+$("vma-go").onclick=()=>{
+  $("vma-man").classList.add("hidden");$("vma-res").classList.add("hidden");
+  if(!navigator.geolocation){vmaMsg("GPS indisponible : saisis un résultat à la main.");return}
+  vmaDist=0;vmaLast=null;$("vma-t").textContent="6:00";$("vma-m").textContent="0";
+  $("vma-start").classList.remove("hidden");$("vma-run").classList.remove("hidden");vmaMsg("");
+};
+$("vma-start").onclick=()=>{
+  vmaDist=0;vmaLast=null;vmaT0=Date.now();$("vma-start").classList.add("hidden");
+  try{window.AndroidBle&&AndroidBle.keepScreen(true)}catch(e){}
+  vmaWatch=navigator.geolocation.watchPosition(p=>{
+    const c=p.coords;if(c.accuracy>25)return;
+    if(vmaLast){
+      const d=hav(vmaLast.lat,vmaLast.lon,c.latitude,c.longitude)*1000,dt=(p.timestamp-vmaLast.t)/1000;
+      if(dt<=0||d>dt*10)return;
+      if(d<2)return;
+      vmaDist+=d;
+    }
+    vmaLast={lat:c.latitude,lon:c.longitude,t:p.timestamp};
+    $("vma-m").textContent=String(Math.round(vmaDist));
+  },err=>{vmaMsg(err.code===1?"GPS refusé : autorise la position pour Coach Running.":"Signal GPS faible…")},{enableHighAccuracy:true,maximumAge:0,timeout:30000});
+  vmaTimer=setInterval(()=>{
+    const left=Math.max(0,360-Math.floor((Date.now()-vmaT0)/1000));
+    $("vma-t").textContent=Math.floor(left/60)+":"+pad2(left%60);
+    if(left<=0)vmaFinish();
+  },500);
+};
+$("vma-cancel").onclick=()=>{vmaStopGps();$("vma-run").classList.add("hidden");$("vma-res").classList.add("hidden");vmaMsg("")};
+$("vma-hand").onclick=()=>{vmaStopGps();$("vma-run").classList.add("hidden");$("vma-man").classList.toggle("hidden");$("vma-res").classList.add("hidden");vmaMsg("")};
+$("vma-ok").onclick=()=>{vmaResult(+$("vma-d").value||0)};
+$("vma-save").onclick=()=>{
+  if(!(vmaPending>0))return;
+  profile.vma=vmaPending;profile.vmaDate=today();saveProfile();
+  $("vma-res").classList.add("hidden");$("vma-run").classList.add("hidden");$("vma-man").classList.add("hidden");
+  vmaMsg("VMA enregistrée : ton plan est recalculé.");_adKey="";renderPlan();
+};
+$("vma-del").onclick=()=>{delete profile.vma;delete profile.vmaDate;saveProfile();vmaMsg("VMA effacée.");_adKey="";renderPlan()};
 function renderPlan(){
   const W=weekPlan(),plan=W.days,planned=plan[todayIdx()].t,r=recommend(planned);
   $("sess").textContent=(W.ctx.kind==="trail"?"Trail":"Course route")+" : "+NAMES[r.session];
@@ -536,7 +642,7 @@ function renderPlan(){
   const info=r.session===planned?plan[todayIdx()]:sessInfo(r.session,W.ctx);
   $("tgt").textContent=[info.m?info.m+" min":"",info.d,target(r.session,W.ctx.kind)].filter(Boolean).join(" · ");
   if(planned==="RACE")$("sess").textContent="Jour de course : "+goalName();
-  renderGoal(W);renderZones();
+  renderGoal(W);renderZones();renderVma();
   $("today").style.setProperty("--tc",TCOL[r.session]||"#2F6BFF");
   $("sub").textContent=new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
   $("go").textContent=r.session==="REST"?"Courir quand même":"Démarrer la séance";
@@ -962,7 +1068,7 @@ $("psave").onclick=()=>{
     }
     goal={km:km,date:gdv,sec:gs,dplus:dp,custom:gk==="custom"};
   }
-  profile={age:age,weight:w,level:$("f-lvl").value,res:res,days:+$("f-days").value,terrain:$("f-ter").value,goal:goal,fcmax:fcmax,fcrest:fcrest};
+  profile={age:age,weight:w,level:$("f-lvl").value,res:res,days:+$("f-days").value,terrain:$("f-ter").value,goal:goal,fcmax:fcmax,fcrest:fcrest,vma:profile&&profile.vma>0?profile.vma:undefined,vmaDate:profile&&profile.vma>0?profile.vmaDate:undefined};
   saveProfile();show("plan");
 };
 $("prest").onclick=()=>show(profile?"plan":"stats");
