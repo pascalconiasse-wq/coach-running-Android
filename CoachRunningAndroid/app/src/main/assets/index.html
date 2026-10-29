@@ -348,7 +348,6 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
       <img id="d-snap" class="hidden" alt="Carte enregistrée pendant la séance"><div id="map"></div><p class="mute" id="d-mapmsg"></p>
       <div id="d-sum" class="dsum"></div>
       <h3 class="dt" id="d-pace-t">Allure</h3><canvas id="c-pace"></canvas>
-      <h3 class="dt" id="d-spd-t">Vitesse (km/h)</h3><canvas id="c-spd"></canvas>
       <h3 class="dt">Altitude (m)</h3><canvas id="c-alt"></canvas>
       <h3 class="dt">Fréquence cardiaque (bpm)</h3><canvas id="c-hr"></canvas>
       <h3 class="dt">Cadence</h3><canvas id="c-cad"></canvas>
@@ -1754,7 +1753,6 @@ function renderDetail(){
   $("d-pace-t").textContent=run?"Allure (min/km)":"Vitesse (km/h)";
   line("c-pace",speed,"#2F6BFF",run?{invert:true,fmt:fmtP}:{fmt:dec});
   line("c-cad",pts.map(p=>p[4]==null?null:(run&&p[4]<120?p[4]*2:p[4])),"#18B26B",{fmt:v=>String(Math.round(v))});
-  line("c-spd",ms.map(v=>v==null?null:v*3.6),"#0EA5E9",{fmt:dec});
   detailSummary(s,pts,run);
   drawMap(pts);
 }
