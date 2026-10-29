@@ -6,6 +6,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.util.Base64
+import android.Manifest
+import android.content.pm.PackageManager
+import android.webkit.GeolocationPermissions
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -13,6 +16,7 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
 import androidx.health.connect.client.PermissionController
 import org.json.JSONArray
@@ -41,6 +45,15 @@ class MainActivity : ComponentActivity() {
         fileCallback = null
     }
 
+    // Position (GPS) : demandée à Android, puis transmise à la page
+    private var geoOrigin: String? = null
+    private var geoCallback: GeolocationPermissions.Callback? = null
+    private val locLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { res ->
+        val ok = res[Manifest.permission.ACCESS_FINE_LOCATION] == true || res[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        geoCallback?.invoke(geoOrigin, ok, false)
+        geoCallback = null
+    }
+
     private val permLauncher = registerForActivityResult(
         PermissionController.createRequestPermissionResultContract()
     ) { granted -> health.onPermissions(granted) }
@@ -52,6 +65,7 @@ class MainActivity : ComponentActivity() {
         setContentView(web)
         web.settings.javaScriptEnabled = true
         web.settings.domStorageEnabled = true
+        web.settings.setGeolocationEnabled(true)
         web.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 pageReady = true
@@ -60,6 +74,14 @@ class MainActivity : ComponentActivity() {
             }
         }
         web.webChromeClient = object : WebChromeClient() {
+            override fun onGeolocationPermissionsShowPrompt(origin: String?, callback: GeolocationPermissions.Callback?) {
+                val granted = ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                if (granted) { callback?.invoke(origin, true, false); return }
+                geoOrigin = origin
+                geoCallback = callback
+                locLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            }
+
             override fun onShowFileChooser(
                 view: WebView?,
                 callback: ValueCallback<Array<Uri>>?,
@@ -86,6 +108,7 @@ class MainActivity : ComponentActivity() {
         // Pont minimal (écran allumé, sauvegarde). Si vous avez déjà votre propre pont
         // "AndroidBle" avec la connexion Bluetooth, gardez le vôtre et supprimez cette ligne.
         web.addJavascriptInterface(DeviceBridge(this, web), "AndroidBle")
+        web.addJavascriptInterface(AppBridge(this), "AndroidApp")   // numéro de version + ouverture du lien de mise à jour
         web.loadUrl("file:///android_asset/index.html")
 
         addOnNewIntentListener { handleShare(it) }   // appli déjà ouverte
@@ -132,3 +155,19 @@ class MainActivity : ComponentActivity() {
         if (web.canGoBack()) web.goBack() else super.onBackPressed()
     }
 }
+
+/** Pont pour la mise à jour : la page lit la version installée et ouvre le téléchargement de l'APK. */
+class AppBridge(private val act: android.app.Activity) {
+    @android.webkit.JavascriptInterface
+    fun version(): String = try {
+        act.packageManager.getPackageInfo(act.packageName, 0).versionName ?: ""
+    } catch (e: Exception) { "" }
+
+    @android.webkit.JavascriptInterface
+    fun open(url: String) {
+        act.runOnUiThread {
+            try { act.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (e: Exception) { }
+        }
+    }
+}
+
