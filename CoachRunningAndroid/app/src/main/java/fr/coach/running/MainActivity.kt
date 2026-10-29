@@ -54,6 +54,18 @@ class MainActivity : ComponentActivity() {
         geoCallback = null
     }
 
+    // Autorisations demandées par la page (position, notifications, Bluetooth)
+    private var permCallback: (() -> Unit)? = null
+    private val multiPerm = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        val cb = permCallback
+        permCallback = null
+        cb?.invoke()
+    }
+    private fun askPerms(p: Array<String>, then: () -> Unit) {
+        val missing = p.filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
+        if (missing.isEmpty()) then() else { permCallback = then; multiPerm.launch(missing.toTypedArray()) }
+    }
+
     private val permLauncher = registerForActivityResult(
         PermissionController.createRequestPermissionResultContract()
     ) { granted -> health.onPermissions(granted) }
@@ -108,6 +120,7 @@ class MainActivity : ComponentActivity() {
         // Pont minimal (écran allumé, sauvegarde). Si vous avez déjà votre propre pont
         // "AndroidBle" avec la connexion Bluetooth, gardez le vôtre et supprimez cette ligne.
         web.addJavascriptInterface(DeviceBridge(this, web), "AndroidBle")
+        web.addJavascriptInterface(TrackBridge(this, web) { p, t -> askPerms(p, t) }, "AndroidTrack")
         web.addJavascriptInterface(AppBridge(this), "AndroidApp")   // numéro de version + ouverture du lien de mise à jour
         web.loadUrl("file:///android_asset/index.html")
 
@@ -152,7 +165,12 @@ class MainActivity : ComponentActivity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (web.canGoBack()) web.goBack() else super.onBackPressed()
+        // Pendant une séance, la page décide (confirmation avant de quitter)
+        web.evaluateJavascript("window.onAndroidBack ? onAndroidBack() : false") { r ->
+            if (r != "true") {
+                if (web.canGoBack()) web.goBack() else super@MainActivity.onBackPressed()
+            }
+        }
     }
 }
 

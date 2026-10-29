@@ -68,6 +68,26 @@ textarea{width:100%;margin-top:12px;font:14px/1.4 ui-monospace,monospace;backgro
 .insight{margin:12px 0 0;padding:10px 12px;border-radius:12px;background:var(--bg);font-size:14px;color:var(--ink)}
 #map{height:320px;border-radius:14px;margin:12px 0;position:relative;z-index:0}
 h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4px}
+
+#lwrap{position:relative;height:calc(100vh - 360px);min-height:340px;border-radius:16px;overflow:hidden;margin-bottom:10px;border:1px solid var(--line)}
+#lmap{position:absolute;inset:0;background:#dfe6f3}
+#lov{position:absolute;top:8px;left:8px;z-index:1000;background:rgba(12,18,34,.84);color:#fff;border-radius:12px;padding:8px 12px;min-width:160px}
+#lov .timer2{font:800 34px/1 "Barlow Semi Condensed",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+#lov .lg{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-top:6px}
+#lov .lg>div{display:flex;flex-direction:column;line-height:1.05}
+#lov .lk{font-size:11px;opacity:.75;text-transform:uppercase}
+#lov b{font:700 23px "Barlow Semi Condensed",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+#lov i{font-style:normal;font-size:11px;opacity:.75}
+#lov .bad,#lov .bad b{color:#ff5a5f}
+#lov .lhz{font-size:12px;margin-top:4px;min-height:14px}
+.lbtn{position:absolute;top:8px;right:8px;z-index:1000;width:44px;height:44px;padding:0;border-radius:50%;font-size:22px;background:rgba(12,18,34,.84);color:#fff}
+#lrecap{position:absolute;left:8px;right:8px;bottom:8px;z-index:1000;background:rgba(47,107,255,.96);color:#fff;border-radius:12px;padding:10px 12px;font:700 18px "Barlow Semi Condensed",system-ui,sans-serif}
+#cfm{position:fixed;inset:0;z-index:5000;background:rgba(10,15,30,.72);display:grid;place-items:center;padding:16px}
+#cfm.hidden{display:none}
+.cfm-box{background:var(--card);color:var(--ink);border-radius:18px;padding:18px;max-width:420px;width:100%;max-height:92vh;overflow:auto}
+.chk{display:flex;gap:8px;align-items:center;margin:10px 0}
+.chk input{width:auto}
+#d-snap{width:100%;border-radius:12px;margin-bottom:8px}
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -124,6 +144,16 @@ h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4
     <div class="count" id="cd"></div>
     <p id="goal" class="mute"></p>
   </div>
+  <div class="card" id="xcard">
+    <h2>Autres objectifs</h2>
+    <p class="mute">Courses secondaires : elles allègent la semaine concernée, mais l’objectif principal reste prioritaire.</p>
+    <ul id="xlist"></ul>
+    <label class="f" for="x-name">Nom</label><input type="text" id="x-name" placeholder="ex. 10 km de la ville">
+    <label class="f" for="x-date">Date</label><input type="date" id="x-date">
+    <label class="f" for="x-km">Distance (km)</label><input type="number" id="x-km" inputmode="decimal" min="1" max="250" step="0.1">
+    <button class="alt" id="x-add">Ajouter</button>
+    <p class="mute warn" id="x-msg" role="status"></p>
+  </div>
   <div class="card hero-card" id="today">
     <h2 id="sess">Séance du jour</h2>
     <p id="why" class="mute"></p>
@@ -178,32 +208,49 @@ h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4
 </section>
 
 <section id="live" class="hidden">
-  <div class="timer" id="timer">00:00</div>
-  <p class="mute" id="livetgt" style="text-align:center;margin:-6px 0 14px"></p>
-  <div class="row">
-    <div class="card"><div class="mute">Cardio</div><div class="num" id="hr">--</div><div class="mute" id="hrz"></div></div>
-    <div class="card"><div class="mute">Vitesse (km/h)</div><div class="num" id="spd">--</div></div>
-  </div>
-  <div class="card" style="margin-top:12px">
-    <div class="row" style="margin-bottom:8px">
-      <div><div class="mute">Distance (km)</div><div class="num" id="gdist">0,00</div></div>
-      <div><div class="mute">Allure (min/km)</div><div class="num" id="gpace">--</div></div>
-      <div><div class="mute">D+ (m)</div><div class="num" id="gdp">0</div></div>
+  <div id="lwrap">
+    <div id="lmap"></div>
+    <div id="lov">
+      <div class="timer2" id="timer">00:00</div>
+      <div class="lg">
+        <div><span class="lk">Distance</span><b id="gdist">0,00</b><i>km</i></div>
+        <div><span class="lk">D+</span><b id="gdp">0</b><i>m</i></div>
+        <div><span class="lk">Allure</span><b id="gpace">--</b><i>/km</i></div>
+        <div><span class="lk">Moyenne</span><b id="gavg">--</b><i>/km</i></div>
+        <div><span class="lk">FC</span><b id="hr">--</b><i>bpm</i></div>
+      </div>
+      <div class="lhz" id="hrz"></div>
     </div>
-    <div id="lmap" style="height:220px;border-radius:12px;overflow:hidden"></div>
-    <p class="mute" id="gmsg" role="status" style="margin:8px 0 0">GPS : recherche du signal…</p>
+    <button id="lrec" class="lbtn" aria-label="Recentrer la carte">⌖</button>
+    <div id="lrecap" class="hidden" role="status"></div>
   </div>
-  <div class="card" style="margin-top:12px">
-    <button class="alt" id="bhr" style="margin-top:0">Connecter la ceinture ou montre (FC)</button>
-    <button class="alt" id="bspd">Connecter le capteur de vitesse</button>
-    <p class="mute warn" id="msg" role="status"></p>
-  </div>
+  <p class="mute" id="livetgt" style="margin:0 0 6px"></p>
+  <p class="mute" id="gmsg" role="status" style="margin:0 0 6px">GPS : recherche du signal…</p>
+  <p class="mute warn" id="msg" role="status" style="margin:0 0 6px"></p>
+  <span id="spd" class="hidden"></span>
   <div class="card">
-    <label for="rpe">Intensité perçue (RPE) : <b id="rpev">6</b>/10</label>
-    <input type="range" id="rpe" min="1" max="10" step="1" value="6">
+    <label class="f" for="l-recap">Récap avec vibration tous les</label>
+    <select id="l-recap"><option value="0">Aucun</option><option value="1">1 km</option><option value="5">5 km</option></select>
+    <label class="f" for="l-maxpace">Allure max (la plus rapide autorisée, min/km, vide = aucune)</label>
+    <input type="text" id="l-maxpace" inputmode="numeric" placeholder="ex. 5:30">
+    <label class="f" for="l-cap">FC max pour cette séance (bpm, vide = aucune)</label>
+    <input type="number" id="l-cap" inputmode="numeric" min="90" max="230">
+    <label class="chk"><input type="checkbox" id="l-keep"> Garder l’écran allumé (consomme plus de batterie)</label>
+    <button class="alt" id="bhr">Connecter la ceinture ou montre (FC)</button>
   </div>
-  <button class="stop" id="end">Enregistrer l’effort</button>
+  <button class="stop" id="end">Terminer la séance</button>
 </section>
+<div id="cfm" class="hidden" role="dialog" aria-modal="true" aria-labelledby="cfm-t">
+  <div class="cfm-box">
+    <h2 id="cfm-t">Terminer la séance ?</h2>
+    <p class="mute" id="cfm-sum"></p>
+    <div id="cfm-rpe"><label for="rpe">Intensité perçue (RPE) : <b id="rpev">6</b>/10</label><input type="range" id="rpe" min="1" max="10" step="1" value="6"></div>
+    <p class="mute" id="cfm-msg" role="status"></p>
+    <button id="cfm-save">Enregistrer et quitter</button>
+    <button class="alt" id="cfm-back">Continuer la séance</button>
+    <button class="alt" id="cfm-drop">Abandonner sans enregistrer</button>
+  </div>
+</div>
 
 <section id="prog" class="hidden">
   <div class="card">
@@ -268,7 +315,7 @@ h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4
     <select id="d-sel"></select>
     <p class="mute" id="d-info"></p>
     <div id="d-body" class="hidden">
-      <div id="map"></div><p class="mute" id="d-mapmsg"></p>
+      <img id="d-snap" class="hidden" alt="Carte enregistrée pendant la séance"><div id="map"></div><p class="mute" id="d-mapmsg"></p>
       <h3 class="dt">Altitude (m)</h3><canvas id="c-alt"></canvas>
       <h3 class="dt">Fréquence cardiaque (bpm)</h3><canvas id="c-hr"></canvas>
       <h3 class="dt" id="d-pace-t">Allure</h3><canvas id="c-pace"></canvas>
@@ -410,7 +457,11 @@ function weekCtx(mon){
   const kind=g&&wl>=1?(g.dplus>0?"trail":"route"):profile.terrain;
   const spec=kind==="route"&&!!g&&wl>=1&&g.km>=21&&phase==="Spécifique";
   const taper=phase==="Affûtage"||phase==="Course";
-  return {phase:phase,wl:wl,dpl:dpl,kind:kind,spec:spec,longMin:roundTo(longMax*frac,5),
+  /* objectifs secondaires : jamais pendant l'affûtage ni la course du principal, qui reste prioritaire */
+  let xr=null;
+  if(!taper)(profile.extra||[]).forEach(e=>{const w=Math.round((mondayOf(new Date(e.date+"T00:00:00"))-mon)/(7*DAY));if((w===0||w===1)&&(!xr||w<xr.w))xr={name:e.name,km:e.km,w:w,date:e.date}});
+  if(xr)frac*=xr.w===0?.6:.85;
+  return {xr:xr,phase:phase,wl:wl,dpl:dpl,kind:kind,spec:spec,longMin:roundTo(longMax*frac,5),
     easyMin:phase==="Course"?25:roundTo({debutant:30,inter:40,confirme:50}[lvl]*(taper?.8:1),5),
     reps:{debutant:5,inter:6,confirme:8}[lvl]+(phase==="Spécifique"?2:0),
     tMin:{debutant:10,inter:15,confirme:20}[lvl]+(phase==="Spécifique"?5:0)};
@@ -563,19 +614,27 @@ function renderZones(){
     li.append(a,b);ul.appendChild(li);
   });
 }
-let liveCap=0,lastBuzz=0;
-function startLive(){
-  const W=weekPlan(0),t=recommend(W.days[todayIdx()].t).session;
-  liveCap=capFor(t);$("hrz").textContent="";
-  const tt=t==="REST"?"restez en zone 2, FC max "+liveCap+" bpm":target(t,W.ctx.kind);
-  $("livetgt").textContent=NAMES[t]+(tt?" · "+tt:"");
+/* Objectifs secondaires */
+function renderExtras(){
+  const ul=$("xlist");if(!ul||!profile)return;ul.innerHTML="";
+  const ex=(profile.extra||[]).filter(e=>e.date>=today()).sort((a,b)=>a.date<b.date?-1:1);
+  ex.forEach(e=>{
+    const li=document.createElement("li"),a=document.createElement("span"),b=document.createElement("button");
+    a.textContent=fmtDate(e.date)+" · "+e.name+" · "+String(e.km).replace(".",",")+" km";
+    b.className="alt";b.textContent="Retirer";b.setAttribute("aria-label","Retirer "+e.name);
+    b.onclick=()=>{profile.extra=profile.extra.filter(x=>x!==e&&!(x.date===e.date&&x.name===e.name));saveProfile();renderPlan()};
+    li.append(a,b);ul.appendChild(li);
+  });
+  if(!ex.length){const li=document.createElement("li");li.className="mute";li.textContent="Aucun pour l’instant.";ul.appendChild(li)}
 }
-function hrCheck(b){
-  const z=zoneOf(b),over=liveCap>0&&b>liveCap;
-  $("hrz").textContent=over?"⚠️ Au-dessus de "+liveCap+" bpm : ralentissez":(z?"Zone "+z.n+" · "+z.name:"");
-  $("hrz").style.color=over?"var(--bad)":"";
-  if(over&&Date.now()-lastBuzz>20000){lastBuzz=Date.now();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(x){}}
-}
+$("x-add").onclick=()=>{
+  const n=$("x-name").value.trim(),d=$("x-date").value,k=+String($("x-km").value).replace(",","."),m=$("x-msg");
+  if(!n||!d||!(k>0)){m.textContent="Renseignez nom, date et distance.";return}
+  if(d<=today()){m.textContent="La date doit être à venir.";return}
+  if(profile.goal&&d===profile.goal.date){m.textContent="C’est la date de votre objectif principal.";return}
+  profile.extra=(profile.extra||[]).concat([{name:n,date:d,km:k}]);saveProfile();
+  $("x-name").value=$("x-date").value=$("x-km").value="";m.textContent="";renderPlan();
+};
 
 /* Test VMA facultatif : une fois enregistré, il cale le fractionné et le seuil et débloque des séances de VMA */
 let vmaWatch=null,vmaTimer=null,vmaT0=0,vmaDist=0,vmaLast=null,vmaPending=0;
@@ -654,7 +713,7 @@ function renderPlan(){
   const info=r.session===planned?plan[todayIdx()]:sessInfo(r.session,W.ctx);
   $("tgt").textContent=[info.m?info.m+" min":"",info.d,target(r.session,W.ctx.kind)].filter(Boolean).join(" · ");
   if(planned==="RACE")$("sess").textContent="Jour de course : "+goalName();
-  renderGoal(W);renderZones();renderVma();
+  renderGoal(W);renderZones();renderVma();renderExtras();
   $("today").style.setProperty("--tc",TCOL[r.session]||"#2F6BFF");
   $("sub").textContent=new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
   $("go").textContent=r.session==="REST"?"Courir quand même":"Démarrer la séance";
@@ -682,125 +741,280 @@ function show(id){
   if(id==="prog")renderProg();
   if(id==="acts")renderActs();
 }
-document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if(timerId&&!confirm("Quitter la séance en cours ?"))return;if(timerId)stopSession();show(b.dataset.t)});
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if(liveOn){if(b.dataset.t!=="live")openCfm();return}show(b.dataset.t)});
 
-/* Séance en direct */
-let timerId=null,t0=0,hrSamples=[],spdSamples=[],devices=[],lock=null;
-function startSession(){
-  t0=Date.now();hrSamples=[];spdSamples=[];startLive();$("hr").textContent="--";$("spd").textContent="--";$("msg").textContent="";
-  timerId=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);$("timer").textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")},500);
-  $("timer").textContent="00:00";
-  try{navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>lock=l).catch(()=>{})}catch(e){}
-  try{window.AndroidBle&&AndroidBle.keepScreen(true)}catch(e){}
-  show("live");gpsStart();
+/* Séance en direct : le suivi tourne dans un service Android (écran éteint), la page n'affiche que ce qu'il enregistre */
+const MKEY="coach_maps",LKEY="coach_live",QKEY="coach_prefs";
+let maps={};try{maps=JSON.parse(localStorage.getItem(MKEY))||{}}catch(e){}
+const persistM=()=>{try{localStorage.setItem(MKEY,JSON.stringify(maps));return true}catch(e){return false}};
+let prefs={};try{prefs=JSON.parse(localStorage.getItem(QKEY))||{}}catch(e){}
+const persistP=()=>{try{localStorage.setItem(QKEY,JSON.stringify(prefs))}catch(e){}};
+const NAT=()=>typeof window.AndroidTrack!=="undefined"&&window.AndroidTrack;
+let liveOn=false,t0=0,pollId=null,clockId=null,gWatch=null,lock=null,nIdx=0;
+let gRaw=[],gDist=0,gGain=0,gBase=null,gEle=[],hrSamples=[],lastHr=0,splits=[],nextRec=0,lastPt=null,lastRecapT=0,recapTimer=null;
+let lmap=null,lline=null,lmark=null,follow=true,liveCapHr=0,maxPaceS=0,recapKm=0,lastVib=0;
+const pad=n=>String(n).padStart(2,"0");
+const clock=s=>(s>=3600?Math.floor(s/3600)+":"+pad(Math.floor(s/60)%60):pad(Math.floor(s/60)))+":"+pad(Math.floor(s%60));
+const paceTxt=sk=>!isFinite(sk)||sk<=0||sk>1800?"--":Math.floor(sk/60)+":"+pad(Math.min(59,Math.round(sk%60)));
+function parsePace(v){const m=/^\s*(\d{1,2})\s*[:.'hm]\s*(\d{1,2})?\s*$/.exec(v||"");if(!m)return 0;const s=+m[1]*60+(+m[2]||0);return s>=120&&s<=900?s:0}
+function limits(){
+  recapKm=+$("l-recap").value||0;maxPaceS=parsePace($("l-maxpace").value);liveCapHr=+$("l-cap").value||0;
+  prefs.recap=recapKm;prefs.keep=$("l-keep").checked;persistP();
+  const n=NAT();if(n&&liveOn){try{n.setLimits(recapKm*1000,maxPaceS,liveCapHr)}catch(e){}}
+  if(recapKm){nextRec=(Math.floor(gDist/1000/recapKm)+1)*recapKm}else nextRec=0;
+  saveLive();
 }
-function stopSession(){
-  clearInterval(timerId);timerId=null;gpsStop();
-  devices.forEach(d=>{try{d.gatt.disconnect()}catch(e){}});devices=[];
-  try{lock&&lock.release()}catch(e){}lock=null;
-  try{if(window.AndroidBle){AndroidBle.disconnect();AndroidBle.keepScreen(false)}}catch(e){}
+["l-recap","l-maxpace","l-cap"].forEach(i=>$(i).onchange=limits);
+$("l-keep").onchange=()=>{limits();keepScreen($("l-keep").checked)};
+function keepScreen(on){
+  try{window.AndroidBle&&AndroidBle.keepScreen(on)}catch(e){}
+  try{if(on){navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>lock=l).catch(()=>{})}else{lock&&lock.release();lock=null}}catch(e){}
 }
-$("go").onclick=startSession;
-$("rpe").oninput=e=>$("rpev").textContent=e.target.value;
-$("end").onclick=()=>{
-  const min=Math.floor((Date.now()-t0)/60000);
-  const avg=hrSamples.length?Math.round(hrSamples.reduce((a,b)=>a+b,0)/hrSamples.length):0;
-  const rpe=+$("rpe").value,spd=spdSamples.length?spdSamples.reduce((a,b)=>a+b,0)/spdSamples.length:0;
-  const g=gpsResult(),rec={id:uid(),date:today(),sport:weekPlan(0).ctx.kind==="trail"?"RUN_TRAIL":"RUN_ROUTE",min:min,sec:Math.round((Date.now()-t0)/1000),ts:t0,rpe:rpe,hr:avg,kcal:kcalFor(min,rpe,g?g.km/(Math.max(1,min)/60):spd)};
-  if(g){rec.km=Math.round(g.km*10)/10;rec.dplus=g.dplus;traces[rec.id]=g.pts}
-  sessions.push(rec);
-  persist();persistT();stopSession();show("stats");
-  if(g)ignAlti(rec.id);
-};
+function saveLive(){try{localStorage.setItem(LKEY,JSON.stringify({t0:t0,sport:liveSport,recap:recapKm,maxPace:$("l-maxpace").value,cap:liveCapHr,tgt:$("livetgt").textContent}))}catch(e){}}
+let liveSport="RUN_ROUTE";
 
-async function connect(kind){
-  const msg=$("msg");
-  if(window.AndroidBle){AndroidBle.connect(kind);msg.textContent="Recherche de l’appareil…";return}
-  if(!navigator.bluetooth){msg.textContent="Bluetooth indisponible ici. Ouvrez cette page dans Chrome sur Android.";return}
-  const hr=kind==="hr";
-  const svc=hr?"heart_rate":"running_speed_and_cadence";
-  try{
-    const dev=await navigator.bluetooth.requestDevice({filters:[{services:[svc]}]});
-    const server=await dev.gatt.connect();
-    const ch=await (await server.getPrimaryService(svc)).getCharacteristic(hr?"heart_rate_measurement":"rsc_measurement");
-    await ch.startNotifications();
-    ch.addEventListener("characteristicvaluechanged",e=>{
-      const v=e.target.value;
-      if(hr){const bpm=(v.getUint8(0)&1)?v.getUint16(1,true):v.getUint8(1);if(bpm>0){$("hr").textContent=bpm;hrSamples.push(bpm);hrCheck(bpm)}}
-      else{gLastBle=Date.now();const kmh=v.getUint16(1,true)/256*3.6;$("spd").textContent=kmh.toFixed(1).replace(".",",");if(kmh>0)spdSamples.push(kmh)}
-    });
-    devices.push(dev);msg.textContent="";
-  }catch(err){msg.textContent="Connexion impossible : "+err.message}
-}
-window.onNativeHr=b=>{if(b>0){$("msg").textContent="";$("hr").textContent=b;hrSamples.push(b);hrCheck(b)}};
-window.onNativeSpd=k=>{if(k>0){gLastBle=Date.now();$("msg").textContent="";$("spd").textContent=k.toFixed(1).replace(".",",");spdSamples.push(k)}};
-window.onNativeMsg=t=>{$("msg").textContent=t};
-$("bhr").onclick=()=>connect("hr");
-$("bspd").onclick=()=>connect("rsc");
-
-
-/* Suivi GPS en direct (vitesse, distance, dénivelé, carte IGN) */
-let gWatch=null,gRaw=[],gDist=0,gGain=0,gBase=null,gEle=[],lmap=null,lline=null,lmark=null,gLastBle=0;
-function gpsStart(){
-  gRaw=[];gDist=0;gGain=0;gBase=null;gEle=[];
-  $("gdist").textContent="0,00";$("gpace").textContent="--";$("gdp").textContent="0";
-  const m=$("gmsg");
-  if(!navigator.geolocation){m.textContent="GPS indisponible sur cet appareil.";return}
-  m.textContent="GPS : recherche du signal…";
+function liveMap(){
   try{
     if(!lmap&&typeof L!=="undefined"){
       lmap=L.map("lmap",{zoomControl:false,attributionControl:false}).setView([46.6,2.4],6);
-      L.tileLayer(IGN+"GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&FORMAT=image/png",{maxZoom:19}).addTo(lmap);
+      L.tileLayer(IGN+"GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&FORMAT=image/png",{maxZoom:18}).addTo(lmap);
+      lmap.on("dragstart",()=>{follow=false});
     }
-    if(lmap){if(lline)lmap.removeLayer(lline);if(lmark)lmap.removeLayer(lmark);lline=lmark=null;setTimeout(()=>lmap.invalidateSize(),150)}
+    if(lmap){if(lline)lmap.removeLayer(lline);if(lmark)lmap.removeLayer(lmark);lline=lmark=null;follow=true;setTimeout(()=>lmap.invalidateSize(),200)}
   }catch(e){}
-  gWatch=navigator.geolocation.watchPosition(onPos,err=>{
-    m.textContent=err.code===1?"GPS refusé : Réglages Android > Applications > Coach Running > Autorisations > Position.":"GPS : signal faible…";
-  },{enableHighAccuracy:true,maximumAge:1000,timeout:30000});
 }
-function gpsStop(){if(gWatch!==null){try{navigator.geolocation.clearWatch(gWatch)}catch(e){}gWatch=null}}
-function onPos(p){
-  const c=p.coords,m=$("gmsg");
-  if(c.accuracy>30){m.textContent="GPS : précision faible (±"+Math.round(c.accuracy)+" m)…";return}
-  m.textContent="GPS OK (±"+Math.round(c.accuracy)+" m)";
-  const t=p.timestamp,last=gRaw[gRaw.length-1];
-  let ele=null;
-  if(c.altitude!=null&&isFinite(c.altitude)){gEle.push(c.altitude);if(gEle.length>7)gEle.shift();ele=gEle.reduce((a,b)=>a+b,0)/gEle.length}
-  if(last){
-    const d=hav(last.lat,last.lon,c.latitude,c.longitude)*1000,dt=(t-last.t)/1000;
-    if(dt<=0||d<Math.max(3,c.accuracy/4)||d/dt>25)return;   /* bruit à l'arrêt ou saut GPS */
+$("lrec").onclick=()=>{follow=true;if(lmap&&lmark)lmap.setView(lmark.getLatLng(),Math.max(lmap.getZoom(),16))};
+
+function resetLive(){
+  gRaw=[];gDist=0;gGain=0;gBase=null;gEle=[];hrSamples=[];lastHr=0;splits=[];lastPt=null;nIdx=0;nextRec=recapKm||0;
+  ["gdist","gdp"].forEach(i=>$(i).textContent=i==="gdist"?"0,00":"0");
+  $("gpace").textContent=$("gavg").textContent=$("hr").textContent="--";$("hrz").textContent="";
+  $("lrecap").classList.add("hidden");setBad();
+}
+function setBad(){
+  const sk=curPace;
+  const pb=maxPaceS>0&&sk>0&&sk<maxPaceS,hb=liveCapHr>0&&lastHr>liveCapHr;
+  $("gpace").parentElement.classList.toggle("bad",pb);
+  $("hr").parentElement.classList.toggle("bad",hb);
+  const z=lastHr?zoneOf(lastHr):null;
+  const msg=[];if(hb)msg.push("⚠️ FC au-dessus de "+liveCapHr+" bpm");if(pb)msg.push("⚠️ Plus vite que "+paceTxt(maxPaceS)+" /km");
+  $("hrz").textContent=msg.length?msg.join(" · "):(z?"Zone "+z.n+" · "+z.name:"");
+  $("hrz").className="lhz"+(msg.length?" bad":"");
+  /* hors Android, pas de service pour faire vibrer */
+  if(!NAT()&&msg.length&&Date.now()-lastVib>20000){lastVib=Date.now();try{navigator.vibrate&&navigator.vibrate([300,120,300,120,300])}catch(e){}}
+}
+let curPace=0;
+
+/* Un point [t,lat,lon,alt,précision,FC] */
+function addPt(t,la,lo,alt,hr){
+  if(hr>0){lastHr=hr;hrSamples.push(hr)}
+  if(lastPt){
+    const d=hav(lastPt.lat,lastPt.lon,la,lo)*1000,dt=(t-lastPt.t)/1000;
+    if(dt<=0||d>25*dt)return;
+    if(d<1&&!NAT())return;
     gDist+=d;
   }
-  if(ele!=null){
-    if(gBase===null)gBase=ele;else if(ele>gBase+4){gGain+=ele-gBase;gBase=ele}else if(ele<gBase)gBase=ele;
-  }
-  const hr=hrSamples.length?hrSamples[hrSamples.length-1]:null;
-  gRaw.push({t:t,lat:c.latitude,lon:c.longitude,ele:ele,hr:hr});
-  $("gdist").textContent=(gDist/1000).toFixed(2).replace(".",",");
-  $("gdp").textContent=String(Math.round(gGain));
-  /* allure sur ~15 s glissantes */
+  let ele=null;
+  if(alt!=null&&isFinite(alt)){gEle.push(alt);if(gEle.length>7)gEle.shift();ele=gEle.reduce((a,b)=>a+b,0)/gEle.length}
+  if(ele!=null){if(gBase===null)gBase=ele;else if(ele>gBase+4){gGain+=ele-gBase;gBase=ele}else if(ele<gBase)gBase=ele}
+  const p={t:t,lat:la,lon:lo,ele:ele,hr:hr>0?hr:(lastHr||null)};
+  gRaw.push(p);lastPt=p;
+  /* allure sur ~15 s */
   let j=gRaw.length-1;while(j>0&&t-gRaw[j].t<15000)j--;
-  if(j<gRaw.length-1){
-    let dd=0;for(let k=j+1;k<gRaw.length;k++)dd+=hav(gRaw[k-1].lat,gRaw[k-1].lon,gRaw[k].lat,gRaw[k].lon)*1000;
-    const v=dd/((t-gRaw[j].t)/1000);
-    if(v>0.3){
-      const kmh=v*3.6,sk=1000/v;
-      $("gpace").textContent=sk>1200?"--":Math.floor(sk/60)+":"+String(Math.round(sk%60)).padStart(2,"0").replace(/^60$/,"59");
-      if(Date.now()-gLastBle>5000)$("spd").textContent=kmh.toFixed(1).replace(".",",");
-      spdSamples.push(kmh);
-    }
+  curPace=0;
+  if(j<gRaw.length-1){let dd=0;for(let k=j+1;k<gRaw.length;k++)dd+=hav(gRaw[k-1].lat,gRaw[k-1].lon,gRaw[k].lat,gRaw[k].lon)*1000;const v=dd/((t-gRaw[j].t)/1000);if(v>0.5)curPace=1000/v}
+  /* récap */
+  if(recapKm&&gDist/1000>=nextRec){
+    const km=nextRec;nextRec+=recapKm;
+    const sec=Math.round((t-t0)/1000),prevSec=splits.length?splits[splits.length-1].sec:0,prevKm=splits.length?splits[splits.length-1].km:0;
+    splits.push({km:km,sec:sec,dp:Math.round(gGain)});
+    const seg=(sec-prevSec)/(km-prevKm);
+    showRecap("Km "+String(km).replace(".",",")+" · "+clock(sec)+" · dernier segment "+paceTxt(seg)+"/km · moy "+paceTxt(sec/km)+"/km · D+ "+Math.round(gGain)+" m");
+    if(!NAT()){try{navigator.vibrate&&navigator.vibrate([150,120,150])}catch(e){}}
   }
   if(lmap){
-    const ll=[c.latitude,c.longitude];
-    if(!lline){lline=L.polyline([ll],{color:"#E5484D",weight:4}).addTo(lmap);lmark=L.circleMarker(ll,{radius:7,color:"#fff",weight:2,fillColor:"#2F6BFF",fillOpacity:1}).addTo(lmap);lmap.setView(ll,16)}
-    else{lline.addLatLng(ll);lmark.setLatLng(ll);lmap.panTo(ll)}
+    const ll=[la,lo];
+    if(!lline){lline=L.polyline([ll],{color:"#E5484D",weight:5}).addTo(lmap);lmark=L.circleMarker(ll,{radius:8,color:"#fff",weight:3,fillColor:"#2F6BFF",fillOpacity:1}).addTo(lmap);lmap.setView(ll,16)}
+    else{lline.addLatLng(ll);lmark.setLatLng(ll);if(follow)lmap.panTo(ll,{animate:false})}
   }
 }
-function gpsResult(){
-  if(gRaw.length<5||gDist<50)return null;
-  const pts=mkTrace(gRaw.map(p=>({t:p.t,lat:p.lat,lon:p.lon,ele:p.ele,hr:p.hr})));
-  return pts?{pts:pts,km:gDist/1000,dplus:Math.round(gGain)}:null;
+function showRecap(t){
+  const e=$("lrecap");e.textContent=t;e.classList.remove("hidden");
+  clearTimeout(recapTimer);recapTimer=setTimeout(()=>e.classList.add("hidden"),15000);
 }
+function paint(){
+  const s=Math.floor((Date.now()-t0)/1000);
+  $("timer").textContent=clock(s);
+  $("gdist").textContent=(gDist/1000).toFixed(2).replace(".",",");
+  $("gdp").textContent=String(Math.round(gGain));
+  $("gpace").textContent=paceTxt(curPace);
+  $("gavg").textContent=gDist>50?paceTxt(s/(gDist/1000)):"--";
+  $("hr").textContent=lastHr||"--";
+  setBad();
+}
+function poll(){
+  const n=NAT();if(!n)return;
+  try{
+    const arr=JSON.parse(n.points(nIdx));nIdx+=arr.length;
+    arr.forEach(a=>addPt(a[0],a[1],a[2],a[3],a[5]));
+    if(!arr.length&&lastHr===0){}
+    $("gmsg").textContent=nIdx?"GPS OK · "+nIdx+" points (le suivi continue écran éteint)":"GPS : recherche du signal…";
+  }catch(e){}
+  paint();
+}
+function onPos(p){
+  const c=p.coords;
+  if(c.accuracy>30){$("gmsg").textContent="GPS : précision faible (±"+Math.round(c.accuracy)+" m)…";return}
+  $("gmsg").textContent="GPS OK (±"+Math.round(c.accuracy)+" m)";
+  addPt(p.timestamp,c.latitude,c.longitude,c.altitude,0);paint();
+}
+
+function startSession(){
+  const W=weekPlan(0),t=recommend(W.days[todayIdx()].t).session;
+  liveSport=W.ctx.kind==="trail"?"RUN_TRAIL":"RUN_ROUTE";
+  $("l-recap").value=String(prefs.recap||0);$("l-keep").checked=!!prefs.keep;$("l-maxpace").value="";
+  $("l-cap").value=capFor(t)||"";
+  const tt=t==="REST"?"restez en zone 2":target(t,W.ctx.kind);
+  $("livetgt").textContent=NAMES[t]+(tt?" · "+tt:"");
+  t0=Date.now();liveOn=true;$("msg").textContent="";$("gmsg").textContent="GPS : recherche du signal…";
+  recapKm=+$("l-recap").value;maxPaceS=0;liveCapHr=+$("l-cap").value||0;curPace=0;
+  resetLive();
+  show("live");liveMap();
+  const n=NAT();
+  if(n){try{n.start(recapKm*1000,maxPaceS,liveCapHr)}catch(e){$("msg").textContent="Suivi impossible : "+e.message}}
+  else if(navigator.geolocation){
+    gWatch=navigator.geolocation.watchPosition(onPos,err=>{$("gmsg").textContent=err.code===1?"GPS refusé : Réglages Android > Applications > Coach Running > Autorisations > Position.":"GPS : signal faible…"},{enableHighAccuracy:true,maximumAge:1000,timeout:30000});
+  }else $("gmsg").textContent="GPS indisponible sur cet appareil.";
+  keepScreen($("l-keep").checked);
+  saveLive();startTimers();
+}
+function startTimers(){
+  clearInterval(pollId);clearInterval(clockId);
+  pollId=setInterval(poll,1000);clockId=setInterval(paint,1000);
+}
+$("go").onclick=startSession;
+document.addEventListener("visibilitychange",()=>{if(liveOn&&!document.hidden){poll()}});
+
+/* Reprise si l'application a été fermée ou relancée pendant la séance */
+function resumeLive(){
+  const n=NAT();if(!n)return;
+  let st=null;try{st=JSON.parse(localStorage.getItem(LKEY))}catch(e){}
+  let run=false;try{run=n.running()}catch(e){}
+  if(!st||!run){if(st&&!run&&n.count&&n.count()>20){/* service arrêté mais données encore là */}else{if(!run)try{localStorage.removeItem(LKEY)}catch(e){}return}}
+  t0=st.t0;liveSport=st.sport||"RUN_ROUTE";liveOn=true;
+  $("l-recap").value=String(st.recap||0);$("l-maxpace").value=st.maxPace||"";$("l-cap").value=st.cap||"";$("livetgt").textContent=st.tgt||"";
+  $("l-keep").checked=!!prefs.keep;
+  recapKm=+st.recap||0;maxPaceS=parsePace(st.maxPace);liveCapHr=+st.cap||0;
+  resetLive();show("live");liveMap();poll();startTimers();
+}
+
+/* Sortie : jamais sans confirmation */
+function openCfm(){
+  const s=Math.round((Date.now()-t0)/1000);
+  $("cfm-sum").textContent=clock(s)+" · "+(gDist/1000).toFixed(2).replace(".",",")+" km · D+ "+Math.round(gGain)+" m"+(gDist>50?" · "+paceTxt(s/(gDist/1000))+"/km":"");
+  $("cfm-msg").textContent="";$("cfm-save").disabled=false;$("cfm").classList.remove("hidden");
+}
+$("end").onclick=openCfm;
+$("cfm-back").onclick=()=>$("cfm").classList.add("hidden");
+$("rpe").oninput=e=>$("rpev").textContent=e.target.value;
+$("cfm-drop").onclick=()=>{if(confirm("Abandonner : rien ne sera enregistré. Sûr ?")){endLive(true);show("plan")}};
+window.onAndroidBack=()=>{
+  if(!liveOn)return false;
+  if(!$("cfm").classList.contains("hidden"))$("cfm").classList.add("hidden");else openCfm();
+  return true;
+};
+function endLive(){
+  liveOn=false;clearInterval(pollId);clearInterval(clockId);pollId=clockId=null;
+  if(gWatch!==null){try{navigator.geolocation.clearWatch(gWatch)}catch(e){}gWatch=null}
+  const n=NAT();if(n){try{n.stop();n.disconnectHr();n.clear()}catch(e){}}
+  keepScreen(false);
+  try{localStorage.removeItem(LKEY)}catch(e){}
+  $("cfm").classList.add("hidden");
+}
+function gpxText(rec){
+  const esc=x=>String(x).replace(/&/g,"&amp;");
+  let g='<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Coach Running" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"><trk><name>'+esc("Coach Running "+rec.date)+'</name><type>running</type><trkseg>\n';
+  gRaw.forEach(p=>{g+='<trkpt lat="'+p.lat.toFixed(6)+'" lon="'+p.lon.toFixed(6)+'">'+(p.ele!=null?'<ele>'+p.ele.toFixed(1)+'</ele>':'')+'<time>'+new Date(p.t).toISOString()+'</time>'+(p.hr?'<extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>'+Math.round(p.hr)+'</gpxtpx:hr></gpxtpx:TrackPointExtension></extensions>':'')+'</trkpt>\n'});
+  return g+'</trkseg></trk></gpx>';
+}
+/* Image de la carte IGN avec le parcours, dessinée sans Leaflet */
+async function snapshotMap(){
+  const pts=gRaw.map(p=>[p.lat,p.lon]);if(pts.length<2)return null;
+  const W=900,H=600;
+  let la0=90,la1=-90,lo0=180,lo1=-180;pts.forEach(p=>{la0=Math.min(la0,p[0]);la1=Math.max(la1,p[0]);lo0=Math.min(lo0,p[1]);lo1=Math.max(lo1,p[1])});
+  const mx=lo=>(lo+180)/360,my=la=>{const r=la*Math.PI/180;return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2};
+  let z=17;
+  for(;z>5;z--){const sc=256*2**z;if((mx(lo1)-mx(lo0))*sc<W*0.8&&(my(la0)-my(la1))*sc<H*0.8)break}
+  const sc=256*2**z,cx=(mx(lo0)+mx(lo1))/2*sc,cy=(my(la0)+my(la1))/2*sc;
+  const ox=cx-W/2,oy=cy-H/2;
+  const cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
+  c.fillStyle="#e8edf5";c.fillRect(0,0,W,H);
+  const tx0=Math.floor(ox/256),tx1=Math.floor((ox+W)/256),ty0=Math.floor(oy/256),ty1=Math.floor((oy+H)/256);
+  const jobs=[];
+  for(let x=tx0;x<=tx1;x++)for(let y=ty0;y<=ty1;y++){
+    jobs.push(new Promise(res=>{
+      const im=new Image();im.crossOrigin="anonymous";
+      const to=setTimeout(()=>res(false),8000);
+      im.onload=()=>{clearTimeout(to);c.drawImage(im,x*256-ox,y*256-oy);res(true)};
+      im.onerror=()=>{clearTimeout(to);res(false)};
+      im.src=(IGN+"GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&FORMAT=image/png").replace("{z}",z).replace("{y}",y).replace("{x}",x);
+    }));
+  }
+  const ok=(await Promise.all(jobs)).filter(Boolean).length;
+  const X=lo=>mx(lo)*sc-ox,Y=la=>my(la)*sc-oy;
+  c.lineJoin="round";c.lineCap="round";
+  c.strokeStyle="#fff";c.lineWidth=9;c.beginPath();pts.forEach((p,i)=>i?c.lineTo(X(p[1]),Y(p[0])):c.moveTo(X(p[1]),Y(p[0])));c.stroke();
+  c.strokeStyle="#E5484D";c.lineWidth=5;c.stroke();
+  const dot=(p,col)=>{c.fillStyle=col;c.strokeStyle="#fff";c.lineWidth=3;c.beginPath();c.arc(X(p[1]),Y(p[0]),9,0,7);c.fill();c.stroke()};
+  dot(pts[0],"#2EA043");dot(pts[pts.length-1],"#111");
+  try{return {url:cv.toDataURL("image/jpeg",0.82),tiles:ok}}catch(e){return null}
+}
+$("cfm-save").onclick=async()=>{
+  const btn=$("cfm-save"),msg=$("cfm-msg");btn.disabled=true;msg.textContent="Enregistrement…";
+  poll();
+  const sec=Math.round((Date.now()-t0)/1000),min=Math.floor(sec/60),rpe=+$("rpe").value;
+  const avg=hrSamples.length?Math.round(hrSamples.reduce((a,b)=>a+b,0)/hrSamples.length):0;
+  const hasG=gRaw.length>=5&&gDist>=50;
+  const rec={id:uid(),date:new Date(t0).toLocaleDateString("sv-SE"),sport:liveSport,min:min,sec:sec,ts:t0,rpe:rpe,hr:avg,kcal:kcalFor(min,rpe,hasG?gDist/1000/(Math.max(1,min)/60):0)};
+  let pts=null;
+  if(hasG){pts=mkTrace(gRaw.map(p=>({t:p.t,lat:p.lat,lon:p.lon,ele:p.ele,hr:p.hr})));rec.km=Math.round(gDist/100)/10;rec.dplus=Math.round(gGain);if(pts)traces[rec.id]=pts}
+  sessions.push(rec);persist();persistT();
+  let note="";
+  if(hasG){
+    msg.textContent="Création de la carte…";
+    let snap=null;try{snap=await snapshotMap()}catch(e){}
+    const stamp=rec.date+"_"+pad(new Date(t0).getHours())+pad(new Date(t0).getMinutes());
+    if(snap){maps[rec.id]=snap.url;if(!persistM()){delete maps[rec.id];note+=" Carte trop lourde pour la mémoire de l’appli."}}
+    const A=window.AndroidBle;let saved=0;
+    if(A&&A.saveFile){
+      try{if(A.saveFile("Coach-Running_"+stamp+".gpx",gpxText(rec)))saved++}catch(e){}
+      if(snap&&A.saveBase64){try{if(A.saveBase64("Coach-Running_"+stamp+"_carte.jpg","image/jpeg",snap.url.split(",")[1]))saved++}catch(e){}}
+      note+=saved?" Fichiers enregistrés dans Téléchargements/Coach Running.":" Copie dans Téléchargements impossible (la séance reste dans l’appli).";
+    }
+    if(snap&&snap.tiles===0)note+=" Fond IGN indisponible : trace seule sur la carte.";
+  }
+  endLive();persistM();
+  if(hasG)ignAlti(rec.id);
+  show("stats");
+  if(note){const m=$("bmsg");if(m)m.textContent=note.trim()}
+};
+
+
+/* Ceinture / montre cardio */
+window.onNativeHr=b=>{if(b>0){$("msg").textContent="";lastHr=b;setBad();$("hr").textContent=b}};
+window.onNativeMsg=t=>{$("msg").textContent=t};
+$("bhr").onclick=async()=>{
+  const msg=$("msg");
+  if(NAT()){NAT().connectHr();msg.textContent="Recherche de la ceinture ou montre (diffusion cardio activée ?)…";return}
+  if(!navigator.bluetooth){msg.textContent="Bluetooth indisponible ici.";return}
+  try{
+    const dev=await navigator.bluetooth.requestDevice({filters:[{services:["heart_rate"]}]});
+    const ch=await (await (await dev.gatt.connect()).getPrimaryService("heart_rate")).getCharacteristic("heart_rate_measurement");
+    await ch.startNotifications();
+    ch.addEventListener("characteristicvaluechanged",e=>{const v=e.target.value,b=(v.getUint8(0)&1)?v.getUint16(1,true):v.getUint8(1);if(b>0){lastHr=b;hrSamples.push(b);$("hr").textContent=b;setBad()}});
+    msg.textContent="";
+  }catch(err){msg.textContent="Connexion impossible : "+err.message}
+};
 /* Correction du dénivelé avec l'altimétrie IGN (RGE ALTI), plus fiable que l'altitude GPS du téléphone */
 async function ignAlti(id){
   try{
@@ -989,7 +1203,7 @@ function showPaste(text,withImport){
 }
 let lastBackup="";
 $("exp").onclick=async()=>{
-  const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces},null,1),name="coach-running-"+today()+".json";
+  const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces,maps:maps},null,1),name="coach-running-"+today()+".json";
   $("copybk").classList.add("hidden");$("paste").classList.add("hidden");$("pasteok").classList.add("hidden");
   if(window.AndroidBle&&AndroidBle.saveFile){bmsg(AndroidBle.saveFile(name,data)?"Sauvegarde enregistrée dans le dossier Téléchargements.":"Enregistrement impossible.");return}
   let dl=null;
@@ -1024,7 +1238,7 @@ function doImport(text){
     if(!validList(list))throw new Error("format");
     const key=s=>[s.date,s.sport||"",s.min,s.rpe,s.hr||0].join("|"),seen=new Set(sessions.map(key));
     let n=0;
-    list.forEach(s=>{if(!seen.has(key(s))){const nid=s.id&&!sessions.some(x=>x.id===s.id)?s.id:uid();if(o&&o.traces&&o.traces[s.id])traces[nid]=o.traces[s.id];sessions.push({id:nid,date:s.date,sport:s.sport||"RUN_ROUTE",min:s.min,rpe:s.rpe,hr:s.hr||0,kcal:s.kcal||0,km:s.km||0,dplus:s.dplus||0,sec:s.sec||0,ts:s.ts||0});seen.add(key(s));n++}});
+    list.forEach(s=>{if(!seen.has(key(s))){const nid=s.id&&!sessions.some(x=>x.id===s.id)?s.id:uid();if(o&&o.traces&&o.traces[s.id])traces[nid]=o.traces[s.id];if(o&&o.maps&&o.maps[s.id])maps[nid]=o.maps[s.id];sessions.push({id:nid,date:s.date,sport:s.sport||"RUN_ROUTE",min:s.min,rpe:s.rpe,hr:s.hr||0,kcal:s.kcal||0,km:s.km||0,dplus:s.dplus||0,sec:s.sec||0,ts:s.ts||0});seen.add(key(s));n++}});
     sessions.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
     if(o&&o.profile&&!profile&&validProfile(o.profile)){profile=o.profile;saveProfile()}
     if(o&&o.moves&&typeof o.moves==="object"){Object.keys(o.moves).forEach(k=>{if(!(k in moves)&&isDate(k)&&o.moves[k]>=1&&o.moves[k]<=7)moves[k]=o.moves[k]});saveMoves()}
@@ -1081,7 +1295,7 @@ $("psave").onclick=()=>{
     }
     goal={km:km,date:gdv,sec:gs,dplus:dp,custom:gk==="custom"};
   }
-  profile={age:age,weight:w,level:$("f-lvl").value,res:res,days:+$("f-days").value,terrain:$("f-ter").value,goal:goal,fcmax:fcmax,fcrest:fcrest,vma:profile&&profile.vma>0?profile.vma:undefined,vmaDate:profile&&profile.vma>0?profile.vmaDate:undefined};
+  profile={age:age,weight:w,level:$("f-lvl").value,res:res,days:+$("f-days").value,terrain:$("f-ter").value,goal:goal,fcmax:fcmax,fcrest:fcrest,vma:profile&&profile.vma>0?profile.vma:undefined,vmaDate:profile&&profile.vma>0?profile.vmaDate:undefined,extra:profile&&profile.extra?profile.extra:undefined};
   saveProfile();show("plan");
 };
 $("prest").onclick=()=>show(profile?"plan":"stats");
@@ -1104,7 +1318,7 @@ function renderGoal(W){
 let mvSel=0;
 function renderMover(){
   const off=+$("mv-w").value,W=weekPlan(off),sel=$("mv-s"),dd=$("mv-d");
-  $("wk-title").textContent=(off?"Semaine prochaine":"Votre semaine")+" · "+W.ctx.phase.toLowerCase();
+  $("wk-title").textContent=(off?"Semaine prochaine":"Votre semaine")+" · "+W.ctx.phase.toLowerCase()+(W.ctx.xr?" · "+W.ctx.xr.name+(W.ctx.xr.w?" la semaine suivante":" cette semaine"):"");
   const race=W.ctx.phase==="Course";
   const mov=Object.keys(W.days).filter(d=>W.days[d].t!=="REST"&&W.days[d].t!=="RACE");
   sel.innerHTML="";
@@ -1423,6 +1637,7 @@ function renderDetail(){
   const s=sessions.find(x=>x.id===detailId),pts=traces[detailId];
   if(!s||!pts)return;
   $("d-body").classList.remove("hidden");
+  const sn=$("d-snap");if(maps[detailId]){sn.src=maps[detailId];sn.classList.remove("hidden")}else{sn.classList.add("hidden");sn.removeAttribute("src")}
   const run=isRun(s),n=pts.length;
   $("d-info").textContent=[fmtDate(s.date),durText(s),s.km?dec(s.km)+" km":"",s.dplus?"+"+s.dplus+" m":"",s.hr?s.hr+" bpm":""].filter(Boolean).join(" · ");
   const X=pts.map(p=>(p[1]/1000).toFixed(1));
@@ -1514,7 +1729,7 @@ function renderProg(){
   for(let off=0;off<W0.ctx.wl;off++){
     const W=weekPlan(off),det=document.createElement("details"),sm=document.createElement("summary"),ul=document.createElement("ul");
     const tot=Object.values(W.days).reduce((a,x)=>a+(x.m||0),0);
-    sm.textContent=fmtDate(iso(W.mon)).slice(0,5)+" · "+(W.ctx.phase==="Course"?"semaine de course":W.ctx.phase.toLowerCase())+" · "+Math.floor(tot/60)+" h "+pad2(tot%60)+(W.ctx.phase==="Course"?"":" · SL "+W.ctx.longMin+" min")+(W.ctx.adapt?(W.ctx.adapt.f<1?" · allégée":" · augmentée"):"");
+    sm.textContent=fmtDate(iso(W.mon)).slice(0,5)+" · "+(W.ctx.phase==="Course"?"semaine de course":W.ctx.phase.toLowerCase())+" · "+Math.floor(tot/60)+" h "+pad2(tot%60)+(W.ctx.phase==="Course"?"":" · SL "+W.ctx.longMin+" min")+(W.ctx.xr?" · "+W.ctx.xr.name+(W.ctx.xr.w?" (semaine suivante)":""):"")+(W.ctx.adapt?(W.ctx.adapt.f<1?" · allégée":" · augmentée"):"");
     for(let d=1;d<=7;d++){
       const x=W.days[d],li=document.createElement("li"),a=document.createElement("span"),b=document.createElement("span");
       li.className="wrap";a.textContent=DN[d];a.prepend(dot(x.t));b.textContent=dayText(x);
@@ -1530,6 +1745,7 @@ function renderProg(){
 }
 if(window.AndroidHealth){$("health").classList.remove("hidden");setTimeout(healthSync,900)}
 if(profile)show("plan");else openSetup();
+resumeLive();
 </script>
 </body>
 </html>
