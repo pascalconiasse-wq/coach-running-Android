@@ -121,7 +121,7 @@ class MainActivity : ComponentActivity() {
         // "AndroidBle" avec la connexion Bluetooth, gardez le vôtre et supprimez cette ligne.
         web.addJavascriptInterface(DeviceBridge(this, web), "AndroidBle")
         web.addJavascriptInterface(TrackBridge(this, web) { p, t -> askPerms(p, t) }, "AndroidTrack")
-        web.addJavascriptInterface(AppBridge(this), "AndroidApp")   // numéro de version + ouverture du lien de mise à jour
+        web.addJavascriptInterface(AppBridge(this, web), "AndroidApp")   // numéro de version + ouverture du lien de mise à jour
         web.loadUrl("file:///android_asset/index.html")
 
         addOnNewIntentListener { handleShare(it) }   // appli déjà ouverte
@@ -175,7 +175,30 @@ class MainActivity : ComponentActivity() {
 }
 
 /** Pont pour la mise à jour : la page lit la version installée et ouvre le téléchargement de l'APK. */
-class AppBridge(private val act: android.app.Activity) {
+class AppBridge(private val act: android.app.Activity, private val web: android.webkit.WebView) {
+    /** Interroge GitHub depuis Android (pas de limite CORS) et rappelle la page : onLatest(tag, erreur). */
+    @android.webkit.JavascriptInterface
+    fun checkLatest(repo: String) {
+        Thread {
+            var tag = ""
+            var err = ""
+            try {
+                val c = java.net.URL("https://api.github.com/repos/" + repo + "/releases/latest").openConnection() as java.net.HttpURLConnection
+                c.connectTimeout = 10000
+                c.readTimeout = 10000
+                c.setRequestProperty("Accept", "application/vnd.github+json")
+                c.setRequestProperty("User-Agent", "CoachRunning")
+                if (c.responseCode == 200) {
+                    val body = c.inputStream.bufferedReader().readText()
+                    tag = org.json.JSONObject(body).optString("tag_name", "")
+                } else err = "HTTP " + c.responseCode
+            } catch (e: Exception) {
+                err = e.javaClass.simpleName
+            }
+            web.post { web.evaluateJavascript("window.onLatest && onLatest(" + org.json.JSONObject.quote(tag) + "," + org.json.JSONObject.quote(err) + ")", null) }
+        }.start()
+    }
+
     @android.webkit.JavascriptInterface
     fun version(): String = try {
         act.packageManager.getPackageInfo(act.packageName, 0).versionName ?: ""

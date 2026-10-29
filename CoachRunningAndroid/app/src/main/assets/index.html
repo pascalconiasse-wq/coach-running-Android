@@ -314,7 +314,8 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p>« Synchroniser maintenant » (onglet Activités) lit Health Connect (30 jours) : synchronisez d’abord la montre vers COROS, qui doit écrire dans Health Connect. Une sortie déjà enregistrée par le téléphone est fusionnée avec celle de la montre : on garde les données en plus (FC, dénivelé, calories) et le doublon disparaît. Import et partage de fichiers FIT, GPX, TCX possibles. Garmin : uniquement via Health Connect ou export de fichier.</p></details>
   <details class="card"><summary><b>Courbes et détail</b></summary>
     <p>Pour chaque activité : carte OpenStreetMap, plan IGN ou photos aériennes au choix (ou image enregistrée pendant la séance), courbes d’allure, FC et altitude. Le dénivelé est corrigé avec l’altimétrie IGN quand elle répond.</p></details>
-  <details class="card"><summary><b>Sauvegarde et mises à jour</b></summary>
+  <details class="card" open><summary><b>Sauvegarde et mises à jour</b></summary>
+    <p id="upd-st" class="mute">Version : vérification…</p><button class="alt" id="upd-chk">Vérifier les mises à jour</button>
     <p>Onglet Courbes, « Exporter l’historique » : sauvegarde complète (profil, séances, traces, cartes) dans Téléchargements. Restaurez-la après une désinstallation. Au lancement, l’appli compare sa version à la dernière Release GitHub et affiche « Mise à jour disponible » : touchez pour télécharger l’APK puis installez-le.</p></details>
   <details class="card"><summary><b>Problèmes fréquents</b></summary>
     <p>Km ou D+ manquants : autorisez la position « tout le temps » et ne limitez pas la batterie de l’appli. Pas de GPS : sortez, attendez « GPS OK ». Pas de FC : activez la diffusion cardio de la montre. Séance absente après synchro : vérifiez les autorisations Health Connect.</p></details>
@@ -1077,17 +1078,25 @@ async function ignAlti(id){
 
 /* Mise à jour de l'appli (APK publié dans les Releases GitHub) */
 const GH_REPO="pascalconiasse-wq/coach-running-Android";
+let updManual=false;
+function showUpd(tag,err){
+  const cur=window.AndroidApp&&AndroidApp.version?AndroidApp.version():"",n=v=>parseInt(String(v).split(".").pop(),10)||0,v=String(tag||"").replace(/^v/,"");
+  const st=$("upd-st");
+  if(!v){if(st)st.textContent="Version installée : "+(cur||"?")+" · vérification impossible"+(err?" ("+err+")":"")+".";return}
+  if(st)st.textContent="Version installée : "+cur+" · dernière version : "+v+(n(v)>n(cur)?" → mise à jour disponible.":" · vous êtes à jour.");
+  if(n(v)>n(cur)){$("upd-v").textContent=v+" (installée : "+cur+")";$("upd").classList.remove("hidden")}else $("upd").classList.add("hidden");
+}
+window.onLatest=showUpd;
 async function checkUpdate(){
   if(!window.AndroidApp)return;
+  if(AndroidApp.checkLatest){try{AndroidApp.checkLatest(GH_REPO);return}catch(e){}}
   try{
-    const cur=AndroidApp.version(),n=v=>parseInt(String(v).split(".").pop(),10)||0;
-    if(!cur)return;
     const r=await fetch("https://api.github.com/repos/"+GH_REPO+"/releases/latest");
-    if(!r.ok)return;
-    const j=await r.json(),v=String(j.tag_name||"").replace(/^v/,"");
-    if(v&&n(v)>n(cur)){$("upd-v").textContent=v+" (installée : "+cur+")";$("upd").classList.remove("hidden")}
-  }catch(e){/* hors ligne : on réessaiera au prochain lancement */}
+    if(!r.ok){showUpd("","HTTP "+r.status);return}
+    showUpd((await r.json()).tag_name,"");
+  }catch(e){showUpd("","réseau")}
 }
+$("upd-chk").onclick=()=>{$("upd-st").textContent="Vérification…";checkUpdate()};
 $("upd-go").onclick=()=>{try{AndroidApp.open("https://github.com/"+GH_REPO+"/releases/latest/download/coach-running.apk")}catch(e){}};
 setTimeout(checkUpdate,1500);
 setTimeout(backfillDplus,3000);
