@@ -1037,6 +1037,20 @@ $("bhr").onclick=async()=>{
     msg.textContent="";
   }catch(err){msg.textContent="Connexion impossible : "+err.message}
 };
+/* Activités sans D+ (Health Connect ne le fournit pas toujours) : on le recalcule depuis la trace */
+const altTried=new Set();
+async function backfillDplus(){
+  let ch=false;const todo=[];
+  sessions.forEach(x=>{
+    const t=traces[x.id];if(x.dplus>0||!t||altTried.has(x.id))return;
+    altTried.add(x.id);
+    const al=t.map(p=>p[2]).filter(v=>v!=null&&isFinite(v));
+    if(al.length>=3){const g=gainOf(al);if(g>0){x.dplus=g;ch=true}}
+    if(t.filter(p=>p[5]!=null&&p[6]!=null).length>=3)todo.push(x.id);
+  });
+  if(ch){persist();if(!$("acts").classList.contains("hidden"))renderActs()}
+  for(const id of todo){await ignAlti(id);if(!$("acts").classList.contains("hidden"))renderActs()}
+}
 /* Correction du dénivelé avec l'altimétrie IGN (RGE ALTI), plus fiable que l'altitude GPS du téléphone */
 async function ignAlti(id){
   try{
@@ -1076,6 +1090,7 @@ async function checkUpdate(){
 }
 $("upd-go").onclick=()=>{try{AndroidApp.open("https://github.com/"+GH_REPO+"/releases/latest/download/coach-running.apk")}catch(e){}};
 setTimeout(checkUpdate,1500);
+setTimeout(backfillDplus,3000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!liveOn)checkUpdate()});
 /* Courbes */
 /* Courbes */
@@ -1743,6 +1758,7 @@ window.onHealthData=json=>{
   try{localStorage.setItem(HKEY,String(Date.now()))}catch(e){}
   hmsg(recu+" séance(s) lue(s) dans Health Connect"+(recu?" (dernières : "+dates+")":"")+" → "+added+" ajoutée(s), "+dup+" doublon(s) ignoré(s)"+(enr?", "+enr+" complétée(s) par la montre":"")+(court?", "+court+" trop courte(s)":"")+(err?", "+err+" erreur(s) : "+lastErr:"")+".");
   if(!$("acts").classList.contains("hidden"))renderActs();
+  backfillDplus();
 };
 $("h-go").onclick=healthSync;
 
