@@ -376,9 +376,47 @@ function weekCtx(mon){
     reps:{debutant:5,inter:6,confirme:8}[lvl]+(phase==="Spécifique"?2:0),
     tMin:{debutant:10,inter:15,confirme:20}[lvl]+(phase==="Spécifique"?5:0)};
 }
-function weekPlan(off){
+/* Ajustement automatique des semaines à venir d'après ce qui a vraiment été couru */
+let _adKey="",_adVal=null;
+function adaptInfo(){
+  if(!profile)return {f:1};
+  const last=sessions.length?sessions[sessions.length-1].id:"";
+  const key=sessions.length+"|"+last+"|"+today()+"|"+profile.days+"|"+profile.level+"|"+(profile.goal?profile.goal.date+profile.goal.km:"");
+  if(key===_adKey&&_adVal)return _adVal;
+  let out={f:1};
+  try{
+    const mon=mondayOf(new Date()),oldest=sessions.length?sessions.reduce((m,x)=>x.date<m?x.date:m,"9999-99-99"):"9999-99-99";
+    const RUNT=[E,L,I,T];let planned=0,actual=0;
+    for(let k=1;k<=2;k++){
+      const W=weekPlan(-k,true),a=iso(W.mon),e=new Date(W.mon);e.setDate(e.getDate()+6);
+      planned+=Object.values(W.days).filter(x=>RUNT.includes(x.t)).reduce((s,x)=>s+(x.m||0),0);
+      actual+=sessions.filter(x=>x.date>=a&&x.date<=iso(e)&&isRun(x)).reduce((s,x)=>s+x.min,0);
+    }
+    const hist=oldest<=iso(new Date(mon.getTime()-14*DAY));
+    const rc=recommend(E),r=planned>=60?actual/planned:1;
+    if(hist&&planned>=60){
+      if(rc.ratio>1.4)out={f:.85,reason:"ta charge des 7 derniers jours est élevée (×"+rc.ratio.toFixed(1).replace(".",",")+" par rapport à ta moyenne)"};
+      else if(r<.7)out={f:.9,reason:"tu as couru "+Math.round(r*100)+" % du volume prévu ces 2 dernières semaines"};
+      else if(r>1.1&&r<=1.5&&rc.ratio<=1.2)out={f:1.05,reason:"tu as dépassé le volume prévu ("+Math.round(r*100)+" %) sans surcharge"};
+    }
+  }catch(e){out={f:1}}
+  _adKey=key;_adVal=out;return out;
+}
+function applyAdapt(c,off){
+  if(c.phase==="Course")return;
+  const a=adaptInfo();if(!a||a.f===1)return;
+  /* l'effet s'estompe sur 3 semaines : les prochaines sorties corrigeront de toute façon */
+  const f=1+(a.f-1)*Math.max(0,1-(off-1)/3);
+  if(f>1&&(c.phase==="Affûtage"))return;
+  if(Math.abs(f-1)<.01)return;
+  c.longMin=roundTo(c.longMin*f,5);c.easyMin=roundTo(c.easyMin*f,5);
+  if(c.dpl)c.dpl=Math.max(0,Math.round(c.dpl*f/50)*50);
+  c.adapt={f:f,reason:a.reason};
+}
+function weekPlan(off,raw){
   const mon=mondayOf(new Date());mon.setDate(mon.getDate()+7*(off||0));
   const c=weekCtx(mon),n=profile.days,days={};
+  if(!raw&&off>=1)applyAdapt(c,off);
   for(let d=1;d<=7;d++)days[d]={t:"REST"};
   WEEK[n].forEach((d,i)=>{
     let s=SEQ[n][i];
@@ -427,11 +465,32 @@ function hrZones(){
 }
 function zoneOf(b){const Z=hrZones().z;return b<Z[0].lo?null:(Z.find(z=>b<z.hi)||Z[4])}
 const capFor=t=>SESSZ[t]?hrZones().z[SESSZ[t]-1].hi:0;
+/* Meilleure sortie récente (course sur route, effort soutenu) convertie en temps équivalent sur 10 km */
+let _arKey="",_arVal=null;
+function autoRef(){
+  const key=sessions.length+"|"+today()+"|"+(profile&&profile.fcmax||0);
+  if(key===_arKey)return _arVal;
+  let best=null;
+  const lim=new Date(Date.now()-90*DAY).toLocaleDateString("sv-SE");
+  sessions.forEach(x=>{
+    if(x.sport!=="RUN_ROUTE"&&x.sport!==undefined)return;
+    if(!(x.km>=3&&x.sec>=720&&x.date>=lim&&x.rpe>=7))return;
+    const v=x.km/(x.sec/3600);if(v<6||v>25)return;
+    if(x.dplus&&x.dplus/x.km>15)return;
+    const t10=x.sec*Math.pow(10/x.km,1.06);if(t10<1500)return;
+    if(!best||t10<best.t10)best={t10:t10,km:x.km,sec:x.sec,date:x.date};
+  });
+  _arKey=key;_arVal=best;return best;
+}
 function paces(){
-  const src=profile&&(profile.res||(profile.goal&&profile.goal.sec>0?{km:profile.goal.km,sec:profile.goal.sec}:null));
-  if(!src)return null;
-  const p10=src.sec*Math.pow(10/src.km,1.06)/10;
-  return {p10:p10,INTERVALS:p10*0.95,THRESHOLD:p10*1.03,EASY_RUN:p10*1.25,LONG_RUN:p10*1.28};
+  const man=profile&&(profile.res||(profile.goal&&profile.goal.sec>0?{km:profile.goal.km,sec:profile.goal.sec}:null));
+  const tm=man?man.sec*Math.pow(10/man.km,1.06):null,au=autoRef();
+  /* la référence ne fait que s'améliorer : une sortie récente plus rapide que ton résultat de référence la remplace */
+  const useAuto=au&&(!tm||au.t10<tm*0.99);
+  const t10=useAuto?au.t10:tm;
+  if(!t10)return null;
+  const p10=t10/10;
+  return {p10:p10,auto:useAuto?au:null,INTERVALS:p10*0.95,THRESHOLD:p10*1.03,EASY_RUN:p10*1.25,LONG_RUN:p10*1.28};
 }
 function target(s,kind){
   if(s==="REST"||s==="RACE"||s==="STRENGTH")return "";
@@ -446,7 +505,7 @@ function renderZones(){
   const H=hrZones(),pc=paces(),ul=$("zones");ul.innerHTML="";
   const kind=weekPlan(0).ctx.kind;
   $("zinfo").textContent="FC max "+H.max+" bpm"+(H.est?" (estimée d’après l’âge)":"")+(H.rest?" · FC de repos "+H.rest+" bpm":"")+" · calcul par "+H.method+"."
-    +(pc?(kind==="trail"?" Allures sur le plat : en trail, suivez surtout la FC.":""):" Ajoutez un résultat récent ou un temps visé pour obtenir vos allures.");
+    +(pc&&pc.auto?" Allures mises à jour d\u2019après ta sortie du "+fmtDate(pc.auto.date)+" ("+dec(pc.auto.km)+" km en "+fmtT(pc.auto.sec)+").":"")+(pc?(kind==="trail"?" Allures sur le plat : en trail, suivez surtout la FC.":""):" Ajoutez un résultat récent ou un temps visé pour obtenir vos allures.");
   const P=[[1.4,null],[1.2,1.4],[1.08,1.2],[0.98,1.08],[0.88,0.97]];
   H.z.forEach((z,i)=>{
     const li=document.createElement("li"),a=document.createElement("span"),b=document.createElement("span");
@@ -1319,11 +1378,13 @@ function renderProg(){
     $("prog-msg").textContent=g?"Votre objectif est passé. Définissez-en un nouveau dans votre profil.":"Ajoutez un objectif (course et date) dans votre profil pour voir votre préparation complète.";
     return;
   }
-  $("prog-msg").textContent=goalName()+" le "+fmtDate(g.date)+" · "+W0.ctx.wl+" semaine"+(W0.ctx.wl>1?"s":"")+" de préparation. Touchez une semaine pour voir le détail.";
+  const AD=adaptInfo();
+  $("prog-msg").textContent=goalName()+" le "+fmtDate(g.date)+" · "+W0.ctx.wl+" semaine"+(W0.ctx.wl>1?"s":"")+" de préparation. Touchez une semaine pour voir le détail."
+    +(AD.f!==1?" Semaines à venir "+(AD.f<1?"allégées":"augmentées")+" automatiquement ("+(AD.f<1?"":"+")+Math.round((AD.f-1)*100)+" %) : "+AD.reason+".":"");
   for(let off=0;off<W0.ctx.wl;off++){
     const W=weekPlan(off),det=document.createElement("details"),sm=document.createElement("summary"),ul=document.createElement("ul");
     const tot=Object.values(W.days).reduce((a,x)=>a+(x.m||0),0);
-    sm.textContent=fmtDate(iso(W.mon)).slice(0,5)+" · "+(W.ctx.phase==="Course"?"semaine de course":W.ctx.phase.toLowerCase())+" · "+Math.floor(tot/60)+" h "+pad2(tot%60)+(W.ctx.phase==="Course"?"":" · SL "+W.ctx.longMin+" min");
+    sm.textContent=fmtDate(iso(W.mon)).slice(0,5)+" · "+(W.ctx.phase==="Course"?"semaine de course":W.ctx.phase.toLowerCase())+" · "+Math.floor(tot/60)+" h "+pad2(tot%60)+(W.ctx.phase==="Course"?"":" · SL "+W.ctx.longMin+" min")+(W.ctx.adapt?(W.ctx.adapt.f<1?" · allégée":" · augmentée"):"");
     for(let d=1;d<=7;d++){
       const x=W.days[d],li=document.createElement("li"),a=document.createElement("span"),b=document.createElement("span");
       li.className="wrap";a.textContent=DN[d];a.prepend(dot(x.t));b.textContent=dayText(x);
