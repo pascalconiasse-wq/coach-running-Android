@@ -979,7 +979,7 @@ async function snapshotMap(){
       const to=setTimeout(()=>res(false),8000);
       im.onload=()=>{clearTimeout(to);c.drawImage(im,x*256-ox,y*256-oy);res(true)};
       im.onerror=()=>{clearTimeout(to);res(false)};
-      im.src=OSM.replace("{z}",z).replace("{y}",y).replace("{x}",x);
+      im.src=OSM.replace("{s}","a").replace("{z}",z).replace("{y}",y).replace("{x}",x);
     }));
   }
   const ok=(await Promise.all(jobs)).filter(Boolean).length;
@@ -988,7 +988,7 @@ async function snapshotMap(){
   c.strokeStyle="#fff";c.lineWidth=9;c.beginPath();pts.forEach((p,i)=>i?c.lineTo(X(p[1]),Y(p[0])):c.moveTo(X(p[1]),Y(p[0])));c.stroke();
   c.strokeStyle="#E5484D";c.lineWidth=5;c.stroke();
   const dot=(p,col)=>{c.fillStyle=col;c.strokeStyle="#fff";c.lineWidth=3;c.beginPath();c.arc(X(p[1]),Y(p[0]),9,0,7);c.fill();c.stroke()};
-  c.font="12px sans-serif";c.fillStyle="rgba(255,255,255,.8)";c.fillRect(W-170,H-18,170,18);c.fillStyle="#333";c.fillText(OSMA,W-166,H-5);
+  c.font="12px sans-serif";c.fillStyle="rgba(255,255,255,.8)";c.fillRect(W-250,H-18,250,18);c.fillStyle="#333";c.fillText(OSMA,W-246,H-5);
   dot(pts[0],"#2EA043");dot(pts[pts.length-1],"#111");
   try{return {url:cv.toDataURL("image/jpeg",0.82),tiles:ok}}catch(e){return null}
 }
@@ -1676,7 +1676,8 @@ function renderActs(){
 
 /* Détail d’une activité : carte IGN et courbes */
 let detailId=null,carte=null,couche=null;
-const OSM="https://tile.openstreetmap.org/{z}/{x}/{y}.png",OSMA="© contributeurs OpenStreetMap";
+/* Fond OpenStreetMap servi par CARTO (tuiles.openstreetmap.org refuse les requêtes sans Referer, ce qui est le cas dans l’appli) */
+const OSM="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",OSMA="© contributeurs OpenStreetMap © CARTO";
 const IGN="https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&LAYER=";
 function renderDetailSel(){
   const sel=$("d-sel"),list=sessions.filter(s=>traces[s.id]).reverse();
