@@ -166,10 +166,13 @@ h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4
   <div class="card">
     <h2 id="wk-title">Votre semaine</h2>
     <ul id="week"></ul>
-    <label class="f" for="mv-d">Déplacer la sortie longue</label>
+    <label class="f" for="mv-s">Déplacer une séance</label>
     <select id="mv-w" aria-label="Semaine concernée"><option value="0">Cette semaine</option><option value="1">Semaine prochaine</option></select>
-    <select id="mv-d" aria-label="Nouveau jour de la sortie longue"></select>
+    <select id="mv-s" aria-label="Séance à déplacer"></select>
+    <label class="f" for="mv-d">Nouveau jour</label>
+    <select id="mv-d" aria-label="Nouveau jour de la séance"></select>
     <p class="mute" id="mvmsg" role="status"></p>
+    <button class="alt hidden" id="mv-reset">Annuler mes déplacements de cette semaine</button>
     <button class="alt" id="editp">Modifier mon profil et mon objectif</button>
   </div>
 </section>
@@ -346,6 +349,11 @@ const MOVES_KEY="coach_moves";
 let moves={};
 try{moves=JSON.parse(localStorage.getItem(MOVES_KEY))||{}}catch(e){}
 const saveMoves=()=>{try{localStorage.setItem(MOVES_KEY,JSON.stringify(moves))}catch(e){}};
+/* Déplacements de séances : liste d'échanges de jours par semaine, appliqués dans l'ordre */
+const SW_KEY="coach_swaps";
+let swaps={};
+try{swaps=JSON.parse(localStorage.getItem(SW_KEY))||{}}catch(e){}
+const saveSwaps=()=>{try{localStorage.setItem(SW_KEY,JSON.stringify(swaps))}catch(e){}};
 function isDate(s){return typeof s==="string"&&s.length===10&&s[4]==="-"&&s[7]==="-"}
 const iso=d=>d.toLocaleDateString("sv-SE");
 const fmtDate=s=>s.split("-").reverse().join("/");
@@ -466,6 +474,10 @@ function weekPlan(off,raw){
   }
   const td=moves[iso(mon)],ld=Object.keys(days).find(d=>days[d].t===L);
   if(ld&&td&&td!==+ld){const tmp=days[td];days[td]=days[ld];days[ld]=tmp}
+  if(c.phase!=="Course"&&Array.isArray(swaps[iso(mon)]))swaps[iso(mon)].forEach(pr=>{
+    const a=pr[0],b=pr[1];
+    if(days[a]&&days[b]&&a!==b){const tmp=days[a];days[a]=days[b];days[b]=tmp}
+  });
   if(c.phase==="Course"){
     const gd=new Date(profile.goal.date+"T00:00:00"),r=gd.getDay()===0?7:gd.getDay();
     for(let d=1;d<=7;d++){if(d===r)days[d]=sessInfo("RACE",c);else if(d>r||d===r-1)days[d]={t:"REST"}}
@@ -977,7 +989,7 @@ function showPaste(text,withImport){
 }
 let lastBackup="";
 $("exp").onclick=async()=>{
-  const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,sessions:sessions,traces:traces},null,1),name="coach-running-"+today()+".json";
+  const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces},null,1),name="coach-running-"+today()+".json";
   $("copybk").classList.add("hidden");$("paste").classList.add("hidden");$("pasteok").classList.add("hidden");
   if(window.AndroidBle&&AndroidBle.saveFile){bmsg(AndroidBle.saveFile(name,data)?"Sauvegarde enregistrée dans le dossier Téléchargements.":"Enregistrement impossible.");return}
   let dl=null;
@@ -1016,6 +1028,7 @@ function doImport(text){
     sessions.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
     if(o&&o.profile&&!profile&&validProfile(o.profile)){profile=o.profile;saveProfile()}
     if(o&&o.moves&&typeof o.moves==="object"){Object.keys(o.moves).forEach(k=>{if(!(k in moves)&&isDate(k)&&o.moves[k]>=1&&o.moves[k]<=7)moves[k]=o.moves[k]});saveMoves()}
+    if(o&&o.swaps&&typeof o.swaps==="object"){Object.keys(o.swaps).forEach(k=>{if(!(k in swaps)&&isDate(k)&&Array.isArray(o.swaps[k]))swaps[k]=o.swaps[k].filter(q=>Array.isArray(q)&&q[0]>=1&&q[0]<=7&&q[1]>=1&&q[1]<=7)});saveSwaps()}
     persist();persistT();renderStats();
     bmsg(n+" séance(s) importée(s) sur "+list.length+".");
   }catch(e){bmsg("Import impossible : choisissez une sauvegarde Coach Running (.json).")}
@@ -1088,20 +1101,31 @@ function renderGoal(W){
   if(Math.ceil(days/7)<interp(MINW,effKm(g))*(profile.level==="debutant"?1:.75))t+=". Délai court pour cet objectif : abordez-le avec prudence ou visez une distance plus courte.";
   el.textContent=t;
 }
+let mvSel=0;
 function renderMover(){
-  const s=$("mv-d");
-  if(!s.options.length){for(let d=1;d<=7;d++){const o=document.createElement("option");o.value=d;o.textContent=DN[d];s.appendChild(o)}}
-  const off=+$("mv-w").value,W=weekPlan(off),ld=Object.keys(W.days).find(d=>W.days[d].t===L);
+  const off=+$("mv-w").value,W=weekPlan(off),sel=$("mv-s"),dd=$("mv-d");
   $("wk-title").textContent=(off?"Semaine prochaine":"Votre semaine")+" · "+W.ctx.phase.toLowerCase();
-  s.disabled=!ld;
-  if(ld)s.value=ld;
-  $("mvmsg").textContent=ld?"":"Pas de sortie longue prévue cette semaine-là.";
+  const race=W.ctx.phase==="Course";
+  const mov=Object.keys(W.days).filter(d=>W.days[d].t!=="REST"&&W.days[d].t!=="RACE");
+  sel.innerHTML="";
+  mov.forEach(d=>{const o=document.createElement("option");o.value=d;o.textContent=DN[d]+" · "+NAMES[W.days[d].t];sel.appendChild(o)});
+  if(!mov.includes(String(mvSel)))mvSel=mov.length?+mov[0]:0;
+  if(mvSel)sel.value=String(mvSel);
+  if(!dd.options.length){for(let d=1;d<=7;d++){const o=document.createElement("option");o.value=d;o.textContent=DN[d];dd.appendChild(o)}}
+  if(mvSel)dd.value=String(mvSel);
+  sel.disabled=dd.disabled=race||!mov.length;
+  $("mv-reset").classList.toggle("hidden",!(swaps[iso(W.mon)]&&swaps[iso(W.mon)].length));
+  $("mvmsg").textContent=race?"Pas de déplacement la semaine de la course.":!mov.length?"Aucune séance à déplacer cette semaine-là.":"Si le jour choisi a déjà une séance, les deux séances sont échangées.";
 }
 $("mv-w").onchange=()=>renderPlan();
+$("mv-s").onchange=()=>{mvSel=+$("mv-s").value;$("mv-d").value=String(mvSel)};
 $("mv-d").onchange=()=>{
-  const mon=weekPlan(+$("mv-w").value).mon;
-  moves[iso(mon)]=+$("mv-d").value;saveMoves();renderPlan();
+  const W=weekPlan(+$("mv-w").value),from=+$("mv-s").value,to=+$("mv-d").value;
+  if(!from||from===to||W.ctx.phase==="Course")return;
+  const k=iso(W.mon);(swaps[k]=swaps[k]||[]).push([from,to]);saveSwaps();
+  mvSel=to;renderPlan();
 };
+$("mv-reset").onclick=()=>{const W=weekPlan(+$("mv-w").value);delete swaps[iso(W.mon)];saveSwaps();renderPlan()};
 function kcalFor(min,rpe,spd,sport){
   if(!profile||!(min>0))return 0;
   const met=spd>3&&spd<25?spd:({CYCLING:4+0.8*rpe,SWIMMING:4+0.9*rpe,OTHER:3+0.7*rpe}[sport]||6+0.6*rpe);
