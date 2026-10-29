@@ -1747,25 +1747,39 @@ function renderDetail(){
     c.classList.toggle("hidden",!ok);c.previousElementSibling.classList.toggle("hidden",!ok);
     if(ok)drawLine(a,color,Object.assign({canvas:id},o));
   };
-  const speed=pts.map((p,i)=>{
-    const a=Math.max(0,i-2),b=Math.min(n-1,i+2),dd=pts[b][1]-pts[a][1],dt=pts[b][0]-pts[a][0];
-    if(dd<=0||dt<=0)return null;
-    const kmh=dd/dt*3.6;
-    if(run){const sk=3600/kmh;return sk>900?null:sk}
-    return kmh;
-  });
+  const ms=speedSeries(pts,run);
+  const speed=ms.map(v=>v==null?null:run?1000/v*1:v*3.6);
   line("c-alt",pts.map(p=>p[2]),"#8B5CF6",{fmt:v=>String(Math.round(v))});
   line("c-hr",pts.map(p=>p[3]),"#E5484D",{fmt:v=>String(Math.round(v))});
   $("d-pace-t").textContent=run?"Allure (min/km)":"Vitesse (km/h)";
   line("c-pace",speed,"#2F6BFF",run?{invert:true,fmt:fmtP}:{fmt:dec});
   line("c-cad",pts.map(p=>p[4]==null?null:(run&&p[4]<120?p[4]*2:p[4])),"#18B26B",{fmt:v=>String(Math.round(v))});
-  line("c-spd",pts.map((p,i)=>{const a=Math.max(0,i-2),b=Math.min(n-1,i+2),dd=pts[b][1]-pts[a][1],dt=pts[b][0]-pts[a][0];return dd>0&&dt>0&&dd/dt*3.6<60?dd/dt*3.6:null}),"#0EA5E9",{fmt:dec});
+  line("c-spd",ms.map(v=>v==null?null:v*3.6),"#0EA5E9",{fmt:dec});
   detailSummary(s,pts,run);
   drawMap(pts);
 }
 const fmtDur=t=>{t=Math.round(t);const h=Math.floor(t/3600),m=Math.floor(t/60)%60,x=t%60;return (h?h+" h ":"")+pad2(m)+" min "+pad2(x)+" s"};
+/* Vitesse (m/s) lissée : fenêtre d'au moins 40 s et 40 m, valeurs irréalistes écartées, puis médiane sur 5 points */
+function speedSeries(pts,run){
+  const n=pts.length,vmax=run?7.5:25,raw=pts.map((p,i)=>{
+    let a=i,b=i;
+    for(let g=0;g<n;g++){
+      const dt=pts[b][0]-pts[a][0],dd=pts[b][1]-pts[a][1];
+      if(dt>=40&&dd>=40)break;
+      if(a>0&&(i-a<=b-i||b>=n-1))a--;else if(b<n-1)b++;else break;
+    }
+    const dt=pts[b][0]-pts[a][0],dd=pts[b][1]-pts[a][1];
+    if(dt<=0||dd<=0)return null;
+    const v=dd/dt;return v>vmax||v<0.3?null:v;
+  });
+  return raw.map((v,i)=>{
+    if(v==null)return null;
+    const w=raw.slice(Math.max(0,i-2),i+3).filter(x=>x!=null).sort((x,y)=>x-y);
+    return w[Math.floor(w.length/2)];
+  });
+}
 function detailSummary(s,pts,run){
-  const last=pts[pts.length-1],dist=last[1],tm=last[0];
+  const last=pts[pts.length-1],dist=s.km>0?s.km*1000:last[1],tm=(s.sec>0?s.sec:s.min>0?s.min*60:0)||last[0];
   const alts=pts.map(p=>p[2]).filter(v=>v!=null),hrs=pts.map(p=>p[3]).filter(v=>v>0);
   let up=s.dplus||(alts.length>2?gainOf(alts):0),dn=0;
   if(alts.length>2){let base=alts[0];alts.forEach(e=>{if(e<base-3){dn+=base-e;base=e}else if(e>base)base=e})}
