@@ -99,7 +99,15 @@ class HealthBridge(
                 o.put("sec", Duration.between(s.startTime, s.endTime).seconds)
                 o.put("sport", sport(s.exerciseType))
                 o.put("m", agg[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0.0)
-                o.put("gain", agg[ElevationGainedRecord.ELEVATION_GAINED_TOTAL]?.inMeters ?: 0.0)
+                var gain = agg[ElevationGainedRecord.ELEVATION_GAINED_TOTAL]?.inMeters ?: 0.0
+                if (gain <= 0.0) {
+                    // L'agrégat peut être vide selon l'appli source : on additionne les enregistrements bruts.
+                    try {
+                        gain = c.readRecords(ReadRecordsRequest(ElevationGainedRecord::class, tr)).records
+                            .sumOf { it.elevation.inMeters }
+                    } catch (e: Exception) { }
+                }
+                o.put("gain", gain)
                 o.put("hrAvg", agg[HeartRateRecord.BPM_AVG] ?: 0L)
                 // Parcours : disponible seulement si l'appli de la montre l'écrit et si l'accès est accordé.
                 val route = (s.exerciseRouteResult as? ExerciseRouteResult.Data)?.exerciseRoute?.route
