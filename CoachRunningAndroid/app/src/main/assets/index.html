@@ -61,7 +61,7 @@ li.wrap{flex-wrap:wrap;gap:0 12px}
 label.f{display:block;margin-top:14px;font-weight:500}
 select,input[type=number],input[type=text],input[type=date]{width:100%;margin-top:4px;font:400 16px Barlow,system-ui,sans-serif;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px}
 textarea{width:100%;margin-top:12px;font:14px/1.4 ui-monospace,monospace;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px}
-.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
+.chips{display:flex;gap:8px;flex-wrap:wrap;padding:2px 0 12px}
 .chip{flex:none;width:auto;margin:0;padding:8px 15px;font-size:15px;border-radius:99px;background:var(--bg);color:var(--ink);border:1px solid var(--line)}
 .chip[aria-pressed=true]{background:linear-gradient(135deg,var(--acc),var(--acc2));color:var(--acc-ink);border-color:transparent}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;margin-top:10px;color:var(--mute)}
@@ -339,7 +339,6 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p class="mute" id="empty"></p>
     <p class="insight" id="insight"></p>
   </div>
-  <div class="card"><h2>Historique</h2><ul id="hist"></ul></div>
   <div class="card">
     <h2>Détail d’une activité</h2>
     <label class="f" for="d-sel">Activité avec trace</label>
@@ -1133,6 +1132,11 @@ const CHARTS=[
  ["forme","Forme","Forme et fatigue","Rapport entre la charge de la semaine et votre moyenne sur 4 semaines. Entre 0,8 et 1,3 : zone idéale. Au-dessus de 1,5 : risque de surmenage, le plan allège alors vos séances."],
  ["volume","Volume","Volume hebdomadaire (heures)","Temps d’activité par semaine, tous sports confondus."],
  ["dplus","D+","Dénivelé positif par semaine","Essentiel pour préparer un trail : augmentez-le progressivement, d’environ 10 % par semaine."],
+ ["km","Km","Kilomètres par semaine","Distance des sorties course (route et trail) sur 12 semaines. Progressez d’environ 10 % par semaine au plus."],
+ ["long","Sortie longue","Plus longue sortie de la semaine","Votre sortie la plus longue chaque semaine (en km). Elle doit grimper progressivement vers la distance de l’objectif."],
+ ["effi","Efficacité","Efficacité aérobie","Vitesse (m/min) divisée par la FC moyenne. Quand la courbe monte, vous courez plus vite pour le même effort cardiaque : votre endurance progresse."],
+ ["zones","Zones FC","Temps par zone cardiaque (28 jours)","Temps passé dans chaque zone d’après la FC enregistrée dans les traces. Visez surtout les zones 1 et 2."],
+ ["mois","Mois","Kilomètres par mois","Distance course sur 12 mois, pour voir la régularité sur la durée."],
  ["intens","Intensité","Répartition de l’intensité (28 jours)","Idéal : environ 80 % du temps en facile (RPE 1 à 4) et 20 % en séances intenses (RPE 7 et plus)."],
  ["sports","Sports","Répartition par sport (28 jours)","Temps passé dans chaque sport sur les 4 dernières semaines."],
  ["allure","Allure","Allure des sorties course","Plus la courbe monte, plus vous êtes rapide. En trail, l’allure est corrigée du dénivelé (100 m de D+ comptent pour 1 km)."],
@@ -1218,6 +1222,31 @@ function renderCharts(){
     const W=weekStats(12),ser=[{name:"Dénivelé positif (m)",color:SCOL.RUN_TRAIL,vals:W.map(w=>w.list.reduce((a,s)=>a+(s.dplus||0),0))}];
     if(!ser[0].vals.some(v=>v>0))return empty("Aucun dénivelé enregistré : renseignez le D+ de vos activités.");
     drawBars(W.map(w=>w.label),ser,v=>String(Math.round(v)));setLegend(ser);
+  }else if(chartKind==="km"||chartKind==="long"){
+    const W=weekStats(12),lg=chartKind==="long",isR=x=>isRun(x)&&x.km>0;
+    const vals=W.map(w=>{const r=w.list.filter(isR);return lg?r.reduce((a,x)=>Math.max(a,x.km),0):r.reduce((a,x)=>a+x.km,0)});
+    if(!vals.some(v=>v>0))return empty("Aucune sortie course avec distance : ajoutez les km de vos activités.");
+    const ser=[{name:lg?"Plus longue sortie (km)":"Kilomètres",color:"#2F6BFF",vals:vals}];
+    drawBars(W.map(w=>w.label),ser,v=>v?dec(Math.round(v*10)/10):"");setLegend(ser);
+    $("insight").textContent=def[3]+" Cette semaine : "+dec(Math.round(vals[vals.length-1]*10)/10)+" km.";
+  }else if(chartKind==="mois"){
+    const labs=[],vals=[];const n=new Date();
+    for(let i=11;i>=0;i--){const d=new Date(n.getFullYear(),n.getMonth()-i,1),k=iso(d).slice(0,7);labs.push(String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getFullYear()).slice(2));vals.push(sessions.filter(x=>isRun(x)&&x.km>0&&x.date.slice(0,7)===k&&x.date<=today()).reduce((a,x)=>a+x.km,0))}
+    if(!vals.some(v=>v>0))return empty("Aucune sortie course avec distance.");
+    const ser=[{name:"Kilomètres",color:"#18B26B",vals:vals}];
+    drawBars(labs,ser,v=>v?String(Math.round(v)):"");setLegend(ser);
+  }else if(chartKind==="effi"){
+    const runs=sessions.filter(x=>isRun(x)&&x.km>0&&x.hr>0&&x.min>5&&x.date<=today()).slice(-15);
+    if(runs.length<2)return empty("Il faut au moins deux sorties course avec distance et fréquence cardiaque.");
+    drawLine(runs.map(x=>({x:fmtDate(x.date).slice(0,5),v:(x.km*1000/((x.sec||x.min*60)/60))/x.hr*100})),"#7A5CFF",{fmt:v=>dec(Math.round(v*10)/10)});
+    setLegend([{name:"efficacité (m/min par bpm × 100)",color:"#7A5CFF"}]);
+  }else if(chartKind==="zones"){
+    const Z=hrZones().z,tz=Z.map(()=>0),c0=new Date();c0.setDate(c0.getDate()-28);const cs=iso(c0);
+    sessions.filter(x=>x.date>=cs&&traces[x.id]).forEach(x=>{const t=traces[x.id];for(let i=0;i<t.length-1;i++){const h=t[i][3];if(!(h>0))continue;const dt=Math.min(300,t[i+1][0]-t[i][0]);let k=0;Z.forEach((z,j)=>{if(h>=z.lo)k=j});if(h>=Z[0].lo)tz[k]+=dt}});
+    const cols=["#9AA7C2","#18B26B","#FFC21F","#FF8A1F","#E5484D"],parts=Z.map((z,j)=>({name:"Z"+(j+1)+" "+z.name,color:cols[j],v:tz[j]})).filter(q=>q.v>0),tot=parts.reduce((a,q)=>a+q.v,0);
+    if(tot<300)return empty("Pas assez de données cardiaques : il faut des activités avec trace et FC sur les 28 derniers jours.");
+    drawDonut(parts,Math.round(tot/60)+" min");
+    setLegend(parts.map(q=>({name:q.name+" "+Math.round(q.v/tot*100)+" %",color:q.color})));
   }else if(chartKind==="forme"){
     const W=weekStats(16),ld=W.map(w=>w.list.reduce((a,s)=>a+loadOf(s),0)),pts=[];
     if(!ld.some(v=>v>0))return empty("Enregistrez des activités pour voir votre forme.");
@@ -1255,15 +1284,6 @@ function renderCharts(){
 if(window.addEventListener)window.addEventListener("resize",()=>{if(!$("stats").classList.contains("hidden"))renderCharts()});
 function renderStats(){
   renderCharts();renderDetailSel();
-  $("hist").innerHTML="";
-  sessions.slice().reverse().slice(0,10).forEach(s=>{
-    const li=document.createElement("li");
-    li.innerHTML="<span></span><span class='mute'></span>";
-    li.children[0].textContent=fmtDate(s.date)+" · "+(SPORTS[s.sport]||"Course")+" · "+durText(s)+(s.date>today()?" (prévue)":"");
-    li.children[0].prepend(sdot(s.sport));li.children[1].textContent="RPE "+s.rpe+(s.hr?" · "+s.hr+" bpm":"")+(s.kcal?" · ≈ "+s.kcal+" kcal":"");
-    $("hist").appendChild(li);
-  });
-  if(!sessions.length){const li=document.createElement("li");li.textContent="Aucune séance enregistrée. Lancez-en une depuis l’onglet Plan.";$("hist").appendChild(li)}
 }
 /* Sauvegarde */
 const bmsg=t=>$("bmsg").textContent=t;
