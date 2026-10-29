@@ -1637,6 +1637,12 @@ function renderActs(){
       sb(b1,"Modifier");sb(b2,"Supprimer");a.prepend(sdot(s.sport));
       b1.onclick=()=>startEdit(s);
       b2.onclick=()=>{const i=sessions.indexOf(s);if(i>=0){sessions.splice(i,1);delete traces[s.id];persistT();if(editing===s)endEdit();persist();renderActs()}};
+      a.style.cursor="pointer";a.setAttribute("role","button");a.tabIndex=0;
+      const more=document.createElement("small");more.className="mute";more.style.display="none";more.style.marginTop="4px";
+      more.textContent=[s.hr?"FC moy. "+s.hr+" bpm":"",s.kcal?s.kcal+" kcal":"",s.rpe?"RPE "+s.rpe+"/10":"",s.km&&s.min?"allure moy. "+fmtP(s.min*60/s.km)+" /km":"","pas de trace GPS"].filter(Boolean).join(" · ");
+      a.onclick=()=>{if(traces[s.id]){detailId=s.id;show("stats");$("d-sel").scrollIntoView()}else{more.style.display=more.style.display==="none"?"block":"none"}};
+      a.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();a.click()}};
+      if(!traces[s.id]){const d=document.createElement("div");d.append(more);a.append(d)}
       if(traces[s.id]){const b3=document.createElement("button");sb(b3,"Détail");b3.onclick=()=>{detailId=s.id;show("stats");$("d-sel").scrollIntoView()};c.append(b3)}c.append(b1,b2);li.append(a,c);ul.appendChild(li);
     });
     det.append(sm,ul);det.open=gi===0;box.appendChild(det);
