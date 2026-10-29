@@ -1075,6 +1075,7 @@ async function checkUpdate(){
 }
 $("upd-go").onclick=()=>{try{AndroidApp.open("https://github.com/"+GH_REPO+"/releases/latest/download/coach-running.apk")}catch(e){}};
 setTimeout(checkUpdate,1500);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!liveOn)checkUpdate()});
 /* Courbes */
 /* Courbes */
 let chartKind="charge";
