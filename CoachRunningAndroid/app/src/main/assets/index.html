@@ -347,12 +347,11 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <div id="d-body" class="hidden">
       <img id="d-snap" class="hidden" alt="Carte enregistrée pendant la séance"><div id="map"></div><p class="mute" id="d-mapmsg"></p>
       <div id="d-sum" class="dsum"></div>
+      <h3 class="dt" id="d-pace-t">Allure</h3><canvas id="c-pace"></canvas>
       <h3 class="dt" id="d-spd-t">Vitesse (km/h)</h3><canvas id="c-spd"></canvas>
       <h3 class="dt">Altitude (m)</h3><canvas id="c-alt"></canvas>
       <h3 class="dt">Fréquence cardiaque (bpm)</h3><canvas id="c-hr"></canvas>
-      <h3 class="dt" id="d-pace-t">Allure</h3><canvas id="c-pace"></canvas>
       <h3 class="dt">Cadence</h3><canvas id="c-cad"></canvas>
-      <h3 class="dt" id="d-spl-t">Kilomètre par kilomètre</h3><div id="d-splits" class="dspl"></div>
     </div>
   </div>
   <div class="card">
@@ -1776,28 +1775,6 @@ function detailSummary(s,pts,run){
     ["FC moy.",hrs.length?Math.round(hrs.reduce((a,b)=>a+b,0)/hrs.length)+" bpm":(s.hr?s.hr+" bpm":"--")],["FC max",hrs.length?Math.round(Math.max(...hrs))+" bpm":"--"],[run?"Vitesse moy.":"Allure moy.",run?(v?dec(Math.round(v*10)/10)+" km/h":"--"):(pc?fmtP(pc)+" /km":"--")]];
   $("d-sum").innerHTML="";
   box.forEach(b=>{const d=document.createElement("div"),x=document.createElement("b"),y=document.createElement("span");x.textContent=b[1];y.textContent=b[0];d.append(x,y);$("d-sum").appendChild(d)});
-  /* kilomètre par kilomètre */
-  const at=D=>{let i=1;while(i<pts.length-1&&pts[i][1]<D)i++;const a=pts[i-1],b=pts[i],r=b[1]>a[1]?(D-a[1])/(b[1]-a[1]):0;return a[0]+(b[0]-a[0])*Math.min(1,Math.max(0,r))};
-  const rows=[];
-  for(let k=0;k*1000<dist;k++){
-    const d0=k*1000,d1=Math.min(dist,d0+1000),len=d1-d0;if(len<100)break;
-    const seg=pts.filter(p=>p[1]>=d0&&p[1]<=d1),dt=at(d1)-at(d0);
-    const al=seg.map(p=>p[2]).filter(v=>v!=null),hh=seg.map(p=>p[3]).filter(v=>v>0);
-    rows.push({k:len<1000?(len/1000).toFixed(2).replace(".",","):String(k+1),pace:dt/(len/1000),up:al.length>1?gainOf(al):null,hr:hh.length?Math.round(hh.reduce((a,b)=>a+b,0)/hh.length):null,full:len>=1000});
-  }
-  const sp=$("d-splits");sp.innerHTML="";
-  $("d-spl-t").classList.toggle("hidden",rows.length<1);
-  if(!rows.length)return;
-  const best=Math.min(...rows.filter(r=>r.full).map(r=>r.pace));
-  const t=document.createElement("table");
-  t.innerHTML="<tr><th>Km</th><th>"+(run?"Allure":"Vitesse")+"</th><th>D+</th><th>FC</th></tr>";
-  rows.forEach(r=>{
-    const tr=document.createElement("tr");
-    const cells=[r.k,run?fmtP(r.pace):dec(Math.round(3600/r.pace*10)/10),r.up==null?"--":"+"+r.up+" m",r.hr?String(r.hr):"--"];
-    cells.forEach((c,i)=>{const td=document.createElement("td");td.textContent=c;if(i===1&&r.full&&r.pace===best)td.className="best";tr.appendChild(td)});
-    t.appendChild(tr);
-  });
-  sp.appendChild(t);
 }
 function drawMap(pts){
   const co=pts.filter(p=>p[5]!=null&&p[6]!=null).map(p=>[p[5],p[6]]),box=$("map"),msg=$("d-mapmsg");
