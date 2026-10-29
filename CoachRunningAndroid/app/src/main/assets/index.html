@@ -236,6 +236,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <p class="mute" id="gmsg" role="status" style="margin:0 0 6px">GPS : recherche du signal…</p>
   <p class="mute warn" id="msg" role="status" style="margin:0 0 6px"></p>
   <span id="spd" class="hidden"></span>
+  <h2 id="prehd" class="hidden" style="margin:0 0 6px">Avant de partir</h2>
   <div class="card">
     <label class="f" for="l-recap">Récap avec vibration tous les</label>
     <select id="l-recap"><option value="0">Aucun</option><option value="1">1 km</option><option value="5">5 km</option></select>
@@ -246,6 +247,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <label class="chk"><input type="checkbox" id="l-keep"> Garder l’écran allumé (consomme plus de batterie)</label>
     <button class="alt" id="bhr">Connecter la ceinture ou montre (FC)</button>
   </div>
+  <button id="lstart" class="hidden">Démarrer la séance</button>
   <button class="stop" id="end">Terminer la séance</button>
 </section>
 <div id="cfm" class="hidden" role="dialog" aria-modal="true" aria-labelledby="cfm-t">
@@ -800,7 +802,7 @@ function keepScreen(on){
   try{window.AndroidBle&&AndroidBle.keepScreen(on)}catch(e){}
   try{if(on){navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>lock=l).catch(()=>{})}else{lock&&lock.release();lock=null}}catch(e){}
 }
-function saveLive(){try{localStorage.setItem(LKEY,JSON.stringify({t0:t0,sport:liveSport,recap:recapKm,maxPace:$("l-maxpace").value,cap:liveCapHr,tgt:$("livetgt").textContent}))}catch(e){}}
+function saveLive(){if(!liveOn)return;try{localStorage.setItem(LKEY,JSON.stringify({t0:t0,sport:liveSport,recap:recapKm,maxPace:$("l-maxpace").value,cap:liveCapHr,tgt:$("livetgt").textContent}))}catch(e){}}
 let liveSport="RUN_ROUTE";
 
 function liveMap(){
@@ -910,8 +912,17 @@ function startSession(){
   $("l-cap").value=capFor(t)||"";
   const tt=t==="REST"?"restez en zone 2":target(t,W.ctx.kind);
   $("livetgt").textContent=NAMES[t]+(tt?" · "+tt:"");
+  /* écran de préparation : réglages puis « Démarrer » */
+  livePre(true);show("live");
+}
+function livePre(on){
+  $("lwrap").classList.toggle("hidden",on);$("end").classList.toggle("hidden",on);$("lstart").classList.toggle("hidden",!on);
+  $("gmsg").classList.toggle("hidden",on);$("prehd").classList.toggle("hidden",!on);
+}
+function beginSession(){
+  livePre(false);
   t0=Date.now();liveOn=true;$("msg").textContent="";$("gmsg").textContent="GPS : recherche du signal…";
-  recapKm=+$("l-recap").value;maxPaceS=0;liveCapHr=+$("l-cap").value||0;curPace=0;
+  recapKm=+$("l-recap").value;maxPaceS=parsePace($("l-maxpace").value);liveCapHr=+$("l-cap").value||0;curPace=0;
   resetLive();
   show("live");setFull(true);liveMap();
   const n=NAT();
@@ -927,6 +938,7 @@ function startTimers(){
   pollId=setInterval(poll,1000);clockId=setInterval(paint,1000);
 }
 $("go").onclick=startSession;
+$("lstart").onclick=beginSession;
 document.addEventListener("visibilitychange",()=>{if(liveOn&&!document.hidden){poll()}});
 
 /* Reprise si l'application a été fermée ou relancée pendant la séance */
@@ -939,7 +951,7 @@ function resumeLive(){
   $("l-recap").value=String(st.recap||0);$("l-maxpace").value=st.maxPace||"";$("l-cap").value=st.cap||"";$("livetgt").textContent=st.tgt||"";
   $("l-keep").checked=!!prefs.keep;
   recapKm=+st.recap||0;maxPaceS=parsePace(st.maxPace);liveCapHr=+st.cap||0;
-  resetLive();show("live");setFull(true);liveMap();poll();startTimers();
+  livePre(false);resetLive();show("live");setFull(true);liveMap();poll();startTimers();
 }
 
 /* Sortie : jamais sans confirmation */
