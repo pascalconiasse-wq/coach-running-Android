@@ -55,10 +55,13 @@ object TrackState {
     @Volatile var nextRecap = 0.0
     @Volatile var lastAlertPace = 0L
     @Volatile var lastAlertHr = 0L
+    @Volatile var targetS = 0                  // durée prévue en secondes : 4 vibrations quand elle est atteinte (0 = aucune)
+    @Volatile var targetDone = false
+    @Volatile var startMs = 0L
 
     fun reset() {
         synchronized(points) { points.clear() }
-        distM = 0.0; hr = 0; nextRecap = 0.0; lastAlertPace = 0L; lastAlertHr = 0L
+        distM = 0.0; hr = 0; nextRecap = 0.0; lastAlertPace = 0L; lastAlertHr = 0L; targetS = 0; targetDone = false
     }
 
     @Suppress("DEPRECATION")
@@ -77,6 +80,18 @@ class TrackService : Service() {
     private var last: Location? = null
     private val recent = ArrayList<DoubleArray>()   // t (ms), distance cumulée
     private var lastNotif = 0L
+    private val tickHandler = Handler(Looper.getMainLooper())
+    private val tick = object : Runnable {
+        override fun run() {
+            val ts = TrackState.targetS
+            if (TrackState.running && ts > 0 && !TrackState.targetDone &&
+                System.currentTimeMillis() - TrackState.startMs >= ts * 1000L) {
+                TrackState.targetDone = true
+                TrackState.buzz(this@TrackService, longArrayOf(0, 300, 150, 300, 150, 300, 150, 300))
+            }
+            if (TrackState.running) tickHandler.postDelayed(this, 3000)
+        }
+    }
 
     private val listener = object : LocationListener {
         override fun onLocationChanged(l: Location) { onFix(l) }
@@ -102,6 +117,8 @@ class TrackService : Service() {
         last = null
         recent.clear()
         TrackState.running = true
+        tickHandler.removeCallbacks(tick)
+        tickHandler.post(tick)
         try {
             lm = getSystemService(Context.LOCATION_SERVICE) as LocationManager
             lm?.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, listener, Looper.getMainLooper())
@@ -171,6 +188,7 @@ class TrackService : Service() {
     }
 
     override fun onDestroy() {
+        tickHandler.removeCallbacks(tick)
         try { lm?.removeUpdates(listener) } catch (e: Exception) { }
         try { if (wl?.isHeld == true) wl?.release() } catch (e: Exception) { }
         TrackState.running = false
@@ -318,6 +336,7 @@ class TrackBridge(
         TrackState.maxPace = maxPace
         TrackState.maxHr = maxHr
         TrackState.nextRecap = recapM.toDouble()
+        TrackState.startMs = System.currentTimeMillis()
         val perms = ArrayList<String>()
         perms.add(Manifest.permission.ACCESS_FINE_LOCATION)
         if (Build.VERSION.SDK_INT >= 33) perms.add(Manifest.permission.POST_NOTIFICATIONS)
@@ -347,6 +366,13 @@ class TrackBridge(
         TrackState.maxPace = maxPace
         TrackState.maxHr = maxHr
         TrackState.nextRecap = if (recapM > 0) (Math.floor(TrackState.distM / recapM) + 1) * recapM else 0.0
+    }
+
+    /** Durée prévue (secondes) : 4 vibrations à l'échéance, l'enregistrement continue. 0 = désactivé. */
+    @JavascriptInterface
+    fun setTarget(sec: Int) {
+        TrackState.targetS = sec
+        TrackState.targetDone = sec > 0 && System.currentTimeMillis() - TrackState.startMs >= sec * 1000L
     }
 
     @JavascriptInterface

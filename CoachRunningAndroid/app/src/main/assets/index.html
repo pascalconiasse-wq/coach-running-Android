@@ -240,6 +240,8 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <div class="card">
     <label class="f" for="l-recap">Récap avec vibration tous les</label>
     <select id="l-recap"><option value="0">Aucun</option><option value="1">1 km</option><option value="5">5 km</option></select>
+    <label class="f" for="l-dur">Durée prévue (min) : 4 vibrations à l’échéance, l’enregistrement continue</label>
+    <input type="number" id="l-dur" inputmode="numeric" min="5" max="600" placeholder="ex. 45">
     <label class="f" for="l-maxpace">Allure max (la plus rapide autorisée, min/km, vide = aucune)</label>
     <input type="text" id="l-maxpace" inputmode="numeric" placeholder="ex. 5:30">
     <label class="f" for="l-cap">FC max pour cette séance (bpm, vide = aucune)</label>
@@ -317,6 +319,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), zones cardio, allures de référence calculées sur vos meilleurs efforts, et test VMA facultatif qui débloque des séances de VMA. Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation.</p>
     <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance). Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
   <details class="card"><summary><b>Séance en direct</b></summary>
+    <p><b>Durée prévue</b> : renseignez-la dans les réglages (pré-remplie avec la séance du jour) ; à l’échéance, 4 vibrations et un bandeau, mais l’enregistrement continue.</p>
     <p>« Démarrer la séance » lance le suivi GPS dans un service Android : il continue écran éteint, une notification reste affichée. La carte plein écran (plan IGN) montre votre trace ; dans le coin : chrono, distance, D+, allure, allure moyenne, FC.</p>
     <p><b>Récap</b> tous les 1 km ou 5 km (ou aucun) : deux vibrations et un bandeau. <b>Alertes</b> : si vous dépassez l’allure max ou la FC max réglées, trois vibrations et l’indication passe en rouge. La FC demande une ceinture ou une montre qui diffuse la fréquence en Bluetooth (bouton « Connecter »).</p>
     <p><b>Terminer</b> demande toujours confirmation (bouton, retour Android, onglets). La séance est enregistrée avec sa carte, et copiée dans Téléchargements/Coach Running (GPX + image de la carte). Si l’appli est fermée en cours de route, elle reprend la séance.</p></details>
@@ -792,18 +795,19 @@ function parsePace(v){const m=/^\s*(\d{1,2})\s*[:.'hm]\s*(\d{1,2})?\s*$/.exec(v|
 function limits(){
   recapKm=+$("l-recap").value||0;maxPaceS=parsePace($("l-maxpace").value);liveCapHr=+$("l-cap").value||0;
   prefs.recap=recapKm;prefs.keep=$("l-keep").checked;persistP();
-  const n=NAT();if(n&&liveOn){try{n.setLimits(recapKm*1000,maxPaceS,liveCapHr)}catch(e){}}
+  targetMin=+$("l-dur").value||0;if(targetMin&&(Date.now()-t0)/60000>=targetMin)targetShown=true;
+  const n=NAT();if(n&&liveOn){try{n.setLimits(recapKm*1000,maxPaceS,liveCapHr);n.setTarget&&n.setTarget(targetMin*60)}catch(e){}}
   if(recapKm){nextRec=(Math.floor(gDist/1000/recapKm)+1)*recapKm}else nextRec=0;
   saveLive();
 }
-["l-recap","l-maxpace","l-cap"].forEach(i=>$(i).onchange=limits);
+["l-recap","l-maxpace","l-cap","l-dur"].forEach(i=>$(i).onchange=limits);
 $("l-keep").onchange=()=>{limits();keepScreen($("l-keep").checked)};
 function keepScreen(on){
   try{window.AndroidBle&&AndroidBle.keepScreen(on)}catch(e){}
   try{if(on){navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>lock=l).catch(()=>{})}else{lock&&lock.release();lock=null}}catch(e){}
 }
-function saveLive(){if(!liveOn)return;try{localStorage.setItem(LKEY,JSON.stringify({t0:t0,sport:liveSport,recap:recapKm,maxPace:$("l-maxpace").value,cap:liveCapHr,tgt:$("livetgt").textContent}))}catch(e){}}
-let liveSport="RUN_ROUTE";
+function saveLive(){if(!liveOn)return;try{localStorage.setItem(LKEY,JSON.stringify({t0:t0,sport:liveSport,recap:recapKm,maxPace:$("l-maxpace").value,cap:liveCapHr,dur:$("l-dur").value,tgt:$("livetgt").textContent}))}catch(e){}}
+let liveSport="RUN_ROUTE",targetMin=0,targetShown=false;
 
 function liveMap(){
   try{
@@ -880,6 +884,7 @@ function showRecap(t){
 }
 function paint(){
   const s=Math.floor((Date.now()-t0)/1000);
+  if(liveOn&&targetMin>0&&!targetShown&&s>=targetMin*60){targetShown=true;showRecap("⏱ Durée prévue atteinte : "+targetMin+" min. L’enregistrement continue.");if(!NAT()){try{navigator.vibrate&&navigator.vibrate([300,150,300,150,300,150,300])}catch(e){}}}
   $("timer").textContent=clock(s);
   $("gdist").textContent=(gDist/1000).toFixed(2).replace(".",",");
   $("gdp").textContent=String(Math.round(gGain));
@@ -910,6 +915,7 @@ function startSession(){
   liveSport=W.ctx.kind==="trail"?"RUN_TRAIL":"RUN_ROUTE";
   $("l-recap").value=String(prefs.recap||0);$("l-keep").checked=!!prefs.keep;$("l-maxpace").value="";
   $("l-cap").value=capFor(t)||"";
+  const pm=W.days[todayIdx()].m;$("l-dur").value=t!=="REST"&&pm>0?pm:"";
   const tt=t==="REST"?"restez en zone 2":target(t,W.ctx.kind);
   $("livetgt").textContent=NAMES[t]+(tt?" · "+tt:"");
   /* écran de préparation : réglages puis « Démarrer » */
@@ -926,10 +932,11 @@ function beginSession(){
   resetLive();
   show("live");setFull(true);liveMap();
   const n=NAT();
-  if(n){try{n.start(recapKm*1000,maxPaceS,liveCapHr)}catch(e){$("msg").textContent="Suivi impossible : "+e.message}}
+  if(n){try{n.start(recapKm*1000,maxPaceS,liveCapHr);if(n.setTarget)n.setTarget((+$("l-dur").value||0)*60)}catch(e){$("msg").textContent="Suivi impossible : "+e.message}}
   else if(navigator.geolocation){
     gWatch=navigator.geolocation.watchPosition(onPos,err=>{$("gmsg").textContent=err.code===1?"GPS refusé : Réglages Android > Applications > Coach Running > Autorisations > Position.":"GPS : signal faible…"},{enableHighAccuracy:true,maximumAge:1000,timeout:30000});
   }else $("gmsg").textContent="GPS indisponible sur cet appareil.";
+  targetMin=+$("l-dur").value||0;targetShown=false;
   keepScreen($("l-keep").checked);
   saveLive();startTimers();
 }
@@ -948,7 +955,7 @@ function resumeLive(){
   let run=false;try{run=n.running()}catch(e){}
   if(!st||!run){if(st&&!run&&n.count&&n.count()>20){/* service arrêté mais données encore là */}else{if(!run)try{localStorage.removeItem(LKEY)}catch(e){}return}}
   t0=st.t0;liveSport=st.sport||"RUN_ROUTE";liveOn=true;
-  $("l-recap").value=String(st.recap||0);$("l-maxpace").value=st.maxPace||"";$("l-cap").value=st.cap||"";$("livetgt").textContent=st.tgt||"";
+  $("l-recap").value=String(st.recap||0);$("l-maxpace").value=st.maxPace||"";$("l-cap").value=st.cap||"";$("l-dur").value=st.dur||"";targetMin=+st.dur||0;targetShown=targetMin>0&&(Date.now()-t0)/60000>=targetMin;$("livetgt").textContent=st.tgt||"";
   $("l-keep").checked=!!prefs.keep;
   recapKm=+st.recap||0;maxPaceS=parsePace(st.maxPace);liveCapHr=+st.cap||0;
   livePre(false);resetLive();show("live");setFull(true);liveMap();poll();startTimers();
