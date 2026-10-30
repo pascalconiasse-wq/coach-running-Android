@@ -884,7 +884,7 @@ function showRecap(t){
 }
 function paint(){
   const s=Math.floor((Date.now()-t0)/1000);
-  if(liveOn&&targetMin>0&&!targetShown&&s>=targetMin*60){targetShown=true;showRecap("⏱ Durée prévue atteinte : "+targetMin+" min. L’enregistrement continue.");if(!NAT()){try{navigator.vibrate&&navigator.vibrate([300,150,300,150,300,150,300])}catch(e){}}}
+  if(liveOn&&targetMin>0&&!targetShown&&s>=targetMin*60){targetShown=true;showRecap("⏱ Durée prévue atteinte : "+targetMin+" min. L’enregistrement continue.");if(!NAT()){try{navigator.vibrate&&navigator.vibrate([500,250,500,250,500,250,500])}catch(e){}}}
   $("timer").textContent=clock(s);
   $("gdist").textContent=(gDist/1000).toFixed(2).replace(".",",");
   $("gdp").textContent=String(Math.round(gGain));

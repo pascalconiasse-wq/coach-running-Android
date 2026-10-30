@@ -87,7 +87,7 @@ class TrackService : Service() {
             if (TrackState.running && ts > 0 && !TrackState.targetDone &&
                 System.currentTimeMillis() - TrackState.startMs >= ts * 1000L) {
                 TrackState.targetDone = true
-                TrackState.buzz(this@TrackService, longArrayOf(0, 300, 150, 300, 150, 300, 150, 300))
+                TrackState.buzz(this@TrackService, longArrayOf(0, 500, 250, 500, 250, 500, 250, 500))
             }
             if (TrackState.running) tickHandler.postDelayed(this, 3000)
         }
