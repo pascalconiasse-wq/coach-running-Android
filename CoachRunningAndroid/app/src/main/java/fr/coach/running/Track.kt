@@ -68,7 +68,13 @@ object TrackState {
     fun buzz(ctx: Context, pattern: LongArray) {
         try {
             val v = ctx.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            v.vibrate(VibrationEffect.createWaveform(pattern, -1))
+            val eff = VibrationEffect.createWaveform(pattern, -1)
+            // Usage « alarme » : Android l'autorise écran éteint ou application en arrière-plan.
+            val attrs = android.media.AudioAttributes.Builder()
+                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+            v.vibrate(eff, attrs)
         } catch (e: Exception) { }
     }
 }
