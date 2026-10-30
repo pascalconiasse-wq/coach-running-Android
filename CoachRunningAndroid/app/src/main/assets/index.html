@@ -915,7 +915,7 @@ function startSession(){
   liveSport=W.ctx.kind==="trail"?"RUN_TRAIL":"RUN_ROUTE";
   $("l-recap").value=String(prefs.recap||0);$("l-keep").checked=!!prefs.keep;$("l-maxpace").value="";
   $("l-cap").value=capFor(t)||"";
-  const pm=W.days[todayIdx()].m;$("l-dur").value=t!=="REST"&&pm>0?pm:"";
+  const planned=W.days[todayIdx()].t,inf=t===planned?W.days[todayIdx()]:sessInfo(t,W.ctx),pm=inf&&inf.m;$("l-dur").value=t!=="REST"&&pm>0?pm:"";
   const tt=t==="REST"?"restez en zone 2":target(t,W.ctx.kind);
   $("livetgt").textContent=NAMES[t]+(tt?" · "+tt:"");
   /* écran de préparation : réglages puis « Démarrer » */
