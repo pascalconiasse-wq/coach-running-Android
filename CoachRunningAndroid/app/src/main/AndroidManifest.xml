@@ -45,6 +45,7 @@
                 <data android:mimeType="*/*" />
             </intent-filter>
         </activity>
+        <receiver android:name=".WeeklyReceiver" android:exported="false" />
         <service
             android:name=".TrackService"
             android:exported="false"

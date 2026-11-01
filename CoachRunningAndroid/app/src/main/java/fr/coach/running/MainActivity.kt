@@ -122,6 +122,7 @@ class MainActivity : ComponentActivity() {
         web.addJavascriptInterface(DeviceBridge(this, web), "AndroidBle")
         web.addJavascriptInterface(TrackBridge(this, web) { p, t -> askPerms(p, t) }, "AndroidTrack")
         web.addJavascriptInterface(AppBridge(this, web), "AndroidApp")   // numéro de version + ouverture du lien de mise à jour
+        if (Build.VERSION.SDK_INT >= 33) askPerms(arrayOf(Manifest.permission.POST_NOTIFICATIONS)) { }   // notification du dimanche soir
         web.loadUrl("file:///android_asset/index.html")
 
         addOnNewIntentListener { handleShare(it) }   // appli déjà ouverte
@@ -197,6 +198,21 @@ class AppBridge(private val act: android.app.Activity, private val web: android.
             }
             web.post { web.evaluateJavascript("window.onLatest && onLatest(" + org.json.JSONObject.quote(tag) + "," + org.json.JSONObject.quote(err) + ")", null) }
         }.start()
+    }
+
+    /** Programme la notification du dimanche soir avec le texte fourni par la page. */
+    @android.webkit.JavascriptInterface
+    fun scheduleWeekly(text: String, atMs: Long) {
+        try {
+            val ctx = act.applicationContext
+            ctx.getSharedPreferences("weekly", android.content.Context.MODE_PRIVATE).edit().putString("text", text).apply()
+            val am = ctx.getSystemService(android.content.Context.ALARM_SERVICE) as android.app.AlarmManager
+            val pi = android.app.PendingIntent.getBroadcast(
+                ctx, 1, Intent(ctx, WeeklyReceiver::class.java),
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+            am.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, atMs, pi)
+        } catch (e: Exception) { }
     }
 
     @android.webkit.JavascriptInterface
