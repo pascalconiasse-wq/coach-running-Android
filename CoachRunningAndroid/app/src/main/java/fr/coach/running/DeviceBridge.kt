@@ -47,6 +47,27 @@ class DeviceBridge(private val act: ComponentActivity, private val web: WebView)
         }
     }
 
+    /** Sauvegarde automatique : écrase le même fichier à chaque fois au lieu d'en créer un nouveau. */
+    @JavascriptInterface
+    fun saveBackup(name: String, data: String): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
+        try {
+            val col = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+            act.contentResolver.query(
+                col, arrayOf(MediaStore.Downloads._ID),
+                MediaStore.Downloads.DISPLAY_NAME + "=? AND " + MediaStore.Downloads.RELATIVE_PATH + " LIKE ?",
+                arrayOf(name, "Download/Coach Running%"), null
+            )?.use { c ->
+                if (c.moveToFirst()) {
+                    val uri = android.content.ContentUris.withAppendedId(col, c.getLong(0))
+                    act.contentResolver.openOutputStream(uri, "wt")?.use { it.write(data.toByteArray()) }
+                    return true
+                }
+            }
+        } catch (e: Exception) { }
+        return write(name, "application/json", data.toByteArray())
+    }
+
     private fun write(name: String, mime: String, bytes: ByteArray): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
         return try {

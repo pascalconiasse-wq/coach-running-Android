@@ -325,6 +325,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance). Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
   <details class="card"><summary><b>Séance en direct</b></summary>
     <p><b>Bilan du dimanche</b> : chaque dimanche à 19 h, une notification indique si la charge de la semaine suivante est diminuée, augmentée ou inchangée, d’après vos séances récentes. Le même texte est dans l’onglet Plan (« Semaine prochaine »). Ouvrez l’appli après votre dernière sortie pour qu’il soit à jour.</p>
+    <p><b>Sauvegarde automatique</b> : à chaque fois que vous quittez l’appli, vos données sont copiées dans Téléchargements/Coach Running (fichier « Coach-Running_sauvegarde-auto.json », écrasé à chaque fois). Pour restaurer, utilisez l’import de l’onglet Courbes.</p>
     <p><b>Durée prévue</b> : renseignez-la dans les réglages (pré-remplie avec la séance du jour) ; à l’échéance, 4 vibrations et un bandeau, mais l’enregistrement continue.</p>
     <p>« Démarrer la séance » lance le suivi GPS dans un service Android : il continue écran éteint, une notification reste affichée. La carte plein écran (plan IGN) montre votre trace ; dans le coin : chrono, distance, D+, allure, allure moyenne, FC.</p>
     <p><b>Récap</b> tous les 1 km ou 5 km (ou aucun) : deux vibrations et un bandeau. <b>Alertes</b> : si vous dépassez l’allure max ou la FC max réglées, trois vibrations et l’indication passe en rouge. La FC demande une ceinture ou une montre qui diffuse la fréquence en Bluetooth (bouton « Connecter »).</p>
@@ -366,6 +367,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <h2>Sauvegarde</h2>
     <p class="mute">Exportez votre historique dans un fichier pour le conserver ou le retrouver sur un autre appareil. L’import ajoute les séances absentes sans effacer les vôtres.</p>
     <button id="exp">Exporter l’historique</button>
+    <p class="mute" id="autobk"></p>
     <button class="alt hidden" id="copybk">Copier le texte de la sauvegarde</button>
     <button class="alt" id="imp">Importer un fichier</button>
     <button class="alt" id="pst">Importer en collant le texte</button>
@@ -1330,6 +1332,24 @@ function showPaste(text,withImport){
   $("pasteok").classList.toggle("hidden",!withImport);
 }
 let lastBackup="";
+/* Sauvegarde automatique : à chaque passage en arrière-plan ou fermeture, dans Téléchargements/Coach Running */
+let lastAuto="",lastAutoT=0;
+function autoBackup(force){
+  if(!window.AndroidBle||!AndroidBle.saveBackup||!sessions.length||liveOn)return;
+  if(!force&&Date.now()-lastAutoT<30000)return;
+  try{
+    const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces,maps:maps});
+    if(data===lastAuto)return;
+    if(AndroidBle.saveBackup("Coach-Running_sauvegarde-auto.json",data)){
+      lastAuto=data;lastAutoT=Date.now();
+      localStorage.setItem("coach_autobk",new Date().toLocaleString("fr-FR"));showAutoBk();
+    }
+  }catch(e){}
+}
+function showAutoBk(){const e=$("autobk");if(!e)return;let t="";try{t=localStorage.getItem("coach_autobk")||""}catch(x){}e.textContent=window.AndroidBle&&AndroidBle.saveBackup?(t?"Dernière sauvegarde automatique : "+t+" (Téléchargements/Coach Running).":"Sauvegarde automatique activée : elle s’écrit quand vous quittez l’appli."):""}
+document.addEventListener("visibilitychange",()=>{if(document.hidden)autoBackup(false)});
+window.addEventListener("pagehide",()=>autoBackup(true));
+setTimeout(showAutoBk,500);
 $("exp").onclick=async()=>{
   const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces,maps:maps},null,1),name="coach-running-"+today()+".json";
   $("copybk").classList.add("hidden");$("paste").classList.add("hidden");$("pasteok").classList.add("hidden");
