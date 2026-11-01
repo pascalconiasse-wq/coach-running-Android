@@ -150,7 +150,9 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p id="goal" class="mute"></p>
   </div>
   <div class="card" id="wk-next">
-    <h2>Semaine prochaine</h2>
+    <h2>Bilan de la semaine</h2>
+    <p id="wkn-b"></p>
+    <h3 class="dt" style="margin:10px 0 2px">Semaine prochaine</h3>
     <p id="wkn-t"></p>
     <p class="mute" id="wkn-s"></p>
   </div>
@@ -324,7 +326,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), zones cardio, allures de référence calculées sur vos meilleurs efforts, et test VMA facultatif qui débloque des séances de VMA. Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation.</p>
     <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance). Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
   <details class="card"><summary><b>Séance en direct</b></summary>
-    <p><b>Bilan du dimanche</b> : chaque dimanche à 19 h, une notification indique si la charge de la semaine suivante est diminuée, augmentée ou inchangée, d’après vos séances récentes. Le même texte est dans l’onglet Plan (« Semaine prochaine »). Ouvrez l’appli après votre dernière sortie pour qu’il soit à jour.</p>
+    <p><b>Bilan du dimanche</b> : chaque dimanche à 19 h, une notification résume la semaine (séances faites, volume, D+), votre position par rapport à l’objectif (semaines restantes, plus longue sortie récente par rapport à celle visée) et indique si la charge de la semaine suivante est diminuée, augmentée ou inchangée. Le même texte est dans l’onglet Plan (« Semaine prochaine »). Ouvrez l’appli après votre dernière sortie pour qu’il soit à jour.</p>
     <p><b>Sauvegarde automatique</b> : à chaque fois que vous quittez l’appli, vos données sont copiées dans Téléchargements/Coach Running (fichier « Coach-Running_sauvegarde-auto.json », écrasé à chaque fois). Pour restaurer, utilisez l’import de l’onglet Courbes.</p>
     <p><b>Durée prévue</b> : renseignez-la dans les réglages (pré-remplie avec la séance du jour) ; à l’échéance, 4 vibrations et un bandeau, mais l’enregistrement continue.</p>
     <p>« Démarrer la séance » lance le suivi GPS dans un service Android : il continue écran éteint, une notification reste affichée. La carte plein écran (plan IGN) montre votre trace ; dans le coin : chrono, distance, D+, allure, allure moyenne, FC.</p>
@@ -667,12 +669,36 @@ function weeklyInfo(){
   else if(a&&a.f>1){head="Charge augmentée de "+Math.round((a.f-1)*100)+" %.";why=" Raison : "+a.reason+"."}
   else{head="Charge inchangée.";why=" Votre charge récente est cohérente avec le plan."}
   if(c.xr)why+=" "+c.xr.name+" "+(c.xr.w===0?"cette semaine-là":"la semaine suivante")+" est prise en compte.";
-  return {head:head,why:why,vol:vol,text:head+why+vol};
+  const sm=weekSummary();
+  return {head:head,why:why,vol:vol,sum:sm,text:sm+" Semaine prochaine : "+head.charAt(0).toLowerCase()+head.slice(1)+why+vol};
+}
+/* Bilan de la semaine qui se termine et position par rapport à l'objectif */
+function weekSummary(){
+  const mon=mondayOf(new Date()),a=iso(mon),e=new Date(mon);e.setDate(e.getDate()+6);const b=iso(e),td=today();
+  const done=sessions.filter(x=>x.date>=a&&x.date<=b&&x.date<=td);
+  const W=weekPlan(0),plan=Object.values(W.days).filter(x=>x.t!=="REST");
+  const RUNT=[E,LG,I,T],pmin=Object.values(W.days).filter(x=>RUNT.includes(x.t)).reduce((t,x)=>t+(x.m||0),0);
+  const mins=done.reduce((t,x)=>t+x.min,0),km=done.reduce((t,x)=>t+(x.km||0),0),dp=done.reduce((t,x)=>t+(x.dplus||0),0);
+  const hm=m=>Math.floor(m/60)+" h "+pad2(m%60);
+  let t="Cette semaine : "+done.length+" séance"+(done.length>1?"s":"")+" sur "+plan.length+" prévues, "+hm(mins)+(km>0?", "+dec(Math.round(km*10)/10)+" km":"")+(dp>0?", D+ "+dp+" m":"")+(pmin?" (course prévue : "+hm(pmin)+" )".replace(" )",")"):"")+".";
+  const g=profile.goal;
+  if(g){
+    const days=Math.round((new Date(g.date+"T00:00:00")-new Date(td+"T00:00:00"))/DAY);
+    if(days>=0){
+      const wk=Math.ceil(days/7);let peak=0;
+      for(let o=0;o<=Math.min(wk,40);o++){const c=weekPlan(o,true).ctx;if(c.phase!=="Course")peak=Math.max(peak,c.longMin)}
+      const c6=new Date();c6.setDate(c6.getDate()-42);const cs=iso(c6);
+      const best=sessions.filter(x=>isRun(x)&&x.date>=cs&&x.date<=td).reduce((m,x)=>Math.max(m,x.min),0);
+      t+=" Objectif "+goalName()+" dans "+(days>=14?Math.round(days/7)+" semaines":days+" jour"+(days>1?"s":""))+", phase actuelle : "+W.ctx.phase.toLowerCase()+".";
+      if(peak>0&&best>0)t+=" Plus longue sortie récente : "+best+" min sur "+peak+" min visées ("+Math.min(100,Math.round(best/peak*100))+" %).";
+    }
+  }
+  return t;
 }
 function planWeekly(){
   if(!profile)return;
   let w;try{w=weeklyInfo()}catch(e){return}
-  $("wkn-t").textContent=w.head;$("wkn-s").textContent=(w.why+w.vol).trim();
+  $("wkn-t").textContent=w.head;$("wkn-s").textContent=(w.why+w.vol).trim();$("wkn-b").textContent=w.sum;
   if(window.AndroidApp&&AndroidApp.scheduleWeekly){
     const d=new Date();d.setHours(19,0,0,0);
     d.setDate(d.getDate()+((7-d.getDay())%7));          /* prochain dimanche 19 h */
