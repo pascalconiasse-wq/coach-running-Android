@@ -387,6 +387,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <button id="exp">Exporter l’historique</button>
     <p class="mute" id="autobk"></p>
     <button class="alt hidden" id="copybk">Copier le texte de la sauvegarde</button>
+    <button class="alt hidden" id="rest">Restaurer la dernière sauvegarde (Téléchargements)</button>
     <button class="alt" id="imp">Importer un fichier</button>
     <button class="alt" id="pst">Importer en collant le texte</button>
     <input type="file" id="file" accept=".json,application/json" class="hidden">
@@ -1502,6 +1503,10 @@ function doImport(text){
     bmsg(n+" séance(s) importée(s) sur "+list.length+".");
   }catch(e){bmsg("Import impossible : choisissez une sauvegarde Coach Running (.json).")}
 }
+if(window.AndroidBle&&AndroidBle.readBackup)$("rest").classList.remove("hidden");
+$("rest").onclick=()=>{let t="";try{t=AndroidBle.readBackup()}catch(e){}
+  if(!t){bmsg("Aucune sauvegarde trouvée dans Téléchargements/Coach Running. Utilisez « Importer un fichier ».");return}
+  doImport(t)};
 $("imp").onclick=()=>$("file").click();
 $("file").onchange=async e=>{
   const f=e.target.files[0];if(!f)return;

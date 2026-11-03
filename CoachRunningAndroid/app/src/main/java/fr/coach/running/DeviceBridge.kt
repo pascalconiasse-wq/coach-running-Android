@@ -68,6 +68,26 @@ class DeviceBridge(private val act: ComponentActivity, private val web: WebView)
         return write(name, "application/json", data.toByteArray())
     }
 
+    /** Relit la sauvegarde la plus récente de Téléchargements/Coach Running (automatique ou manuelle). Renvoie "" si aucune. */
+    @JavascriptInterface
+    fun readBackup(): String {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return ""
+        return try {
+            val col = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+            act.contentResolver.query(
+                col, arrayOf(MediaStore.Downloads._ID),
+                MediaStore.Downloads.DISPLAY_NAME + " LIKE ? AND " + MediaStore.Downloads.RELATIVE_PATH + " LIKE ?",
+                arrayOf("%.json", "Download/Coach Running%"), MediaStore.Downloads.DATE_MODIFIED + " DESC"
+            )?.use { c ->
+                if (c.moveToFirst()) {
+                    val uri = android.content.ContentUris.withAppendedId(col, c.getLong(0))
+                    return act.contentResolver.openInputStream(uri)?.bufferedReader()?.readText() ?: ""
+                }
+            }
+            ""
+        } catch (e: Exception) { "" }
+    }
+
     private fun write(name: String, mime: String, bytes: ByteArray): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
         return try {
