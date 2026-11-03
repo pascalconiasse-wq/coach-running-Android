@@ -1039,7 +1039,8 @@ function liveLoad(){
   $("l-sharebox").classList.toggle("hidden",!prefs.share);$("l-shmsg").textContent="";
 }
 function liveId(){if(!prefs.liveId){const a=new Uint8Array(14);(window.crypto||{}).getRandomValues?crypto.getRandomValues(a):a.forEach((_,i)=>a[i]=Math.random()*256);prefs.liveId=Array.from(a,x=>x.toString(36).padStart(2,"0").slice(-2)).join("");persistP()}return prefs.liveId}
-function liveLink(){return LIVE_PAGE+"#"+dbHost(prefs.db)+"~"+liveId()}
+const DB_DEF="coach-running-4f54f-default-rtdb.europe-west1.firebasedatabase.app";
+function liveLink(){const h=dbHost(prefs.db);return LIVE_PAGE+"#"+(h===DB_DEF?"":h+"~")+liveId()}
 function liveReady(){return prefs.share&&dbHost(prefs.db).length>5}
 $("l-send").onclick=()=>{
   liveSave();const m=$("l-shmsg");

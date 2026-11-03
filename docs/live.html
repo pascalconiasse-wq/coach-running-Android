@@ -38,7 +38,7 @@ footer{padding:0 16px 20px;color:var(--mut);font-size:12px}
 <footer>Position mise à jour automatiquement. Fond de carte : © IGN / Géoplateforme.</footer>
 <script>
 (function(){
-  var h=decodeURIComponent(location.hash.replace(/^#/,"")).split("~"),host=h[0],id=h[1];
+  var h=decodeURIComponent(location.hash.replace(/^#/,"")).split("~"),host=h[0],id=h[1];if(h.length===1){id=h[0];host="coach-running-4f54f-default-rtdb.europe-west1.firebasedatabase.app"}
   var $=function(i){return document.getElementById(i)};
   if(!host||!id){$("st").textContent="Lien incomplet.";return}
   var map=L.map("map",{zoomControl:true}).setView([46.6,2.4],6);
