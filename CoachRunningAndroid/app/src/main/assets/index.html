@@ -259,6 +259,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
       <label class="f" for="l-name">Mon prénom affiché</label><input type="text" id="l-name" placeholder="ex. Pascal">
       <label class="f" for="l-mails">Envoyer le lien à (adresses séparées par des virgules)</label><input type="text" id="l-mails" inputmode="email" placeholder="ex. marie@exemple.fr, paul@exemple.fr">
       <label class="f" for="l-tels">Envoyer le lien par SMS à (numéros séparés par des virgules)</label><input type="text" id="l-tels" inputmode="tel" placeholder="ex. 0612345678, 0698765432">
+      <button class="alt" id="l-pick">Ajouter depuis mes contacts</button>
       <p class="mute">Le SMS part tout seul quand vous touchez « Démarrer la séance » (autorisation SMS demandée une fois).</p>
       <button class="alt" id="l-sms">Envoyer le lien par SMS maintenant</button>
       <button class="alt" id="l-send">Envoyer le lien par mail</button>
@@ -1064,6 +1065,13 @@ function liveSms(auto){
   m.textContent=r==="ok"?"SMS envoyé.":r==="perm"?"Autorisez l’envoi de SMS, puis touchez « Envoyer le lien par SMS maintenant ».":"Envoi du SMS impossible.";
   if(r==="ok"&&auto)prefs.smsFor=liveId();
 }
+$("l-pick").onclick=()=>{try{AndroidApp.pickContact()}catch(e){$("l-shmsg").textContent="Contacts disponibles dans l’appli Android."}};
+window.onContact=(nom,num)=>{
+  num=String(num||"").replace(/[^0-9+]/g,"");if(!num)return;
+  const cur=$("l-tels").value.trim();$("l-tels").value=cur?cur+", "+num:num;
+  liveSave();try{AndroidApp.sendSms("","")}catch(e){}
+  $("l-shmsg").textContent=(nom||num)+" ajouté.";
+};
 $("l-sms").onclick=()=>{liveSave();liveSms(false)};
 function liveApply(){
   const n=NAT();if(!liveOn)return;

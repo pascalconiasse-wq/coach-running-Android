@@ -62,6 +62,23 @@ class MainActivity : ComponentActivity() {
         permCallback = null
         cb?.invoke()
     }
+    /** Sélecteur de contact système : ne demande aucune autorisation sur les contacts. */
+    private val contactPick = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        val uri = r.data?.data
+        if (r.resultCode == android.app.Activity.RESULT_OK && uri != null) {
+            try {
+                contentResolver.query(uri, arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER), null, null, null)?.use { c ->
+                    if (c.moveToFirst()) {
+                        val js = "window.onContact && onContact(" + org.json.JSONObject.quote(c.getString(0) ?: "") + "," + org.json.JSONObject.quote(c.getString(1) ?: "") + ")"
+                        web.post { web.evaluateJavascript(js, null) }
+                    }
+                }
+            } catch (e: Exception) { }
+        }
+    }
+    fun pickContact() {
+        try { contactPick.launch(Intent(Intent.ACTION_PICK, android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI)) } catch (e: Exception) { }
+    }
     private fun askPerms(p: Array<String>, then: () -> Unit) {
         val missing = p.filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
         if (missing.isEmpty()) then() else { permCallback = then; multiPerm.launch(missing.toTypedArray()) }
@@ -177,7 +194,7 @@ class MainActivity : ComponentActivity() {
 }
 
 /** Pont pour la mise à jour : la page lit la version installée et ouvre le téléchargement de l'APK. */
-class AppBridge(private val act: android.app.Activity, private val web: android.webkit.WebView) {
+class AppBridge(private val act: MainActivity, private val web: android.webkit.WebView) {
     /** Interroge GitHub depuis Android (pas de limite CORS) et rappelle la page : onLatest(tag, erreur). */
     @android.webkit.JavascriptInterface
     fun checkLatest(repo: String) {
@@ -227,6 +244,9 @@ class AppBridge(private val act: android.app.Activity, private val web: android.
             try { act.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (e: Exception) { }
         }
     }
+
+    @android.webkit.JavascriptInterface
+    fun pickContact() { act.runOnUiThread { act.pickContact() } }
 
     @Suppress("DEPRECATION")
     private fun smsManager(): android.telephony.SmsManager =
