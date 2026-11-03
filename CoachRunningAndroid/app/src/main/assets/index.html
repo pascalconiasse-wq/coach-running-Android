@@ -1028,18 +1028,18 @@ document.addEventListener("visibilitychange",()=>{if(liveOn&&!document.hidden){p
 
 /* Suivi en direct partagé (Firebase + page de suivi sur GitHub Pages) */
 const LIVE_PAGE="https://pascalconiasse-wq.github.io/coach-running-Android/live.html";
-const dbHost=v=>String(v||"").trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"");
+const DB_DEF="coach-running-4f54f-default-rtdb.europe-west1.firebasedatabase.app";
+const dbHost=v=>String(v||"").trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"")||DB_DEF;
 function liveSave(){
   prefs.share=$("l-share").checked;prefs.name=$("l-name").value.trim();prefs.mails=$("l-mails").value.trim();prefs.db=dbHost($("l-db").value);persistP();
   $("l-sharebox").classList.toggle("hidden",!prefs.share);
 }
 ["l-share","l-name","l-mails","l-db"].forEach(i=>$(i).onchange=()=>{liveSave();if(i==="l-share")liveApply()});
 function liveLoad(){
-  $("l-share").checked=!!prefs.share;$("l-name").value=prefs.name||"";$("l-mails").value=prefs.mails||"";$("l-db").value=prefs.db||"";
+  $("l-share").checked=!!prefs.share;$("l-name").value=prefs.name||"";$("l-mails").value=prefs.mails||"";$("l-db").value=dbHost(prefs.db);
   $("l-sharebox").classList.toggle("hidden",!prefs.share);$("l-shmsg").textContent="";
 }
 function liveId(){if(!prefs.liveId){const a=new Uint8Array(14);(window.crypto||{}).getRandomValues?crypto.getRandomValues(a):a.forEach((_,i)=>a[i]=Math.random()*256);prefs.liveId=Array.from(a,x=>x.toString(36).padStart(2,"0").slice(-2)).join("");persistP()}return prefs.liveId}
-const DB_DEF="coach-running-4f54f-default-rtdb.europe-west1.firebasedatabase.app";
 function liveLink(){const h=dbHost(prefs.db);return LIVE_PAGE+"#"+(h===DB_DEF?"":h+"~")+liveId()}
 function liveReady(){return prefs.share&&dbHost(prefs.db).length>5}
 $("l-send").onclick=()=>{
