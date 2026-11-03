@@ -227,5 +227,30 @@ class AppBridge(private val act: android.app.Activity, private val web: android.
             try { act.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (e: Exception) { }
         }
     }
+
+    @Suppress("DEPRECATION")
+    private fun smsManager(): android.telephony.SmsManager =
+        if (Build.VERSION.SDK_INT >= 31) act.getSystemService(android.telephony.SmsManager::class.java) else android.telephony.SmsManager.getDefault()
+
+    /** Envoie un SMS à chaque numéro (séparés par des virgules). Renvoie "ok", "perm" (autorisation demandée) ou "err". */
+    @android.webkit.JavascriptInterface
+    fun sendSms(numbers: String, text: String): String {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(act, android.Manifest.permission.SEND_SMS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            act.runOnUiThread { androidx.core.app.ActivityCompat.requestPermissions(act, arrayOf(android.Manifest.permission.SEND_SMS), 77) }
+            return "perm"
+        }
+        if (text.isEmpty()) return "ok"
+        return try {
+            val sm = smsManager()
+            var n = 0
+            for (num in numbers.split(",", ";")) {
+                val t = num.trim().replace(" ", "")
+                if (t.length < 4) continue
+                sm.sendMultipartTextMessage(t, null, sm.divideMessage(text), null, null)
+                n++
+            }
+            if (n > 0) "ok" else "err"
+        } catch (e: Exception) { "err" }
+    }
 }
 
