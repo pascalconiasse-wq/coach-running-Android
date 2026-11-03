@@ -14,7 +14,7 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);background:linear-gradient(180deg,var(--bg),var(--bg2));background-attachment:fixed;color:var(--ink);font:400 16px/1.45 Barlow,system-ui,sans-serif;padding:14px 14px 108px;max-width:560px;margin-inline:auto;min-height:100vh}
 h1,h2,.num,.tab,.count,.pill,.timer{font-family:"Barlow Semi Condensed",system-ui,sans-serif}
-.hero{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:22px;color:#fff;margin-bottom:14px;background:var(--acc);background:linear-gradient(135deg,#2F6BFF 0%,#7A5CFF 58%,#FF6FA5 100%);box-shadow:0 10px 26px rgba(122,92,255,.35)}
+.hero{position:relative;display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:22px;color:#fff;margin-bottom:14px;background:var(--acc);background:linear-gradient(135deg,#2F6BFF 0%,#7A5CFF 58%,#FF6FA5 100%);box-shadow:0 10px 26px rgba(122,92,255,.35)}
 .hero h1{margin:0;font-size:30px;font-weight:800;line-height:1.05;color:#fff}
 .hero .sub{opacity:.92;font-size:15px;text-transform:capitalize}
 .logo{font-size:32px;width:54px;height:54px;border-radius:16px;background:rgba(255,255,255,.22);display:grid;place-items:center;flex:none}
@@ -49,6 +49,7 @@ canvas{width:100%;height:230px;display:block}
 ul{list-style:none;padding:0;margin:0}li{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
 li.today{background:linear-gradient(90deg,rgba(47,107,255,.14),transparent);border-radius:10px;padding-left:8px;padding-right:8px;border-top-color:transparent}
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);border-radius:20px 20px 0 0;box-shadow:0 -8px 24px rgba(20,32,58,.12);padding-bottom:env(safe-area-inset-bottom,0px)}
+#gear{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:auto;margin:0;padding:6px 11px;font-size:22px;line-height:1;background:rgba(255,255,255,.22);box-shadow:none;color:#fff}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;color:var(--mute);border:0;border-radius:20px 20px 0 0;margin:0;padding:9px 0 10px;font-size:14px;width:auto}
 .tab .ti{font-size:22px;line-height:1;filter:grayscale(1);opacity:.65}
 .tab[aria-selected=true]{background:none;color:var(--acc);box-shadow:inset 0 3px 0 var(--acc)}
@@ -98,7 +99,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-<header class="hero"><div class="logo" aria-hidden="true">🏃</div><div><h1>Coach Running</h1><div class="sub" id="sub">Votre coach au quotidien</div></div></header>
+<header class="hero"><div class="logo" aria-hidden="true">🏃</div><div><h1>Coach Running</h1><div class="sub" id="sub">Votre coach au quotidien</div></div><button id="gear" aria-label="Paramètres">⚙</button></header>
 <div class="card hidden" id="upd" style="border-color:var(--acc)"><b>Mise à jour disponible : <span id="upd-v"></span></b><p class="mute" style="margin:4px 0 0">Vos données sont conservées. Téléchargez l’APK puis ouvrez-le pour installer.</p><button id="upd-go" style="margin-top:10px">Télécharger la mise à jour</button></div>
 
 <section id="setup" class="hidden">
@@ -256,6 +257,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <label class="chk"><input type="checkbox" id="l-keep"> Garder l’écran allumé (consomme plus de batterie)</label>
     <label class="chk"><input type="checkbox" id="l-share"> Partager mon suivi en direct</label>
     <div id="l-sharebox" class="hidden">
+      <p class="mute">Prénom et numéros : réglés une fois dans la roue ⚙ (en haut de l’écran principal).</p>
       <label class="f" for="l-name">Mon prénom affiché</label><input type="text" id="l-name" placeholder="ex. Pascal">
       <label class="f" for="l-mails">Envoyer le lien à (adresses séparées par des virgules)</label><input type="text" id="l-mails" inputmode="email" placeholder="ex. marie@exemple.fr, paul@exemple.fr">
       <label class="f" for="l-tels">Envoyer le lien par SMS à (numéros séparés par des virgules)</label><input type="text" id="l-tels" inputmode="tel" placeholder="ex. 0612345678, 0698765432">
@@ -334,7 +336,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
 </section>
 
 <section id="help" class="hidden">
-  <div class="card"><h2>Notice</h2><p class="mute">Touchez un titre pour l’ouvrir.</p></div>
+  <div class="card"><h2>Paramètres et notice</h2><p class="mute">Réglages rarement utilisés, sauvegarde, aide. Touchez un titre de la notice pour l’ouvrir.</p></div>
   <details class="card"><summary><b>Premiers pas</b></summary>
     <p>Au premier lancement, renseignez âge, poids, niveau, jours disponibles et votre objectif principal (distance, date, dénivelé). L’appli construit le plan jusqu’à la course : fondation, développement, spécifique, affûtage. Elle recalcule seule quand vous courez ailleurs (montre, import).</p></details>
   <details class="card"><summary><b>Onglet Plan</b></summary>
@@ -401,7 +403,6 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <button class="tab" role="tab" data-t="prog" aria-selected="false"><span class="ti">🗓️</span>Programme</button>
   <button class="tab" role="tab" data-t="acts" aria-selected="false"><span class="ti">🚴</span>Activités</button>
   <button class="tab" role="tab" data-t="stats" aria-selected="false"><span class="ti">📈</span>Courbes</button>
-  <button class="tab" role="tab" data-t="help" aria-selected="false"><span class="ti">ℹ️</span>Notice</button>
 </nav>
 
 <script>
@@ -2052,6 +2053,24 @@ function renderProg(){
   }
 }
 if(window.AndroidHealth){$("health").classList.remove("hidden");setTimeout(healthSync,900)}
+
+/* Paramètres : la roue ⚙ regroupe partage, import/synchro, sauvegarde et notice */
+(function(){
+  const help=$("help"),title=help.firstElementChild;
+  const mk=(h)=>{const c=document.createElement("div");c.className="card";c.innerHTML="<h2>"+h+"</h2>";return c};
+  const cards=[];
+  /* partage du suivi */
+  const box=$("l-sharebox"),sc=mk("Partage du suivi en direct");
+  sc.insertAdjacentHTML("beforeend",'<p class="mute">Le lien est envoyé par SMS tout seul au démarrage d’une séance si « Partager mon suivi » est coché dans « Avant de partir ».</p>');
+  [...box.children].forEach(el=>{if(el.tagName!=="P"||el.id==="l-shmsg")sc.appendChild(el)});
+  cards.push(sc);
+  /* import et synchronisation */
+  [$("a-imp"),$("h-go")].forEach(b=>{const c=b&&b.closest(".card");if(c&&!cards.includes(c))cards.push(c)});
+  /* sauvegarde */
+  const bk=$("exp").closest(".card");cards.push(bk);
+  let ref=title;cards.forEach(c=>{ref.after(c);ref=c});
+  $("gear").onclick=()=>{if(liveOn)return;show("help")};
+})();
 if(profile)show("plan");else openSetup();
 resumeLive();
 </script>
