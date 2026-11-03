@@ -1040,6 +1040,7 @@ function liveSave(){
   prefs.share=$("l-share").checked;prefs.name=$("l-name").value.trim();prefs.mails=$("l-mails").value.trim();prefs.tels=$("l-tels").value.trim();prefs.db=dbHost($("l-db").value);persistP();
   $("l-sharebox").classList.toggle("hidden",!prefs.share);
 }
+["l-name","l-mails","l-tels","l-db"].forEach(i=>$(i).addEventListener("input",liveSave));
 ["l-share","l-name","l-mails","l-tels","l-db"].forEach(i=>$(i).onchange=()=>{liveSave();if(i==="l-share")liveApply();if(i==="l-tels"&&prefs.tels){try{AndroidApp.sendSms("","")}catch(e){}}});
 function liveLoad(){
   $("l-share").checked=!!prefs.share;$("l-name").value=prefs.name||"";$("l-mails").value=prefs.mails||"";$("l-tels").value=prefs.tels||"";$("l-db").value=dbHost(prefs.db);
@@ -1439,6 +1440,7 @@ if(window.addEventListener)window.addEventListener("resize",()=>{if(!$("stats").
 function renderStats(){
   renderCharts();renderDetailSel();
 }
+const shareData=()=>({name:prefs.name||"",tels:prefs.tels||"",mails:prefs.mails||"",db:prefs.db||"",share:!!prefs.share});
 /* Sauvegarde */
 const bmsg=t=>$("bmsg").textContent=t;
 const validList=a=>Array.isArray(a)&&a.every(s=>s&&/^\d{4}-\d{2}-\d{2}$/.test(s.date)&&Number.isFinite(s.min)&&Number.isFinite(s.rpe));
@@ -1453,7 +1455,7 @@ function autoBackup(force){
   if(!window.AndroidBle||!AndroidBle.saveBackup||!sessions.length||liveOn)return;
   if(!force&&Date.now()-lastAutoT<30000)return;
   try{
-    const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces,maps:maps});
+    const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces,maps:maps,share:shareData()});
     if(data===lastAuto)return;
     if(AndroidBle.saveBackup("Coach-Running_sauvegarde-auto.json",data)){
       lastAuto=data;lastAutoT=Date.now();
@@ -1466,7 +1468,7 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden)autoBackup(
 window.addEventListener("pagehide",()=>autoBackup(true));
 setTimeout(showAutoBk,500);
 $("exp").onclick=async()=>{
-  const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces,maps:maps},null,1),name="coach-running-"+today()+".json";
+  const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces,maps:maps,share:shareData()},null,1),name="coach-running-"+today()+".json";
   $("copybk").classList.add("hidden");$("paste").classList.add("hidden");$("pasteok").classList.add("hidden");
   if(window.AndroidBle&&AndroidBle.saveFile){bmsg(AndroidBle.saveFile(name,data)?"Sauvegarde enregistrée dans le dossier Téléchargements.":"Enregistrement impossible.");return}
   let dl=null;
@@ -1506,6 +1508,7 @@ function doImport(text){
     if(o&&o.profile&&!profile&&validProfile(o.profile)){profile=o.profile;saveProfile()}
     if(o&&o.moves&&typeof o.moves==="object"){Object.keys(o.moves).forEach(k=>{if(!(k in moves)&&isDate(k)&&o.moves[k]>=1&&o.moves[k]<=7)moves[k]=o.moves[k]});saveMoves()}
     if(o&&o.swaps&&typeof o.swaps==="object"){Object.keys(o.swaps).forEach(k=>{if(!(k in swaps)&&isDate(k)&&Array.isArray(o.swaps[k]))swaps[k]=o.swaps[k].filter(q=>Array.isArray(q)&&q[0]>=1&&q[0]<=7&&q[1]>=1&&q[1]<=7)});saveSwaps()}
+    if(o&&o.share&&typeof o.share==="object"){["name","tels","mails","db"].forEach(k=>{if(!prefs[k]&&typeof o.share[k]==="string")prefs[k]=o.share[k]});if(prefs.share===undefined)prefs.share=!!o.share.share;persistP();liveLoad()}
     persist();persistT();renderStats();
     bmsg(n+" séance(s) importée(s) sur "+list.length+".");
   }catch(e){bmsg("Import impossible : choisissez une sauvegarde Coach Running (.json).")}
@@ -2063,6 +2066,9 @@ if(window.AndroidHealth){$("health").classList.remove("hidden");setTimeout(healt
   const box=$("l-sharebox"),sc=mk("Partage du suivi en direct");
   sc.insertAdjacentHTML("beforeend",'<p class="mute">Le lien est envoyé par SMS tout seul au démarrage d’une séance si « Partager mon suivi » est coché dans « Avant de partir ».</p>');
   [...box.children].forEach(el=>{if(el.tagName!=="P"||el.id==="l-shmsg")sc.appendChild(el)});
+  const pc=mk("Mon profil de coureur");
+  pc.insertAdjacentHTML("beforeend",'<p class="mute">Âge, niveau, objectif, jours d’entraînement.</p>');pc.appendChild($("editp"));
+  cards.unshift(pc);
   cards.push(sc);
   /* import et synchronisation */
   [$("a-imp"),$("h-go")].forEach(b=>{const c=b&&b.closest(".card");if(c&&!cards.includes(c))cards.push(c)});
