@@ -254,6 +254,17 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <label class="f" for="l-cap">FC max pour cette séance (bpm, vide = aucune)</label>
     <input type="number" id="l-cap" inputmode="numeric" min="90" max="230">
     <label class="chk"><input type="checkbox" id="l-keep"> Garder l’écran allumé (consomme plus de batterie)</label>
+    <label class="chk"><input type="checkbox" id="l-share"> Partager mon suivi en direct</label>
+    <div id="l-sharebox" class="hidden">
+      <label class="f" for="l-name">Mon prénom affiché</label><input type="text" id="l-name" placeholder="ex. Pascal">
+      <label class="f" for="l-mails">Envoyer le lien à (adresses séparées par des virgules)</label><input type="text" id="l-mails" inputmode="email" placeholder="ex. marie@exemple.fr, paul@exemple.fr">
+      <button class="alt" id="l-send">Envoyer le lien par mail</button>
+      <p class="mute" id="l-shmsg" role="status"></p>
+      <details><summary>Réglage unique (adresse Firebase)</summary>
+        <label class="f" for="l-db">Adresse de la base Firebase</label><input type="text" id="l-db" inputmode="url" placeholder="https://xxxx-default-rtdb.europe-west1.firebasedatabase.app">
+        <p class="mute">À renseigner une seule fois : voir la Notice, rubrique « Suivi en direct ».</p>
+      </details>
+    </div>
     <button class="alt" id="bhr">Connecter la ceinture ou montre (FC)</button>
   </div>
   <button id="lstart" class="hidden">Démarrer la séance</button>
@@ -327,6 +338,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance). Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
   <details class="card"><summary><b>Séance en direct</b></summary>
     <p><b>Bilan du dimanche</b> : chaque dimanche à 19 h, une notification résume la semaine (séances faites, volume, D+), votre position par rapport à l’objectif (semaines restantes, plus longue sortie récente par rapport à celle visée) et indique si la charge de la semaine suivante est diminuée, augmentée ou inchangée. Le même texte est dans l’onglet Plan (« Semaine prochaine »). Ouvrez l’appli après votre dernière sortie pour qu’il soit à jour.</p>
+    <p><b>Suivi en direct</b> : dans « Avant de partir », cochez « Partager mon suivi », saisissez les adresses mail et touchez « Envoyer le lien par mail » (votre appli de mail s’ouvre, appuyez sur Envoyer). Vos proches cliquent sur le lien, sans rien installer : ils voient la carte avec votre trace, l’allure, le D+ et la FC, mise à jour toutes les 10 s, même écran éteint. Le lien est secret et propre à chaque séance. Réglage unique : créez un projet gratuit sur console.firebase.google.com, activez « Realtime Database » (région Europe), copiez son adresse dans le champ « Adresse Firebase » et collez les règles indiquées dans le guide.</p>
     <p><b>Sauvegarde automatique</b> : à chaque fois que vous quittez l’appli, vos données sont copiées dans Téléchargements/Coach Running (fichier « Coach-Running_sauvegarde-auto.json », écrasé à chaque fois). Pour restaurer, utilisez l’import de l’onglet Courbes.</p>
     <p><b>Durée prévue</b> : renseignez-la dans les réglages (pré-remplie avec la séance du jour) ; à l’échéance, 4 vibrations et un bandeau, mais l’enregistrement continue.</p>
     <p>« Démarrer la séance » lance le suivi GPS dans un service Android : il continue écran éteint, une notification reste affichée. La carte plein écran (plan IGN) montre votre trace ; dans le coin : chrono, distance, D+, allure, allure moyenne, FC.</p>
@@ -871,7 +883,7 @@ function keepScreen(on){
   try{window.AndroidBle&&AndroidBle.keepScreen(on)}catch(e){}
   try{if(on){navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>lock=l).catch(()=>{})}else{lock&&lock.release();lock=null}}catch(e){}
 }
-function saveLive(){if(!liveOn)return;try{localStorage.setItem(LKEY,JSON.stringify({t0:t0,sport:liveSport,recap:recapKm,maxPace:$("l-maxpace").value,cap:liveCapHr,dur:$("l-dur").value,tgt:$("livetgt").textContent}))}catch(e){}}
+function saveLive(){if(!liveOn)return;try{localStorage.setItem(LKEY,JSON.stringify({t0:t0,sport:liveSport,recap:recapKm,maxPace:$("l-maxpace").value,cap:liveCapHr,dur:$("l-dur").value,live:prefs.liveId||"",tgt:$("livetgt").textContent}))}catch(e){}}
 let liveSport="RUN_ROUTE",targetMin=0,targetShown=false;
 
 function liveMap(){
@@ -984,7 +996,7 @@ function startSession(){
   const tt=t==="REST"?"restez en zone 2":target(t,W.ctx.kind);
   $("livetgt").textContent=NAMES[t]+(tt?" · "+tt:"");
   /* écran de préparation : réglages puis « Démarrer » */
-  livePre(true);show("live");
+  liveLoad();livePre(true);show("live");
 }
 function livePre(on){
   $("lwrap").classList.toggle("hidden",on);$("end").classList.toggle("hidden",on);$("lstart").classList.toggle("hidden",!on);
@@ -1003,6 +1015,7 @@ function beginSession(){
   }else $("gmsg").textContent="GPS indisponible sur cet appareil.";
   targetMin=+$("l-dur").value||0;targetShown=false;
   keepScreen($("l-keep").checked);
+  liveSave();liveApply();
   saveLive();startTimers();
 }
 function startTimers(){
@@ -1012,6 +1025,48 @@ function startTimers(){
 $("go").onclick=startSession;
 $("lstart").onclick=beginSession;
 document.addEventListener("visibilitychange",()=>{if(liveOn&&!document.hidden){poll()}});
+
+/* Suivi en direct partagé (Firebase + page de suivi sur GitHub Pages) */
+const LIVE_PAGE="https://pascalconiasse-wq.github.io/coach-running-Android/live.html";
+const dbHost=v=>String(v||"").trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"");
+function liveSave(){
+  prefs.share=$("l-share").checked;prefs.name=$("l-name").value.trim();prefs.mails=$("l-mails").value.trim();prefs.db=dbHost($("l-db").value);persistP();
+  $("l-sharebox").classList.toggle("hidden",!prefs.share);
+}
+["l-share","l-name","l-mails","l-db"].forEach(i=>$(i).onchange=()=>{liveSave();if(i==="l-share")liveApply()});
+function liveLoad(){
+  $("l-share").checked=!!prefs.share;$("l-name").value=prefs.name||"";$("l-mails").value=prefs.mails||"";$("l-db").value=prefs.db||"";
+  $("l-sharebox").classList.toggle("hidden",!prefs.share);$("l-shmsg").textContent="";
+}
+function liveId(){if(!prefs.liveId){const a=new Uint8Array(14);(window.crypto||{}).getRandomValues?crypto.getRandomValues(a):a.forEach((_,i)=>a[i]=Math.random()*256);prefs.liveId=Array.from(a,x=>x.toString(36).padStart(2,"0").slice(-2)).join("");persistP()}return prefs.liveId}
+function liveLink(){return LIVE_PAGE+"#"+dbHost(prefs.db)+"~"+liveId()}
+function liveReady(){return prefs.share&&dbHost(prefs.db).length>5}
+$("l-send").onclick=()=>{
+  liveSave();const m=$("l-shmsg");
+  if(!dbHost(prefs.db)){m.textContent="Renseignez d’abord l’adresse Firebase (réglage unique ci-dessous).";$("l-db").closest("details").open=true;return}
+  if(!prefs.mails){m.textContent="Indiquez au moins une adresse mail.";return}
+  const body="Bonjour,\n\nSuivez ma séance en direct (carte, allure, dénivelé) en cliquant sur ce lien :\n"+liveLink()+"\n\nIl suffit d’ouvrir le lien, rien à installer.";
+  const url="mailto:"+encodeURIComponent(prefs.mails).replace(/%2C/gi,",").replace(/%40/g,"@")+"?subject="+encodeURIComponent("Suivi en direct de ma séance")+"&body="+encodeURIComponent(body);
+  m.textContent="Votre application de mail s’ouvre : appuyez sur Envoyer, puis revenez ici.";
+  try{if(window.AndroidApp&&AndroidApp.open)AndroidApp.open(url);else location.href=url}catch(e){}
+};
+function liveApply(){
+  const n=NAT();if(!liveOn)return;
+  if(liveReady()){
+    if(n&&n.setLive){try{n.setLive("https://"+dbHost(prefs.db)+"/live/"+liveId(),prefs.name||"",t0)}catch(e){}}
+    else jsPushStart();
+    $("l-shmsg").textContent="Suivi partagé en cours.";
+  }else{if(n&&n.setLive){try{n.setLive("","",0)}catch(e){}}}
+}
+/* navigateur sans le pont Android : envoi depuis la page (arrière-plan non garanti) */
+let jsSent=0,jsTimer=null;
+function jsPush(done){
+  if(!liveReady())return;
+  const upd={"meta/name":prefs.name||"","meta/start":t0,"meta/done":!!done};let n=jsSent;
+  for(;n<gRaw.length;n++)if(n%4===0||n===gRaw.length-1){const p=gRaw[n];upd["pts/p"+String(n).padStart(6,"0")]=[p.t,p.lat,p.lon,p.ele!=null?Math.round(p.ele*10)/10:null,p.hr||0]}
+  fetch("https://"+dbHost(prefs.db)+"/live/"+liveId()+".json?x-http-method-override=PATCH",{method:"POST",body:JSON.stringify(upd)}).then(r=>{if(r.ok)jsSent=gRaw.length}).catch(()=>{});
+}
+function jsPushStart(){jsSent=0;clearInterval(jsTimer);jsTimer=setInterval(()=>jsPush(false),10000)}
 
 /* Reprise si l'application a été fermée ou relancée pendant la séance */
 function resumeLive(){
@@ -1023,7 +1078,7 @@ function resumeLive(){
   $("l-recap").value=String(st.recap||0);$("l-maxpace").value=st.maxPace||"";$("l-cap").value=st.cap||"";$("l-dur").value=st.dur||"";targetMin=+st.dur||0;targetShown=targetMin>0&&(Date.now()-t0)/60000>=targetMin;$("livetgt").textContent=st.tgt||"";
   $("l-keep").checked=!!prefs.keep;
   recapKm=+st.recap||0;maxPaceS=parsePace(st.maxPace);liveCapHr=+st.cap||0;
-  livePre(false);resetLive();show("live");setFull(true);liveMap();poll();startTimers();
+  if(st.live)prefs.liveId=st.live;liveLoad();livePre(false);resetLive();show("live");setFull(true);liveMap();poll();startTimers();liveApply();
 }
 
 /* Sortie : jamais sans confirmation */
@@ -1044,7 +1099,9 @@ window.onAndroidBack=()=>{
 function endLive(){
   liveOn=false;clearInterval(pollId);clearInterval(clockId);pollId=clockId=null;
   if(gWatch!==null){try{navigator.geolocation.clearWatch(gWatch)}catch(e){}gWatch=null}
-  const n=NAT();if(n){try{n.stop();n.disconnectHr();n.clear()}catch(e){}}
+  clearInterval(jsTimer);if(!NAT())jsPush(true);
+  const n=NAT();if(n){try{n.stop();n.disconnectHr()}catch(e){}}
+  prefs.liveId="";persistP();
   keepScreen(false);
   try{localStorage.removeItem(LKEY)}catch(e){}
   $("cfm").classList.add("hidden");setFull(false);

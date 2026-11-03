@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Suivi en direct</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#14203a;--mut:#65708a;--acc:#2f6bff;--bad:#e5484d}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1324;--card:#18203a;--ink:#eef2ff;--mut:#9aa7c2}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,sans-serif}
+header{padding:12px 16px}
+h1{margin:0;font-size:20px}
+#st{color:var(--mut);font-size:14px;margin-top:2px}
+#map{height:55vh;min-height:300px;background:#dfe6f3}
+#grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 16px}
+#grid div{background:var(--card);border-radius:12px;padding:10px}
+#grid b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+#grid span{font-size:12px;color:var(--mut)}
+footer{padding:0 16px 20px;color:var(--mut);font-size:12px}
+.live{display:inline-block;width:9px;height:9px;border-radius:50%;background:#18b26b;margin-right:6px}
+.off{background:var(--mut)}
+</style>
+</head>
+<body>
+<header><h1 id="t">Suivi en direct</h1><div id="st">Chargement…</div></header>
+<div id="map"></div>
+<div id="grid">
+  <div><b id="d">--</b><span>Distance</span></div>
+  <div><b id="el">--</b><span>Temps</span></div>
+  <div><b id="dp">--</b><span>D+</span></div>
+  <div><b id="pa">--</b><span>Allure</span></div>
+  <div><b id="av">--</b><span>Allure moy.</span></div>
+  <div><b id="hr">--</b><span>FC</span></div>
+</div>
+<footer>Position mise à jour automatiquement. Fond de carte : © IGN / Géoplateforme.</footer>
+<script>
+(function(){
+  var h=decodeURIComponent(location.hash.replace(/^#/,"")).split("~"),host=h[0],id=h[1];
+  var $=function(i){return document.getElementById(i)};
+  if(!host||!id){$("st").textContent="Lien incomplet.";return}
+  var map=L.map("map",{zoomControl:true}).setView([46.6,2.4],6);
+  L.tileLayer("https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&FORMAT=image/png",{maxZoom:18,attribution:"© IGN"}).addTo(map);
+  var line=null,mark=null,fitted=false,follow=true;
+  map.on("dragstart",function(){follow=false});
+  function hav(a,b,c,d){var r=Math.PI/180,x=(c-a)*r,y=(d-b)*r,q=Math.sin(x/2)*Math.sin(x/2)+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)*Math.sin(y/2);return 12742*Math.asin(Math.sqrt(q))*1000}
+  function pad(n){return String(n).padStart(2,"0")}
+  function clock(s){s=Math.max(0,Math.round(s));var h=Math.floor(s/3600),m=Math.floor(s/60)%60;return (h?h+":":"")+pad(m)+":"+pad(s%60)}
+  function pace(sk){return !isFinite(sk)||sk<=0||sk>1800?"--":Math.floor(sk/60)+":"+pad(Math.min(59,Math.round(sk%60)))}
+  function update(data){
+    if(!data||!data.pts){$("st").textContent="La séance n’a pas encore démarré. Cette page se mettra à jour toute seule.";return}
+    var meta=data.meta||{},keys=Object.keys(data.pts).sort(),P=keys.map(function(k){return data.pts[k]}).filter(function(p){return p&&p.length>=3});
+    if(!P.length)return;
+    $("t").textContent=(meta.name?meta.name+" : ":"")+"suivi en direct";
+    var dist=0,i,gain=0,base=null,alts=[];
+    for(i=1;i<P.length;i++)dist+=hav(P[i-1][1],P[i-1][2],P[i][1],P[i][2]);
+    P.forEach(function(p,k){if(p[3]!=null){alts.push(p[3]);if(alts.length>5)alts.shift();var e=alts.reduce(function(a,b){return a+b},0)/alts.length;if(base===null)base=e;else if(e>base+3){gain+=e-base;base=e}else if(e<base)base=e}});
+    var last=P[P.length-1],first=P[0],el=(last[0]-(meta.start||first[0]))/1000;
+    var j=P.length-1;while(j>0&&last[0]-P[j][0]<45000)j--;
+    var dd=0;for(i=j+1;i<P.length;i++)dd+=hav(P[i-1][1],P[i-1][2],P[i][1],P[i][2]);
+    var dt=(last[0]-P[j][0])/1000,cur=dt>0&&dd>5?dt/(dd/1000):0;
+    $("d").textContent=(dist/1000).toFixed(2).replace(".",",")+" km";
+    $("el").textContent=clock(el);
+    $("dp").textContent=Math.round(gain)+" m";
+    $("pa").textContent=pace(cur)+" /km";
+    $("av").textContent=dist>50?pace(el/(dist/1000))+" /km":"--";
+    var hr=null;for(i=P.length-1;i>=0&&hr===null;i--)if(P[i][4]>0)hr=P[i][4];
+    $("hr").textContent=hr?hr+" bpm":"--";
+    var ago=Math.round((Date.now()-last[0])/1000),done=!!meta.done;
+    $("st").innerHTML=done?'<span class="live off"></span>Séance terminée':'<span class="live"></span>'+(ago<90?"En direct":"Dernière position il y a "+(ago<3600?Math.round(ago/60)+" min":Math.round(ago/3600)+" h")+" (signal perdu ou arrêt)");
+    var ll=P.map(function(p){return [p[1],p[2]]});
+    if(!line){line=L.polyline(ll,{color:"#e5484d",weight:5}).addTo(map);mark=L.circleMarker(ll[ll.length-1],{radius:8,color:"#fff",weight:3,fillColor:"#2f6bff",fillOpacity:1}).addTo(map);map.fitBounds(line.getBounds(),{padding:[30,30],maxZoom:16});fitted=true}
+    else{line.setLatLngs(ll);mark.setLatLng(ll[ll.length-1]);if(follow)map.panTo(ll[ll.length-1],{animate:false})}
+  }
+  var stop=false;
+  function load(){
+    fetch("https://"+host+"/live/"+encodeURIComponent(id)+".json",{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){update(d);if(d&&d.meta&&d.meta.done)stop=true}).catch(function(){$("st").textContent="Connexion impossible, nouvelle tentative…"}).then(function(){if(!stop)setTimeout(load,10000)});
+  }
+  load();
+})();
+</script>
+</body>
+</html>

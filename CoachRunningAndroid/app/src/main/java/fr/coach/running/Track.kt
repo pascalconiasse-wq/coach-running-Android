@@ -79,6 +79,80 @@ object TrackState {
     }
 }
 
+/** Envoie la trace à Firebase (REST) pour le suivi en direct, même écran éteint. */
+object LiveUploader {
+    @Volatile private var base = ""        // https://HOTE/live/ID
+    @Volatile private var name = ""
+    @Volatile private var startMs = 0L
+    @Volatile private var finishing = false
+    private var sent = 0
+    private var thread: Thread? = null
+
+    @Volatile private var gen = 0
+
+    fun begin(b: String, n: String, start: Long) {
+        end(false)
+        base = b; name = n; startMs = start; sent = 0; finishing = false
+        val my = ++gen
+        val t = Thread {
+            while (gen == my && base.isNotEmpty()) {
+                val fin = finishing
+                flush(fin)
+                if (fin) { base = ""; break }
+                try { Thread.sleep(8000) } catch (e: InterruptedException) { }
+            }
+        }
+        t.isDaemon = true
+        thread = t
+        t.start()
+    }
+
+    /** finish = true : dernier envoi puis séance marquée terminée. Sinon : arrêt sans rien envoyer. */
+    fun end(finish: Boolean) {
+        if (base.isEmpty()) return
+        if (finish) { finishing = true; thread?.interrupt() } else { gen++; base = "" }
+    }
+
+    private fun flush(done: Boolean) {
+        val b = base
+        if (b.isEmpty()) return
+        try {
+            val upd = JSONObject()
+            upd.put("meta/name", name)
+            upd.put("meta/start", startMs)
+            upd.put("meta/done", done)
+            var newSent = sent
+            synchronized(TrackState.points) {
+                val size = TrackState.points.size
+                var i = sent
+                while (i < size) {
+                    if (i % 4 == 0 || i == size - 1) {
+                        val p = TrackState.points[i]
+                        val a = JSONArray().put(p[0].toLong()).put(p[1]).put(p[2])
+                        if (p[3].isNaN()) a.put(JSONObject.NULL) else a.put(Math.round(p[3] * 10) / 10.0)
+                        a.put(p[5].toInt())
+                        upd.put("pts/p" + String.format("%06d", i), a)
+                    }
+                    i++
+                }
+                newSent = size
+            }
+            val c = java.net.URL(b + ".json?x-http-method-override=PATCH").openConnection() as java.net.HttpURLConnection
+            c.requestMethod = "POST"
+            c.connectTimeout = 10000
+            c.readTimeout = 10000
+            c.doOutput = true
+            c.setRequestProperty("Content-Type", "application/json")
+            c.outputStream.use { it.write(upd.toString().toByteArray()) }
+            val code = c.responseCode
+            c.disconnect()
+            if (code in 200..299) sent = newSent
+        } catch (e: Exception) {
+            // hors réseau : on réessaiera au prochain tour avec les mêmes points
+        }
+    }
+}
+
 /** Service au premier plan : continue d'enregistrer le GPS (et de faire vibrer) quand l'écran est éteint. */
 class TrackService : Service() {
     private var lm: LocationManager? = null
@@ -361,6 +435,7 @@ class TrackBridge(
 
     @JavascriptInterface
     fun stop() {
+        LiveUploader.end(true)
         act.runOnUiThread {
             try { act.stopService(Intent(act, TrackService::class.java)) } catch (e: Exception) { }
         }
@@ -379,6 +454,12 @@ class TrackBridge(
     fun setTarget(sec: Int) {
         TrackState.targetS = sec
         TrackState.targetDone = sec > 0 && System.currentTimeMillis() - TrackState.startMs >= sec * 1000L
+    }
+
+    /** Suivi en direct : base = https://HOTE/live/ID (Firebase). Chaîne vide = désactivé. */
+    @JavascriptInterface
+    fun setLive(base: String, name: String, startMs: Long) {
+        if (base.isEmpty()) LiveUploader.end(false) else LiveUploader.begin(base, name, startMs)
     }
 
     @JavascriptInterface
