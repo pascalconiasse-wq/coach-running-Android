@@ -677,10 +677,18 @@ function weekSummary(){
   const mon=mondayOf(new Date()),a=iso(mon),e=new Date(mon);e.setDate(e.getDate()+6);const b=iso(e),td=today();
   const done=sessions.filter(x=>x.date>=a&&x.date<=b&&x.date<=td);
   const W=weekPlan(0),plan=Object.values(W.days).filter(x=>x.t!=="REST");
+  /* une séance prévue compte comme faite si une activité existe ce jour-là, même importée de la montre */
+  let okPlan=0;const plannedDates=new Set();
+  for(let d=1;d<=7;d++){
+    if(W.days[d].t==="REST")continue;
+    const dd=new Date(mon);dd.setDate(dd.getDate()+d-1);const di=iso(dd);plannedDates.add(di);
+    if(di<=td&&done.some(x=>x.date===di))okPlan++;
+  }
+  const extra=done.filter(x=>!plannedDates.has(x.date)).length;
   const RUNT=[E,LG,I,T],pmin=Object.values(W.days).filter(x=>RUNT.includes(x.t)).reduce((t,x)=>t+(x.m||0),0);
   const mins=done.reduce((t,x)=>t+x.min,0),km=done.reduce((t,x)=>t+(x.km||0),0),dp=done.reduce((t,x)=>t+(x.dplus||0),0);
   const hm=m=>Math.floor(m/60)+" h "+pad2(m%60);
-  let t="Cette semaine : "+done.length+" séance"+(done.length>1?"s":"")+" sur "+plan.length+" prévues, "+hm(mins)+(km>0?", "+dec(Math.round(km*10)/10)+" km":"")+(dp>0?", D+ "+dp+" m":"")+(pmin?" (course prévue : "+hm(pmin)+" )".replace(" )",")"):"")+".";
+  let t="Cette semaine : "+okPlan+" séance"+(okPlan>1?"s":"")+" prévue"+(okPlan>1?"s":"")+" réalisée"+(okPlan>1?"s":"")+" sur "+plan.length+(extra?" (+"+extra+" en plus)":"")+", "+hm(mins)+(km>0?", "+dec(Math.round(km*10)/10)+" km":"")+(dp>0?", D+ "+dp+" m":"")+(pmin?" (course prévue : "+hm(pmin)+" )".replace(" )",")"):"")+".";
   const g=profile.goal;
   if(g){
     const days=Math.round((new Date(g.date+"T00:00:00")-new Date(td+"T00:00:00"))/DAY);
