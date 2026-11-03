@@ -1504,9 +1504,14 @@ function doImport(text){
   }catch(e){bmsg("Import impossible : choisissez une sauvegarde Coach Running (.json).")}
 }
 if(window.AndroidBle&&AndroidBle.readBackup)$("rest").classList.remove("hidden");
-$("rest").onclick=()=>{let t="";try{t=AndroidBle.readBackup()}catch(e){}
-  if(!t){bmsg("Aucune sauvegarde trouvée dans Téléchargements/Coach Running. Utilisez « Importer un fichier ».");return}
-  doImport(t)};
+function restoreBackup(){
+  let t="";try{t=AndroidBle.readBackup()}catch(e){}
+  if(t){doImport(t);return true}
+  try{if(window.AndroidApp&&AndroidApp.pickBackup){AndroidApp.pickBackup();return false}}catch(e){}
+  bmsg("Aucune sauvegarde trouvée. Utilisez « Importer un fichier ».");return false;
+}
+window.onBackupText=t=>{doImport(t);if(profile&&!$("setup").classList.contains("hidden"))show("plan")};
+$("rest").onclick=restoreBackup;
 $("imp").onclick=()=>$("file").click();
 $("file").onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
@@ -1558,7 +1563,7 @@ $("psave").onclick=()=>{
   profile={age:age,weight:w,level:$("f-lvl").value,res:res,days:+$("f-days").value,terrain:$("f-ter").value,goal:goal,fcmax:fcmax,fcrest:fcrest,vma:profile&&profile.vma>0?profile.vma:undefined,vmaDate:profile&&profile.vma>0?profile.vmaDate:undefined,extra:profile&&profile.extra?profile.extra:undefined};
   saveProfile();show("plan");
 };
-$("prest").onclick=()=>show(profile?"plan":"stats");
+$("prest").onclick=()=>{if(profile){show("plan");return}show("help");if(window.AndroidBle&&AndroidBle.readBackup)restoreBackup()};
 $("editp").onclick=openSetup;
 $("zedit").onclick=openSetup;
 const MINW=[[5,6],[10,8],[21.0975,10],[42.195,14],[80,20],[160,28]];

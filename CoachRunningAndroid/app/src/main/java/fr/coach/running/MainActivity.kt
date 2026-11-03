@@ -76,6 +76,26 @@ class MainActivity : ComponentActivity() {
             } catch (e: Exception) { }
         }
     }
+    /** Sélecteur de fichier ouvert directement dans Téléchargements/Coach Running ; le contenu revient à la page via onBackupText. */
+    private val backupPick = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        val uri = r.data?.data
+        if (r.resultCode == android.app.Activity.RESULT_OK && uri != null) {
+            try {
+                val t = contentResolver.openInputStream(uri)?.bufferedReader()?.readText() ?: ""
+                web.post { web.evaluateJavascript("window.onBackupText && onBackupText(" + org.json.JSONObject.quote(t) + ")", null) }
+            } catch (e: Exception) { }
+        }
+    }
+    fun pickBackup() {
+        try {
+            val i = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+                putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload%2FCoach%20Running"))
+            }
+            backupPick.launch(i)
+        } catch (e: Exception) { }
+    }
     fun pickContact() {
         try { contactPick.launch(Intent(Intent.ACTION_PICK, android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI)) } catch (e: Exception) { }
     }
@@ -244,6 +264,9 @@ class AppBridge(private val act: MainActivity, private val web: android.webkit.W
             try { act.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (e: Exception) { }
         }
     }
+
+    @android.webkit.JavascriptInterface
+    fun pickBackup() { act.runOnUiThread { act.pickBackup() } }
 
     @android.webkit.JavascriptInterface
     fun pickContact() { act.runOnUiThread { act.pickContact() } }
