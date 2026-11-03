@@ -56,7 +56,7 @@ footer{padding:0 16px 20px;color:var(--mut);font-size:12px}
     $("t").textContent=(meta.name?meta.name+" : ":"")+"suivi en direct";
     var dist=0,i,gain=0,base=null,alts=[];
     for(i=1;i<P.length;i++)dist+=hav(P[i-1][1],P[i-1][2],P[i][1],P[i][2]);
-    P.forEach(function(p,k){if(p[3]!=null){alts.push(p[3]);if(alts.length>5)alts.shift();var e=alts.reduce(function(a,b){return a+b},0)/alts.length;if(base===null)base=e;else if(e>base+3){gain+=e-base;base=e}else if(e<base)base=e}});
+    var cd=0;P.forEach(function(p,k){if(k>0)cd+=hav(P[k-1][1],P[k-1][2],p[1],p[2]);if(cd>=100&&p[3]!=null){alts.push(p[3]);if(alts.length>5)alts.shift();var e=alts.reduce(function(a,b){return a+b},0)/alts.length;if(base===null)base=e;else if(e>base+3){gain+=e-base;base=e}else if(e<base)base=e}});
     var last=P[P.length-1],first=P[0],el=(last[0]-(meta.start||first[0]))/1000;
     var j=P.length-1;while(j>0&&last[0]-P[j][0]<45000)j--;
     var dd=0;for(i=j+1;i<P.length;i++)dd+=hav(P[i-1][1],P[i-1][2],P[i][1],P[i][2]);
