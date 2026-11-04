@@ -72,7 +72,9 @@ h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4
 
 #lwrap.full{position:fixed;inset:0;height:100vh;min-height:0;margin:0;border-radius:0;border:0;z-index:3000}
 #lwrap:not(.full) #lend2{display:none}
-#lwrap.full #lrecap{bottom:64px}
+#lwrap.full #lrecap{bottom:92px}
+#lalt{position:absolute;left:8px;right:8px;bottom:8px;height:72px;width:calc(100% - 16px);z-index:1000;background:rgba(12,18,34,.84);border-radius:12px}
+#lwrap.full #lalt{width:calc(100% - 124px)}
 #lwrap{position:relative;height:calc(100vh - 360px);min-height:340px;border-radius:16px;overflow:hidden;margin-bottom:10px;border:1px solid var(--line)}
 #lmap{position:absolute;inset:0;background:#dfe6f3}
 #lov{position:absolute;top:8px;left:8px;z-index:1000;background:rgba(12,18,34,.84);color:#fff;border-radius:12px;padding:8px 12px;min-width:160px}
@@ -238,6 +240,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <button id="lrec" class="lbtn" aria-label="Recentrer la carte">⌖</button>
     <button id="lfull" class="lbtn" style="top:60px" aria-label="Réglages / plein écran">⚙</button>
     <button id="lend2" class="stop" style="position:absolute;right:8px;bottom:8px;z-index:1001;width:auto;margin:0;padding:10px 16px">Terminer</button>
+    <canvas id="lalt" aria-label="Profil d’altitude"></canvas>
     <div id="lrecap" class="hidden" role="status"></div>
   </div>
   <p class="mute" id="livetgt" style="margin:0 0 6px"></p>
@@ -900,7 +903,7 @@ function liveMap(){
     if(lmap){if(lline)lmap.removeLayer(lline);if(lmark)lmap.removeLayer(lmark);lline=lmark=null;follow=true;setTimeout(()=>lmap.invalidateSize(),200)}
   }catch(e){}
 }
-function setFull(f){$("lwrap").classList.toggle("full",f);$("lfull").textContent=f?"⚙":"⛶";setTimeout(()=>{try{lmap&&lmap.invalidateSize()}catch(e){}},150)}
+function setFull(f){$("lwrap").classList.toggle("full",f);$("lfull").textContent=f?"⚙":"⛶";setTimeout(()=>{try{lmap&&lmap.invalidateSize()}catch(e){}profT=0;drawAlt()},150)}
 $("lfull").onclick=()=>setFull(!$("lwrap").classList.contains("full"));
 $("lend2").onclick=()=>openCfm();
 new MutationObserver(()=>{const t=$("gmsg").textContent;$("lgps").textContent=t.startsWith("GPS OK")?"":t}).observe($("gmsg"),{childList:true,characterData:true,subtree:true});
@@ -963,6 +966,29 @@ function showRecap(t){
   const e=$("lrecap");e.textContent=t;e.classList.remove("hidden");
   clearTimeout(recapTimer);recapTimer=setTimeout(()=>e.classList.add("hidden"),15000);
 }
+function drawProf(cv,pts,fg,fill,line){
+  var dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
+  cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+  var c=cv.getContext("2d");c.scale(dpr,dpr);c.clearRect(0,0,w,h);c.font="11px system-ui,sans-serif";c.fillStyle=fg;
+  if(pts.length<2){c.fillText("Profil d’altitude : en attente de données…",8,h/2+4);return}
+  var sm=pts.map(function(p,i){var s=0,n=0;for(var k=Math.max(0,i-2);k<=Math.min(pts.length-1,i+2);k++){s+=pts[k][1];n++}return [p[0],s/n]});
+  var mn=Infinity,mx=-Infinity;sm.forEach(function(p){if(p[1]<mn)mn=p[1];if(p[1]>mx)mx=p[1]});
+  if(mx-mn<10){var m=(mx+mn)/2;mn=m-5;mx=m+5}
+  var D=sm[sm.length-1][0]||1,L=8,R=8,T=14,B=14;
+  var X=function(d){return L+d/D*(w-L-R)},Y=function(a){return T+(1-(a-mn)/(mx-mn))*(h-T-B)};
+  c.beginPath();c.moveTo(X(sm[0][0]),h-B);sm.forEach(function(p){c.lineTo(X(p[0]),Y(p[1]))});c.lineTo(X(D),h-B);c.closePath();c.fillStyle=fill;c.fill();
+  c.beginPath();sm.forEach(function(p,i){i?c.lineTo(X(p[0]),Y(p[1])):c.moveTo(X(p[0]),Y(p[1]))});c.strokeStyle=line;c.lineWidth=2;c.stroke();
+  var e=sm[sm.length-1];c.beginPath();c.arc(X(e[0]),Y(e[1]),4,0,7);c.fillStyle="#fff";c.fill();c.lineWidth=2;c.strokeStyle=line;c.stroke();
+  c.fillStyle=fg;c.fillText(Math.round(mx)+" m",L,10);c.fillText(Math.round(mn)+" m",L,h-3);
+  var t=(D/1000).toFixed(1).replace(".",",")+" km";c.fillText(t,w-R-c.measureText(t).width,h-3);
+}
+let profT=0;
+function drawAlt(){
+  const o=[];let d=0,pr=null;
+  for(const p of gRaw){if(pr)d+=hav(pr.lat,pr.lon,p.lat,p.lon)*1000;pr=p;if(p.ele!=null)o.push([d,p.ele])}
+  const step=Math.max(1,Math.floor(o.length/150)),r=o.filter((q,i)=>i%step===0||i===o.length-1);
+  drawProf($("lalt"),r,"#fff","rgba(46,196,196,.35)","#2ec4c4");
+}
 function paint(){
   const s=Math.floor((Date.now()-t0)/1000);
   if(liveOn&&targetMin>0&&!targetShown&&s>=targetMin*60){targetShown=true;showRecap("⏱ Durée prévue atteinte : "+targetMin+" min. L’enregistrement continue.");if(!NAT()){try{navigator.vibrate&&navigator.vibrate([500,250,500,250,500,250,500])}catch(e){}}}
@@ -973,6 +999,7 @@ function paint(){
   $("gavg").textContent=gDist>50?paceTxt(s/(gDist/1000)):"--";
   $("hr").textContent=lastHr||"--";
   setBad();
+  if(Date.now()-profT>4000){profT=Date.now();drawAlt()}
 }
 function poll(){
   const n=NAT();if(!n)return;
