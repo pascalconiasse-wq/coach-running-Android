@@ -836,12 +836,22 @@ function renderPlan(){
   $("today").style.setProperty("--tc",TCOL[r.session]||"#2F6BFF");
   $("sub").textContent=new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
   $("go").textContent=r.session==="REST"?"Courir quand même":"Démarrer la séance";
+  /* séance prévue déjà faite aujourd'hui (même enregistrée par la montre ou importée) : on l'enlève du plan */
+  const dn=sessions.filter(x=>x.date===today());
+  if(planned!=="REST"&&dn.length){
+    const mm=dn.reduce((t,x)=>t+x.min,0),kk=dn.reduce((t,x)=>t+(x.km||0),0),dd=dn.reduce((t,x)=>t+(x.dplus||0),0);
+    $("sess").textContent="Séance du jour faite ✓";
+    $("why").textContent="Enregistrée : "+mm+" min"+(kk>0?" · "+dec(Math.round(kk*10)/10)+" km":"")+(dd>0?" · D+ "+dd+" m":"")+". Rien d’autre de prévu aujourd’hui.";
+    $("tgt").textContent="";$("go").textContent="Faire une autre séance";
+  }
   $("week").innerHTML="";
   const off=+$("mv-w").value,pl=weekPlan(off).days;
   for(let d=1;d<=7;d++){
     const li=document.createElement("li"),a=document.createElement("span"),b=document.createElement("span");
     a.textContent=DN[d];a.prepend(dot(pl[d].t));b.textContent=dayText(pl[d]);
     if(off===0&&d===todayIdx()){a.style.fontWeight=b.style.fontWeight="700";li.className="today"}else b.className="mute";
+    {const dm=mondayOf(new Date());dm.setDate(dm.getDate()+off*7+d-1);const di=iso(dm);
+     if(pl[d].t!=="REST"&&di<=today()&&sessions.some(x=>x.date===di)){a.append(" ✓");b.style.textDecoration="line-through";li.style.opacity=".6"}}
     li.append(a,b);$("week").appendChild(li);
   }
   renderMover();
@@ -1212,6 +1222,7 @@ $("cfm-save").onclick=async()=>{
     if(snap&&snap.tiles===0)note+=" Fond de carte indisponible : trace seule sur la carte.";
   }
   endLive();persistM();
+  autoBackup(true);
   if(hasG)ignAlti(rec.id);
   show("stats");
   if(note){const m=$("bmsg");if(m)m.textContent=note.trim()}
