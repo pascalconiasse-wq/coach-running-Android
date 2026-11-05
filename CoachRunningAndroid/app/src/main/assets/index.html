@@ -357,7 +357,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p>Pour chaque activité : plan IGN ou photos aériennes au choix (ou image enregistrée pendant la séance), courbes d’allure, FC et altitude. Le dénivelé est corrigé avec l’altimétrie IGN quand elle répond.</p></details>
   <details class="card" open><summary><b>Sauvegarde et mises à jour</b></summary>
     <p id="upd-st" class="mute">Version : vérification…</p><button class="alt" id="upd-chk">Vérifier les mises à jour</button>
-    <p>Roue ⚙, « Exporter l’historique » : sauvegarde complète (profil, séances, traces, cartes, prénom et numéros du partage) dans Téléchargements. Restaurez-la après une désinstallation. Au lancement, l’appli compare sa version à la dernière Release GitHub et affiche « Mise à jour disponible » : touchez pour télécharger l’APK puis installez-le. Pour un proche qui installe l’appli : même page des Releases (github.com/pascalconiasse-wq/coach-running-Android/releases), autoriser l’installation d’applis inconnues ; il sera averti des mises à jour à l’ouverture de l’appli.</p></details>
+    <p>Roue ⚙, « Exporter l’historique » : sauvegarde complète (profil, séances, traces, cartes, prénom et numéros du partage) dans Téléchargements/Coach Running ; le fichier « Coach-Running_sauvegarde.json » remplace le précédent. Restaurez-la après une désinstallation. Au lancement, l’appli compare sa version à la dernière Release GitHub et affiche « Mise à jour disponible » : touchez pour télécharger l’APK puis installez-le. Pour un proche qui installe l’appli : même page des Releases (github.com/pascalconiasse-wq/coach-running-Android/releases), autoriser l’installation d’applis inconnues ; il sera averti des mises à jour à l’ouverture de l’appli.</p></details>
   <details class="card"><summary><b>Problèmes fréquents</b></summary>
     <p>Km ou D+ manquants : autorisez la position « tout le temps » et ne limitez pas la batterie de l’appli. Pas de GPS : sortez, attendez « GPS OK ». Pas de FC : activez la diffusion cardio de la montre. Séance absente après synchro : vérifiez les autorisations Health Connect. SMS qui ne part pas : autorisez les paramètres restreints puis la permission SMS (voir « Séance en direct »).</p></details>
 </section>
@@ -1498,6 +1498,7 @@ setTimeout(showAutoBk,500);
 $("exp").onclick=async()=>{
   const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces,maps:maps,share:shareData()},null,1),name="coach-running-"+today()+".json";
   $("copybk").classList.add("hidden");$("paste").classList.add("hidden");$("pasteok").classList.add("hidden");
+  if(window.AndroidBle&&AndroidBle.saveBackup){bmsg(AndroidBle.saveBackup("Coach-Running_sauvegarde.json",data)?"Sauvegarde enregistrée dans Téléchargements/Coach Running (Coach-Running_sauvegarde.json, remplace la précédente).":"Enregistrement impossible.");return}
   if(window.AndroidBle&&AndroidBle.saveFile){bmsg(AndroidBle.saveFile(name,data)?"Sauvegarde enregistrée dans le dossier Téléchargements.":"Enregistrement impossible.");return}
   let dl=null;
   try{dl=typeof claude!=="undefined"?await claude.use("downloads"):null}catch(e){}
