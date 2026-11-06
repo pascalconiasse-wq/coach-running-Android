@@ -1049,6 +1049,7 @@ function beginSession(){
   recapKm=+$("l-recap").value;maxPaceS=parsePace($("l-maxpace").value);liveCapHr=+$("l-cap").value||0;curPace=0;
   resetLive();
   show("live");setFull(true);liveMap();
+  showRecap(recapKm?"Récap tous les "+recapKm+" km":"Pas de récap kilométrique réglé");
   const n=NAT();
   if(n){try{n.start(recapKm*1000,maxPaceS,liveCapHr);if(n.setTarget)n.setTarget((+$("l-dur").value||0)*60)}catch(e){$("msg").textContent="Suivi impossible : "+e.message}}
   else if(navigator.geolocation){
@@ -1093,6 +1094,7 @@ function liveSms(auto){
   let r="err";try{r=AndroidApp.sendSms(prefs.tels,txt)}catch(e){}
   m.textContent=r==="ok"?"SMS envoyé.":r==="perm"?"Autorisez l’envoi de SMS, puis touchez « Envoyer le lien par SMS maintenant ».":"Envoi du SMS impossible.";
   if(r==="ok"&&auto)prefs.smsFor=liveId();
+  if(auto)showRecap(r==="ok"?"SMS envoyé pour le suivi":r==="perm"?"SMS non envoyé : autorisation SMS manquante (Réglages Android > Applications > Coach Running > Autorisations > SMS)":"SMS non envoyé");
 }
 $("l-pick").onclick=()=>{try{AndroidApp.pickContact()}catch(e){$("l-shmsg").textContent="Contacts disponibles dans l’appli Android."}};
 window.onContact=(nom,num)=>{
