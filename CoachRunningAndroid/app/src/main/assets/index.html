@@ -122,7 +122,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <select id="f-lvl"><option value="debutant">Débutant (moins de 6 mois de course)</option><option value="inter">Intermédiaire (je cours régulièrement)</option><option value="confirme">Confirmé (je prépare des compétitions)</option></select>
     <label class="f" for="f-dist">Meilleur résultat récent (facultatif)</label>
     <select id="f-dist"><option value="">Aucun</option><option value="5">5 km</option><option value="10">10 km</option><option value="21.0975">Semi-marathon</option><option value="42.195">Marathon</option></select>
-    <label class="f" for="f-time">Temps réalisé</label>
+    <label class="f" for="f-time">Temps réalisé (facultatif, à remplir si une distance est choisie)</label>
     <input type="text" id="f-time" placeholder="ex. 52:30 ou 1:45:10">
     <label class="f" for="f-days">Jours de course par semaine</label>
     <select id="f-days"><option value="1">1 jour</option><option value="2">2 jours</option><option value="3">3 jours</option><option value="4">4 jours</option><option value="5">5 jours</option><option value="6">6 jours</option><option value="7">7 jours</option></select>
@@ -1582,9 +1582,9 @@ $("psave").onclick=()=>{
   if(fcrest&&!(fcrest>=30&&fcrest<=100)){msg.textContent="FC de repos : indiquez une valeur entre 30 et 100 bpm.";return}
   if(fcmax&&fcrest&&fcrest>fcmax-30){msg.textContent="La FC de repos doit être nettement inférieure à la FC maximale.";return}
   let res=null;const dist=$("f-dist").value;
-  if(dist){
+  if(dist&&$("f-time").value.trim()){
     const sec=parseT($("f-time").value);
-    if(!(sec>0)){msg.textContent="Indiquez le temps au format mm:ss ou h:mm:ss.";return}
+    if(!(sec>0)){msg.textContent="Temps réalisé : utilisez le format mm:ss ou h:mm:ss (ou laissez vide).";return}
     res={km:+dist,sec:sec};
   }
   let goal=null;const gk=$("f-gd").value;
