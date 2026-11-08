@@ -965,14 +965,15 @@ let gRaw=[],gDist=0,gGain=0,gBase=null,gEle=[],hrSamples=[],lastHr=0,splits=[],n
 let lmap=null,lline=null,lmark=null,follow=true,liveCapHr=0,maxPaceS=0,recapKm=0,lastVib=0;
 const pad=n=>String(n).padStart(2,"0");
 const clock=s=>(s>=3600?Math.floor(s/3600)+":"+pad(Math.floor(s/60)%60):pad(Math.floor(s/60)))+":"+pad(Math.floor(s%60));
+const mpv=()=>{const v=$("l-maxpace").value;if(BIKE()){const k=parseFloat(String(v).replace(",","."));return k>0?3600/k:0}return parsePace(v)};
 const BIKE=()=>liveSport==="CYCLING"||liveSport==="MTB"||liveSport==="GRAVEL";
 const PV=sk=>BIKE()?(isFinite(sk)&&sk>0&&sk<1800?(Math.round(3600/sk*10)/10).toFixed(1).replace(".",","):"--"):paceTxt(sk);
 const PU=()=>BIKE()?"km/h":"/km";
-function setUnits(){const u=document.querySelectorAll("#lov .lg i");if(u[2])u[2].textContent=PU();if(u[3])u[3].textContent=PU();const a=document.querySelectorAll("#lov .lg .lk");if(a[2])a[2].textContent=BIKE()?"Vitesse":"Allure";$("l-maxpace").previousElementSibling.classList.toggle("hidden",BIKE());$("l-maxpace").classList.toggle("hidden",BIKE())}
+function setUnits(){const u=document.querySelectorAll("#lov .lg i");if(u[2])u[2].textContent=PU();if(u[3])u[3].textContent=PU();const a=document.querySelectorAll("#lov .lg .lk");if(a[2])a[2].textContent=BIKE()?"Vitesse":"Allure";{const lb=document.querySelector('label[for="l-maxpace"]'),ip=$("l-maxpace"),hb=!!BIKE();if(lb){const t=hb?"Vitesse max (la plus rapide autorisée, km/h, vide = aucune)":"Allure max (la plus rapide autorisée, min/km, vide = aucune)";const n=lb.firstChild;if(n&&n.nodeType===3)n.nodeValue=t;ip.placeholder=hb?"ex. 35":"ex. 5:30";ip.inputMode=hb?"decimal":"numeric"}}}
 const paceTxt=sk=>!isFinite(sk)||sk<=0||sk>1800?"--":Math.floor(sk/60)+":"+pad(Math.min(59,Math.round(sk%60)));
 function parsePace(v){const m=/^\s*(\d{1,2})\s*[:.'hm]\s*(\d{1,2})?\s*$/.exec(v||"");if(!m)return 0;const s=+m[1]*60+(+m[2]||0);return s>=120&&s<=900?s:0}
 function limits(){
-  recapKm=+$("l-recap").value||0;maxPaceS=parsePace($("l-maxpace").value);liveCapHr=+$("l-cap").value||0;
+  recapKm=+$("l-recap").value||0;maxPaceS=mpv();liveCapHr=+$("l-cap").value||0;
   prefs.recap=recapKm;prefs.keep=$("l-keep").checked;persistP();
   targetMin=+$("l-dur").value||0;if(targetMin&&(Date.now()-t0)/60000>=targetMin)targetShown=true;
   const n=NAT();if(n&&liveOn){try{n.setLimits(recapKm*1000,maxPaceS,liveCapHr);n.setTarget&&n.setTarget(targetMin*60)}catch(e){}}
@@ -1139,7 +1140,7 @@ function beginSession(){
   liveSport=$("l-sport").value||"RUN_ROUTE";prefs.sport=liveSport;try{persistP()}catch(e){}setUnits();
   livePre(false);
   t0=Date.now();liveOn=true;$("msg").textContent="";$("gmsg").textContent="GPS : recherche du signal…";
-  recapKm=+$("l-recap").value;maxPaceS=parsePace($("l-maxpace").value);liveCapHr=+$("l-cap").value||0;curPace=0;
+  recapKm=+$("l-recap").value;maxPaceS=mpv();liveCapHr=+$("l-cap").value||0;curPace=0;
   resetLive();
   show("live");setFull(true);liveMap();
   showRecap(recapKm?"Récap tous les "+recapKm+" km":"Pas de récap kilométrique réglé");
