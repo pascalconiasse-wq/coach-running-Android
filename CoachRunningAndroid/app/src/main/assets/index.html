@@ -898,7 +898,7 @@ function renderPlan(){
   if(planned!=="REST"&&dn.length){
     const mm=dn.reduce((t,x)=>t+x.min,0),kk=dn.reduce((t,x)=>t+(x.km||0),0),dd=dn.reduce((t,x)=>t+(x.dplus||0),0);
     $("sess").textContent="Séance du jour faite ✓";
-    $("why").textContent="Enregistrée : "+mm+" min"+(kk>0?" · "+dec(Math.round(kk*10)/10)+" km":"")+(dd>0?" · D+ "+dd+" m":"")+". Rien d’autre de prévu aujourd’hui.";
+    $("why").textContent="Enregistrée : "+durMin(mm)+(kk>0?" · "+dec(Math.round(kk*10)/10)+" km":"")+(dd>0?" · D+ "+dd+" m":"")+". Rien d’autre de prévu aujourd’hui.";
     $("tgt").textContent="";$("go").textContent="Faire une autre séance";
   }
   $("week").innerHTML="";
@@ -1941,8 +1941,9 @@ function parseFIT(buf){
 let pending={},editing=null;
 const readDur=()=>(+$("a-h").value||0)*3600+(+$("a-m").value||0)*60+(+$("a-s").value||0);
 function setDur(sec){$("a-h").value=sec?Math.floor(sec/3600):"";$("a-m").value=sec?Math.floor(sec%3600/60):"";$("a-s").value=sec?Math.round(sec%60):""}
-const fmtHMS=s=>Math.floor(s/3600)+":"+pad2(Math.floor(s%3600/60))+":"+pad2(Math.round(s%60));
-const durText=s=>s.sec?fmtHMS(s.sec):s.min+" min";
+function fmtHMS(s){s=Math.round(s);return Math.floor(s/3600)+":"+pad2(Math.floor(s%3600/60))+":"+pad2(s%60)}
+function durMin(m){return m>=60?fmtHMS(m*60):m+" min"}
+function durText(s){const t=s.sec||s.min*60;return t>=3600?fmtHMS(t):(s.sec?fmtHMS(s.sec):s.min+" min")}
 const sameFam=(x,y)=>{const r=v=>!v||v==="RUN_ROUTE"||v==="RUN_TRAIL",b=v=>v==="CYCLING"||v==="MTB"||v==="GRAVEL"||v==="TRAINER";return x===y||(r(x)&&r(y))||(b(x)&&b(y))};
 /* Doublon : la sortie existe déjà (ex. enregistrée avec le GPS du téléphone) et la montre apporte plus de données.
    On complète la sortie existante (même id, même RPE) puis le doublon n'est pas créé. Renvoie true si quelque chose a changé. */
