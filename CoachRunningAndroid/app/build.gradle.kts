@@ -12,6 +12,22 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+    // Clé de signature fixe (fournie par GitHub Actions) : même signature à chaque version,
+    // donc Android garde les autorisations lors des mises à jour.
+    val ksFile = System.getenv("KEYSTORE_FILE")
+    signingConfigs {
+        if (ksFile != null) create("fixe") {
+            storeFile = file(ksFile)
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = "coach"
+            keyPassword = System.getenv("KEYSTORE_PASSWORD")
+        }
+    }
+    buildTypes {
+        getByName("debug") {
+            if (ksFile != null) signingConfig = signingConfigs.getByName("fixe")
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
