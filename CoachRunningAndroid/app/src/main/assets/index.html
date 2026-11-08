@@ -28,6 +28,8 @@ button:focus-visible,.tab:focus-visible{outline:3px solid var(--acc);outline-off
 input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);outline-offset:1px}
 .hidden{display:none}
 .chk{display:flex;gap:10px;align-items:center;font-weight:600;margin:10px 0;padding:10px 12px;border-radius:12px;background:linear-gradient(135deg,rgba(47,107,255,.1),rgba(122,92,255,.12))}
+.hlp{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;padding:0;margin-left:8px;border-radius:50%;font-size:14px;line-height:1;background:linear-gradient(135deg,#FF8A1F,#EC4899)}
+.hlpt{margin:4px 0 8px;padding:8px 10px;border-radius:10px;font-size:14px;background:rgba(255,138,31,.14);border-left:3px solid #FF8A1F}
 .chk input{width:22px;height:22px;flex:none}
 #rtab{position:fixed;inset:0;z-index:60;background:rgba(10,18,40,.55);display:flex;align-items:flex-end}
 #rtab.hidden{display:none}
@@ -383,6 +385,11 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <div class="card"><h2>Paramètres et notice</h2><p class="mute">Réglages rarement utilisés, sauvegarde, aide. Touchez un titre de la notice pour l’ouvrir.</p></div>
   <details class="card"><summary><b>Premiers pas</b></summary>
     <p>Au premier lancement, renseignez âge, poids, niveau, jours disponibles et votre objectif principal (distance, date, dénivelé). Vous pourrez les modifier plus tard avec la roue ⚙ (en haut à droite) : « Mon profil de coureur ». L’appli construit le plan jusqu’à la course : fondation, développement, spécifique, affûtage. Elle recalcule seule quand vous courez ailleurs (montre, import).</p></details>
+  <details class="card"><summary><b>Choisir une course et mode sans objectif</b></summary>
+    <p><b>Tableau des courses</b> : dans le profil, « Choisir dans le tableau des courses » liste les courses de la région, une ligne par distance (date, course, distance, D+). Tapez sur une ligne pour remplir l’objectif ; la recherche filtre par nom, lieu ou distance. Vérifiez toujours la date et le dénivelé chez l’organisateur.</p>
+    <p><b>Sans objectif</b> : cochez « Sans objectif » dans le profil (⚙ puis Mon profil). Plus de plan ni de coaching : l’appli enregistre seulement vos sorties (GPS, cardio, altitude, suivi en direct, sauvegarde). Décochez pour retrouver le coaching.</p>
+    <p><b>Types d’activité</b> : course route, trail, marche, VTT, gravel, vélo route (home trainer et natation par saisie manuelle ou import de la montre). Avant de démarrer, le choix « Activité » est préréglé sur le terrain de votre objectif, modifiable ; en vélo, VTT et gravel la vitesse est affichée en km/h.</p>
+    <p><b>Aide contextuelle</b> : touchez les boutons ? à côté des réglages pour une explication courte.</p></details>
   <details class="card"><summary><b>Onglet Plan</b></summary>
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), zones cardio, allures de référence calculées sur vos meilleurs efforts, et test VMA facultatif qui débloque des séances de VMA. Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation. Dès qu’une activité existe pour la journée (enregistrée par l’appli, importée ou synchronisée depuis la montre), la séance du jour passe à « faite ✓ » et le détail prévu disparaît ; dans la liste de la semaine, les jours faits sont cochés et barrés.</p>
     <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance). Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
@@ -923,6 +930,29 @@ function show(id){
 }
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if(liveOn){if(b.dataset.t!=="live")openCfm();return}show(b.dataset.t)});
 
+/* Aide contextuelle : boutons ? */
+(function(){
+  const H={
+   "f-free":"Mode sans objectif : pas de plan ni de coaching, l’appli enregistre seulement vos sorties.",
+   "f-race":"Le tableau liste les courses de la région, une ligne par distance. Un appui remplit l’objectif ; vérifiez date et D+ chez l’organisateur.",
+   "f-gd":"Distance de votre course cible. « Autre » permet de saisir km et dénivelé.",
+   "f-gdate":"Date de la course : le plan se construit à rebours à partir d’elle (montée en charge puis affûtage).",
+   "f-fcmax":"Fréquence cardiaque maximale : sert aux zones et aux alertes. Estimée si vous ne la connaissez pas.",
+   "l-sport":"Type d’activité de cette sortie, préréglé sur votre objectif. Le VTT, le gravel et le vélo affichent la vitesse en km/h.",
+   "l-recap":"Un récap vibre et s’affiche tous les 1 ou 5 km (km, temps, allure, D+), et part par SMS si le partage est réglé.",
+   "l-maxpace":"Alerte (3 vibrations) si vous allez plus vite que cette allure.",
+   "l-dur":"Durée prévue : à l’échéance, 4 vibrations et un bandeau, l’enregistrement continue."
+  };
+  Object.keys(H).forEach(id=>{
+    const el=$(id);if(!el)return;
+    let lab=el.tagName==="LABEL"?el:(document.querySelector('label[for="'+id+'"]')||(el.closest&&el.closest("label")));
+    if(!lab)return;
+    const b=document.createElement("button");b.type="button";b.className="hlp";b.textContent="?";b.setAttribute("aria-label","Aide");
+    const t=document.createElement("p");t.className="hlpt hidden";t.textContent=H[id];
+    b.onclick=e=>{e.preventDefault();e.stopPropagation();t.classList.toggle("hidden")};
+    lab.appendChild(b);lab.insertAdjacentElement("afterend",t);
+  });
+})();
 /* Séance en direct : le suivi tourne dans un service Android (écran éteint), la page n'affiche que ce qu'il enregistre */
 const MKEY="coach_maps",LKEY="coach_live",QKEY="coach_prefs";
 let maps={};try{maps=JSON.parse(localStorage.getItem(MKEY))||{}}catch(e){}
