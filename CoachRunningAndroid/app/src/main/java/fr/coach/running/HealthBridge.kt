@@ -170,8 +170,10 @@ class HealthBridge(
     private fun sport(t: Int) = when (t) {
         ExerciseSessionRecord.EXERCISE_TYPE_RUNNING,
         ExerciseSessionRecord.EXERCISE_TYPE_RUNNING_TREADMILL -> "RUN_ROUTE"
-        ExerciseSessionRecord.EXERCISE_TYPE_BIKING,
-        ExerciseSessionRecord.EXERCISE_TYPE_BIKING_STATIONARY -> "CYCLING"
+        ExerciseSessionRecord.EXERCISE_TYPE_BIKING -> "CYCLING"
+        ExerciseSessionRecord.EXERCISE_TYPE_BIKING_STATIONARY -> "TRAINER"
+        ExerciseSessionRecord.EXERCISE_TYPE_WALKING,
+        ExerciseSessionRecord.EXERCISE_TYPE_HIKING -> "WALK"
         ExerciseSessionRecord.EXERCISE_TYPE_SWIMMING_OPEN_WATER,
         ExerciseSessionRecord.EXERCISE_TYPE_SWIMMING_POOL -> "SWIMMING"
         else -> "OTHER"

@@ -27,6 +27,33 @@ button.stop{background:linear-gradient(135deg,#E5484D,#FF7A59);color:#fff}
 button:focus-visible,.tab:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);outline-offset:1px}
 .hidden{display:none}
+.chk{display:flex;gap:10px;align-items:center;font-weight:600;margin:10px 0;padding:10px 12px;border-radius:12px;background:linear-gradient(135deg,rgba(47,107,255,.1),rgba(122,92,255,.12))}
+.chk input{width:22px;height:22px;flex:none}
+#rtab{position:fixed;inset:0;z-index:60;background:rgba(10,18,40,.55);display:flex;align-items:flex-end}
+#rtab.hidden{display:none}
+.rbox{background:var(--card);width:100%;max-height:92vh;border-radius:20px 20px 0 0;padding:14px;display:flex;flex-direction:column;gap:8px}
+.rhd{display:flex;justify-content:space-between;align-items:center;font-size:18px}
+.rhd button{padding:8px 14px;font-size:15px}
+.rscroll{overflow:auto;flex:1}
+#rt{width:100%;border-collapse:collapse;font-size:14px}
+#rt th{position:sticky;top:0;background:var(--acc);color:#fff;text-align:left;padding:8px 6px;font-weight:700}
+#rt td{padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+#rt tbody tr:nth-child(even){background:rgba(47,107,255,.05)}
+#rt tbody tr:active{background:rgba(47,107,255,.2)}
+#rt .rn{font-weight:700}#rt .rl{color:var(--mute);font-size:12px}
+#rt .rtr{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px;font-weight:700;color:#fff;background:#18B26B;margin-left:4px}
+#rt .rtr.road{background:#2F6BFF}
+
+#plan>.card:not(#today),#prog>.card,#stats>.card,#acts>.card,#help>.card{border-top:4px solid var(--c1,#2F6BFF)}
+section>.card:nth-of-type(4n+1){--c1:#2F6BFF}section>.card:nth-of-type(4n+2){--c1:#18B26B}section>.card:nth-of-type(4n+3){--c1:#FF8A1F}section>.card:nth-of-type(4n+4){--c1:#EC4899}
+.card h2{color:var(--c1,var(--ink))}
+#today{border-top-color:transparent}#today h2{color:inherit}
+.tab[aria-selected="true"]{color:#fff;background:linear-gradient(135deg,#2F6BFF,#7A5CFF);border-radius:12px}
+.tab[data-t="plan"] .ti{filter:none}
+button.alt{border-color:var(--c1,var(--acc));color:var(--c1,var(--acc))}
+select,input[type=text],input[type=number],input[type=date]{border-color:rgba(122,92,255,.35)}
+body{background-image:radial-gradient(circle at 0 0,rgba(47,107,255,.14),transparent 45%),radial-gradient(circle at 100% 30%,rgba(236,72,153,.10),transparent 40%),radial-gradient(circle at 0 100%,rgba(24,178,107,.12),transparent 45%)}
+body.free #plan>.card:not(#today),body.free .tab[data-t="prog"]{display:none}
 .hero-card{border:0;color:#fff;background:var(--tc,#2F6BFF);background:linear-gradient(135deg,var(--tc,#2F6BFF),color-mix(in srgb,var(--tc,#2F6BFF) 55%,#101840));box-shadow:0 12px 28px color-mix(in srgb,var(--tc,#2F6BFF) 40%,transparent)}
 .hero-card h2{font-size:26px;color:#fff;margin-bottom:4px}
 .hero-card .mute{color:rgba(255,255,255,.9)}
@@ -118,6 +145,8 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <label class="f" for="f-fcrest">Fréquence cardiaque de repos (bpm, facultatif)</label>
     <input type="number" id="f-fcrest" inputmode="numeric" min="30" max="100" placeholder="ex. 52">
     <p class="mute">À mesurer au réveil, allongé, avant de vous lever. Elle affine vos zones.</p>
+    <label class="chk"><input type="checkbox" id="f-free"> Sans objectif : enregistrer mes activités, sans coaching</label>
+    <div id="coachf">
     <label class="f" for="f-lvl">Niveau</label>
     <select id="f-lvl"><option value="debutant">Débutant (moins de 6 mois de course)</option><option value="inter">Intermédiaire (je cours régulièrement)</option><option value="confirme">Confirmé (je prépare des compétitions)</option></select>
     <label class="f" for="f-dist">Meilleur résultat récent (facultatif)</label>
@@ -129,8 +158,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <label class="f" for="f-ter">Terrain</label>
     <select id="f-ter"><option value="route">Route</option><option value="trail">Trail</option></select>
     <label class="f" for="f-race">Trouver une course de la région (facultatif)</label>
-    <select id="f-race"><option value="">Choisir dans la liste…</option></select>
-    <select id="f-rdist" class="hidden"></select>
+    <button type="button" class="alt" id="f-race">📋 Choisir dans le tableau des courses</button>
     <p class="mute" id="f-rmsg">Courses autour de Lyon, de la Loire et de la Haute-Loire. Dates et distances à vérifier sur le site de l’organisateur ; le dénivelé n’est pas renseigné.</p>
     <label class="f" for="f-gd">Objectif (facultatif)</label>
     <select id="f-gd"><option value="">Aucun objectif précis</option><option value="5">5 km</option><option value="10">10 km</option><option value="21.0975">Semi-marathon</option><option value="42.195">Marathon</option><option value="custom">Trail ou autre distance</option></select>
@@ -144,11 +172,20 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <input type="date" id="f-gdate">
     <label class="f" for="f-gt">Temps visé (facultatif)</label>
     <input type="text" id="f-gt" placeholder="ex. 1:45:00">
+    </div>
     <button id="psave">Enregistrer mon profil</button>
     <button class="alt" id="prest">J’ai déjà une sauvegarde</button>
     <p class="mute warn" id="fmsg" role="status"></p>
   </div>
 </section>
+
+<div id="rtab" class="hidden" role="dialog" aria-label="Courses de la région">
+  <div class="rbox">
+    <div class="rhd"><b>Courses de la région</b><button type="button" class="alt" id="rclose">Fermer</button></div>
+    <input type="search" id="rq" placeholder="Rechercher (nom, lieu, distance)…">
+    <div class="rscroll"><table id="rt"><thead><tr><th>Date</th><th>Course</th><th>Distance</th><th>D+</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
 
 <section id="plan">
   <div class="card">
@@ -253,6 +290,8 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <span id="spd" class="hidden"></span>
   <h2 id="prehd" class="hidden" style="margin:0 0 6px">Avant de partir</h2>
   <div class="card">
+    <label class="f" for="l-sport">Activité</label>
+    <select id="l-sport"></select>
     <label class="f" for="l-recap">Récap avec vibration tous les</label>
     <select id="l-recap"><option value="0">Aucun</option><option value="1">1 km</option><option value="5">5 km</option></select>
     <label class="f" for="l-dur">Durée prévue (min) : 4 vibrations à l’échéance, l’enregistrement continue</label>
@@ -450,14 +489,15 @@ const WEEK={1:[7],2:[2,7],3:[2,4,7],4:[1,3,5,7],5:[1,2,4,5,7],6:[1,2,3,5,6,7],7:
 const E="EASY_RUN",LG="LONG_RUN",I="INTERVALS",T="THRESHOLD";
 const SEQ={1:[LG],2:[E,LG],3:[I,E,LG],4:[E,I,E,LG],5:[E,I,E,T,LG],6:[E,I,E,T,E,LG],7:[E,I,E,T,E,E,LG]};
 const todayIdx=()=>{const d=new Date().getDay();return d===0?7:d};
-const SPORTS={RUN_ROUTE:"Course route",RUN_TRAIL:"Trail",CYCLING:"Vélo",SWIMMING:"Natation",OTHER:"Autre"};
-const COEF={RUN_ROUTE:1,RUN_TRAIL:1,CYCLING:.7,SWIMMING:.6,OTHER:.5};
+const SPORTS={RUN_ROUTE:"Course route",RUN_TRAIL:"Trail",WALK:"Marche",CYCLING:"Vélo route",MTB:"VTT",GRAVEL:"Gravel",TRAINER:"Home trainer",SWIMMING:"Natation",OTHER:"Autre"};
+const COEF={RUN_ROUTE:1,RUN_TRAIL:1,WALK:.4,CYCLING:.7,MTB:.75,GRAVEL:.7,TRAINER:.7,SWIMMING:.6,OTHER:.5};
 const TCOL={EASY_RUN:"#18B26B",LONG_RUN:"#2F6BFF",INTERVALS:"#FF8A1F",THRESHOLD:"#E5484D",REST:"#8A97B8",RACE:"#8B5CF6",STRENGTH:"#14B8D4"};
 const PCOL={"Fondation":"#2F6BFF","Développement":"#18B26B","Spécifique":"#FF8A1F","Affûtage":"#8B5CF6","Course":"#E5484D","Entretien":"#8A97B8"};
-const SCOL={RUN_ROUTE:"#2F6BFF",RUN_TRAIL:"#18B26B",CYCLING:"#FF8A1F",SWIMMING:"#14B8D4",OTHER:"#8B5CF6"};
+const SCOL={RUN_ROUTE:"#2F6BFF",RUN_TRAIL:"#18B26B",WALK:"#84CC16",CYCLING:"#FF8A1F",MTB:"#E5484D",GRAVEL:"#C98B2B",TRAINER:"#EC4899",SWIMMING:"#14B8D4",OTHER:"#8B5CF6"};
 const mkdot=c=>{const d=document.createElement("span");d.className="dot";d.style.background=c;return d};
 const dot=t=>mkdot(TCOL[t]||"#8A97B8"),sdot=s=>mkdot(SCOL[s]||SCOL.RUN_ROUTE);
 const isRun=s=>!s.sport||s.sport==="RUN_ROUTE"||s.sport==="RUN_TRAIL";
+const isPace=s=>isRun(s)||s.sport==="WALK";
 const loadOf=x=>x.min*x.rpe*(COEF[x.sport]||1);
 const dayText=x=>NAMES[x.t]+(x.m?" · "+x.m+" min":"")+(x.x&&x.x.length?" + "+x.x.map(a=>SPORTS[a.sport]+" "+a.min+" min").join(", "):"");
 const MOVES_KEY="coach_moves";
@@ -727,7 +767,7 @@ function weekSummary(){
   return t;
 }
 function planWeekly(){
-  if(!profile)return;
+  if(!profile||profile.free)return;
   let w;try{w=weeklyInfo()}catch(e){return}
   $("wkn-t").textContent=w.head;$("wkn-s").textContent=(w.why+w.vol).trim();$("wkn-b").textContent=w.sum;
   if(window.AndroidApp&&AndroidApp.scheduleWeekly){
@@ -830,6 +870,12 @@ $("vma-save").onclick=()=>{
 };
 $("vma-del").onclick=()=>{delete profile.vma;delete profile.vmaDate;saveProfile();vmaMsg("VMA effacée.");_adKey="";renderPlan()};
 function renderPlan(){
+  if(profile&&profile.free){
+    $("sess").textContent="Enregistrer une activité";$("why").textContent="Mode sans objectif : pas de coaching, vos sorties sont simplement enregistrées (GPS, cardio, altitude, suivi en direct).";
+    $("tgt").textContent="";$("go").textContent="Démarrer l’enregistrement";
+    $("sub").textContent=new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+    $("today").style.setProperty("--tc","#2F6BFF");return;
+  }
   const W=weekPlan(),plan=W.days,planned=plan[todayIdx()].t,r=recommend(planned);
   $("sess").textContent=(W.ctx.kind==="trail"?"Trail":"Course route")+" : "+NAMES[r.session];
   $("why").textContent=r.session!==planned?"Séance allégée : votre charge sur 7 jours dépasse 1,5 fois votre moyenne.":planned==="REST"?"Jour de repos prévu dans votre semaine.":"Séance prévue dans votre semaine.";
@@ -865,6 +911,7 @@ function renderPlan(){
 }
 
 function show(id){
+  document.body.classList.toggle("free",!!(profile&&profile.free));
   if((id==="plan"||id==="prog")&&!profile){openSetup();return}
   for(const s of ["setup","plan","prog","acts","live","stats","help"])$(s).classList.toggle("hidden",s!==id);
   document.querySelector("nav").classList.toggle("hidden",id==="setup");
@@ -888,6 +935,10 @@ let gRaw=[],gDist=0,gGain=0,gBase=null,gEle=[],hrSamples=[],lastHr=0,splits=[],n
 let lmap=null,lline=null,lmark=null,follow=true,liveCapHr=0,maxPaceS=0,recapKm=0,lastVib=0;
 const pad=n=>String(n).padStart(2,"0");
 const clock=s=>(s>=3600?Math.floor(s/3600)+":"+pad(Math.floor(s/60)%60):pad(Math.floor(s/60)))+":"+pad(Math.floor(s%60));
+const BIKE=()=>liveSport==="CYCLING"||liveSport==="MTB"||liveSport==="GRAVEL";
+const PV=sk=>BIKE()?(isFinite(sk)&&sk>0&&sk<1800?(Math.round(3600/sk*10)/10).toFixed(1).replace(".",","):"--"):paceTxt(sk);
+const PU=()=>BIKE()?"km/h":"/km";
+function setUnits(){const u=document.querySelectorAll("#lov .lg i");if(u[2])u[2].textContent=PU();if(u[3])u[3].textContent=PU();const a=document.querySelectorAll("#lov .lg .lk");if(a[2])a[2].textContent=BIKE()?"Vitesse":"Allure";$("l-maxpace").previousElementSibling.classList.toggle("hidden",BIKE());$("l-maxpace").classList.toggle("hidden",BIKE())}
 const paceTxt=sk=>!isFinite(sk)||sk<=0||sk>1800?"--":Math.floor(sk/60)+":"+pad(Math.min(59,Math.round(sk%60)));
 function parsePace(v){const m=/^\s*(\d{1,2})\s*[:.'hm]\s*(\d{1,2})?\s*$/.exec(v||"");if(!m)return 0;const s=+m[1]*60+(+m[2]||0);return s>=120&&s<=900?s:0}
 function limits(){
@@ -967,7 +1018,7 @@ function addPt(t,la,lo,alt,hr){
     const sec=Math.round((t-t0)/1000),prevSec=splits.length?splits[splits.length-1].sec:0,prevKm=splits.length?splits[splits.length-1].km:0;
     splits.push({km:km,sec:sec,dp:Math.round(gGain)});
     const seg=(sec-prevSec)/(km-prevKm);
-    showRecap("Km "+String(km).replace(".",",")+" · "+clock(sec)+" · dernier segment "+paceTxt(seg)+"/km · moy "+paceTxt(sec/km)+"/km · D+ "+Math.round(gGain)+" m");
+    showRecap("Km "+String(km).replace(".",",")+" · "+clock(sec)+" · dernier segment "+PV(seg)+" "+PU()+" · moy "+PV(sec/km)+" "+PU()+" · D+ "+Math.round(gGain)+" m");
     if(!NAT()){try{navigator.vibrate&&navigator.vibrate([150,120,150])}catch(e){}}
   }
   if(lmap){
@@ -1009,8 +1060,8 @@ function paint(){
   $("timer").textContent=clock(s);
   $("gdist").textContent=(gDist/1000).toFixed(2).replace(".",",");
   $("gdp").textContent=String(Math.round(gGain));
-  $("gpace").textContent=paceTxt(curPace);
-  $("gavg").textContent=gDist>50?paceTxt(s/(gDist/1000)):"--";
+  $("gpace").textContent=PV(curPace);
+  $("gavg").textContent=gDist>50?PV(s/(gDist/1000)):"--";
   $("hr").textContent=lastHr||"--";
   setBad();
   if(Date.now()-profT>4000){profT=Date.now();drawAlt()}
@@ -1033,8 +1084,14 @@ function onPos(p){
 }
 
 function startSession(){
+  if(profile.free){
+    liveSport=prefs.sport||"RUN_ROUTE";$("l-sport").value=liveSport;setUnits();
+    $("l-recap").value=String(prefs.recap||0);$("l-keep").checked=!!prefs.keep;$("l-maxpace").value="";$("l-cap").value="";$("l-dur").value="";
+    $("livetgt").textContent="Enregistrement libre";
+    liveLoad();livePre(true);show("live");return;
+  }
   const W=weekPlan(0),t=recommend(W.days[todayIdx()].t).session;
-  liveSport=W.ctx.kind==="trail"?"RUN_TRAIL":"RUN_ROUTE";
+  liveSport=profile.free?(prefs.sport||"RUN_ROUTE"):(W.ctx.kind==="trail"?"RUN_TRAIL":"RUN_ROUTE");$("l-sport").value=liveSport;setUnits();
   $("l-recap").value=String(prefs.recap||0);$("l-keep").checked=!!prefs.keep;$("l-maxpace").value="";
   $("l-cap").value=capFor(t)||"";
   const planned=W.days[todayIdx()].t,inf=t===planned?W.days[todayIdx()]:sessInfo(t,W.ctx),pm=inf&&inf.m;$("l-dur").value=t!=="REST"&&pm>0?pm:"";
@@ -1043,11 +1100,13 @@ function startSession(){
   /* écran de préparation : réglages puis « Démarrer » */
   liveLoad();livePre(true);show("live");
 }
+(function(){const s=$("l-sport");["RUN_ROUTE","RUN_TRAIL","WALK","MTB","GRAVEL","CYCLING"].forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=SPORTS[k];s.appendChild(o)});s.onchange=()=>{liveSport=s.value;setUnits()}})();
 function livePre(on){
   $("lwrap").classList.toggle("hidden",on);$("end").classList.toggle("hidden",on);$("lstart").classList.toggle("hidden",!on);
   $("gmsg").classList.toggle("hidden",on);$("prehd").classList.toggle("hidden",!on);
 }
 function beginSession(){
+  liveSport=$("l-sport").value||"RUN_ROUTE";prefs.sport=liveSport;try{persistP()}catch(e){}setUnits();
   livePre(false);
   t0=Date.now();liveOn=true;$("msg").textContent="";$("gmsg").textContent="GPS : recherche du signal…";
   recapKm=+$("l-recap").value;maxPaceS=parsePace($("l-maxpace").value);liveCapHr=+$("l-cap").value||0;curPace=0;
@@ -1142,7 +1201,7 @@ function resumeLive(){
 /* Sortie : jamais sans confirmation */
 function openCfm(){
   const s=Math.round((Date.now()-t0)/1000);
-  $("cfm-sum").textContent=clock(s)+" · "+(gDist/1000).toFixed(2).replace(".",",")+" km · D+ "+Math.round(gGain)+" m"+(gDist>50?" · "+paceTxt(s/(gDist/1000))+"/km":"");
+  $("cfm-sum").textContent=clock(s)+" · "+(gDist/1000).toFixed(2).replace(".",",")+" km · D+ "+Math.round(gGain)+" m"+(gDist>50?" · "+PV(s/(gDist/1000))+" "+PU():"");
   $("cfm-msg").textContent="";$("cfm-save").disabled=false;$("cfm").classList.remove("hidden");
 }
 $("end").onclick=openCfm;
@@ -1331,7 +1390,7 @@ const CHARTS=[
  ["allure","Allure","Allure des sorties course","Plus la courbe monte, plus vous êtes rapide. En trail, l’allure est corrigée du dénivelé (100 m de D+ comptent pour 1 km)."],
  ["fc","FC","Fréquence cardiaque moyenne","Si la FC baisse à allure égale, votre forme progresse."]
 ];
-const SORDER=["RUN_ROUTE","RUN_TRAIL","CYCLING","SWIMMING","OTHER"];
+const SORDER=["RUN_ROUTE","RUN_TRAIL","WALK","CYCLING","MTB","GRAVEL","TRAINER","SWIMMING","OTHER"];
 const sk=s=>s.sport||"RUN_ROUTE";
 const dec=v=>String(Math.round(v*10)/10).replace(".",",");
 const niceMax=m=>{const p=Math.pow(10,Math.floor(Math.log10(m))),n=m/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p};
@@ -1573,10 +1632,12 @@ function openSetup(){
   $("f-days").value=p.days||3;$("f-ter").value=p.terrain||"route";
   $("f-gd").value=p.goal?(p.goal.custom?"custom":String(p.goal.km)):"";
   $("f-gkm").value=p.goal&&p.goal.custom?p.goal.km:"";$("f-gdp").value=p.goal&&p.goal.custom?(p.goal.dplus||""):"";toggleCustom();$("f-gdate").value=p.goal?p.goal.date:"";$("f-gt").value=p.goal&&p.goal.sec?fmtT(p.goal.sec):"";
+  $("f-free").checked=!!p.free;$("coachf").classList.toggle("hidden",!!p.free);
   $("fmsg").textContent="";
   $("prest").textContent=profile?"Annuler":"J’ai déjà une sauvegarde";
   show("setup");
 }
+$("f-free").onchange=()=>$("coachf").classList.toggle("hidden",$("f-free").checked);
 $("psave").onclick=()=>{
   const age=+$("f-age").value,w=+$("f-w").value,msg=$("fmsg");
   if(!(age>=12&&age<=90)){msg.textContent="Indiquez un âge entre 12 et 90 ans.";return}
@@ -1585,13 +1646,14 @@ $("psave").onclick=()=>{
   if(fcmax&&!(fcmax>=120&&fcmax<=230)){msg.textContent="FC maximale : indiquez une valeur entre 120 et 230 bpm.";return}
   if(fcrest&&!(fcrest>=30&&fcrest<=100)){msg.textContent="FC de repos : indiquez une valeur entre 30 et 100 bpm.";return}
   if(fcmax&&fcrest&&fcrest>fcmax-30){msg.textContent="La FC de repos doit être nettement inférieure à la FC maximale.";return}
+  const free=$("f-free").checked;
   let res=null;const dist=$("f-dist").value;
-  if(dist&&$("f-time").value.trim()){
+  if(!free&&dist&&$("f-time").value.trim()){
     const sec=parseT($("f-time").value);
     if(!(sec>0)){msg.textContent="Temps réalisé : utilisez le format mm:ss ou h:mm:ss (ou laissez vide).";return}
     res={km:+dist,sec:sec};
   }
-  let goal=null;const gk=$("f-gd").value;
+  let goal=null;const gk=free?"":$("f-gd").value;
   if(gk){
     const gdv=$("f-gdate").value;
     if(!isDate(gdv)||gdv<=today()){msg.textContent="Indiquez une date de course à venir.";return}
@@ -1605,7 +1667,7 @@ $("psave").onclick=()=>{
     }
     goal={km:km,date:gdv,sec:gs,dplus:dp,custom:gk==="custom"};
   }
-  profile={age:age,weight:w,level:$("f-lvl").value,res:res,days:+$("f-days").value,terrain:$("f-ter").value,goal:goal,fcmax:fcmax,fcrest:fcrest,vma:profile&&profile.vma>0?profile.vma:undefined,vmaDate:profile&&profile.vma>0?profile.vmaDate:undefined,extra:profile&&profile.extra?profile.extra:undefined};
+  profile={free:free,age:age,weight:w,level:$("f-lvl").value,res:res,days:+$("f-days").value,terrain:$("f-ter").value,goal:goal,fcmax:fcmax,fcrest:fcrest,vma:profile&&profile.vma>0?profile.vma:undefined,vmaDate:profile&&profile.vma>0?profile.vmaDate:undefined,extra:profile&&profile.extra?profile.extra:undefined};
   saveProfile();show("plan");
 };
 $("prest").onclick=()=>{if(profile){show("plan");return}show("help");if(window.AndroidBle&&AndroidBle.readBackup)restoreBackup()};
@@ -1654,27 +1716,38 @@ const RACES=[
 ];
 const MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
 (function(){
-  const sel=$("f-race"),ds=$("f-rdist");
-  const lab=r=>{const d=r[2],y=d.slice(0,4),m=MOIS[+d.slice(5,7)-1];if(r[5]&&r[5].lab)return r[5].lab+" · "+r[0]+" · "+r[1];return (d.length>7?(+d.slice(8,10))+" "+m+" "+y:m+" "+y+" (date à confirmer)")+" · "+r[0]+" · "+r[1]};
-  RACES.forEach((r,i)=>{const o=document.createElement("option");o.value=i;o.textContent=lab(r);sel.appendChild(o)});
   const fmt=k=>String(k).replace(".",",")+" km";
-  sel.onchange=()=>{
-    const r=RACES[sel.value];ds.innerHTML="";
-    if(!r){ds.classList.add("hidden");return}
-    r[3].forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=fmt(k);ds.appendChild(o)});
-    ds.classList.remove("hidden");pick();
-  };
-  function pick(){
-    const r=RACES[sel.value];if(!r)return;
-    const km=+ds.value,std=[5,10,21.0975,42.195].find(x=>Math.abs(x-km)<.3);
+  const rows=[];
+  RACES.forEach((r,i)=>r[3].forEach(k=>rows.push({r:r,k:k})));
+  rows.sort((a,b)=>a.r[2]<b.r[2]?-1:a.r[2]>b.r[2]?1:a.k-b.k);
+  const dlab=(r,k)=>{const ex=r[5]||{},d=(ex.dt&&ex.dt[k])||r[2];return d.length>7?(+d.slice(8,10))+" "+MOIS[+d.slice(5,7)-1]+" "+d.slice(2,4):MOIS[+d.slice(5,7)-1]+" "+d.slice(2,4)+" (à confirmer)"};
+  const tb=$("rt").tBodies[0];
+  function draw(){
+    const q=$("rq").value.trim().toLowerCase();tb.innerHTML="";
+    rows.forEach(x=>{
+      const r=x.r,ex=r[5]||{},dp=ex.dp&&ex.dp[x.k]!=null?ex.dp[x.k]+" m":"–";
+      const txt=(r[0]+" "+r[1]+" "+fmt(x.k)+" "+dlab(r,x.k)).toLowerCase();
+      if(q&&!txt.includes(q))return;
+      const tr=document.createElement("tr");
+      tr.innerHTML='<td>'+dlab(r,x.k)+'</td><td><span class="rn"></span><span class="rtr '+(r[4]?'':'road')+'">'+(r[4]?'Trail':'Route')+'</span><div class="rl"></div></td><td><b>'+fmt(x.k)+'</b></td><td>'+dp+'</td>';
+      tr.querySelector(".rn").textContent=r[0];tr.querySelector(".rl").textContent=r[1];
+      tr.onclick=()=>pick(r,x.k);tb.appendChild(tr);
+    });
+    if(!tb.rows.length){const tr=document.createElement("tr");tr.innerHTML='<td colspan="4">Aucune course trouvée.</td>';tb.appendChild(tr)}
+  }
+  $("f-race").onclick=()=>{$("rq").value="";draw();$("rtab").classList.remove("hidden")};
+  $("rclose").onclick=()=>$("rtab").classList.add("hidden");
+  $("rq").oninput=draw;
+  function pick(r,km){
+    const std=[5,10,21.0975,42.195].find(x=>Math.abs(x-km)<.3);
     $("f-ter").value=r[4]?"trail":"route";
     if(std&&!r[4]){$("f-gd").value=String(std)}else{$("f-gd").value="custom";$("f-gkm").value=km;$("f-gdp").value=""}
     toggleCustom();
     const ex=r[5]||{},dt=(ex.dt&&ex.dt[km])||(r[2].length>7?r[2]:"");
     $("f-gdate").value=dt;if(ex.dp&&ex.dp[km]!=null&&$("f-gd").value==="custom")$("f-gdp").value=ex.dp[km];
-    $("f-rmsg").textContent=dt?"Objectif rempli : "+r[0]+", "+fmt(km)+(ex.dp&&ex.dp[km]!=null?", D+ "+ex.dp[km]+" m":"")+". Vérifiez la date et le dénivelé sur le site de la course.":"Objectif rempli : "+r[0]+", "+fmt(km)+". Date exacte à saisir ci-dessous (à confirmer chez l’organisateur)"+(r[4]?", ainsi que le dénivelé":"")+".";
+    $("f-rmsg").textContent=(dt?"Objectif rempli : ":"Objectif rempli (date à saisir) : ")+r[0]+", "+fmt(km)+(ex.dp&&ex.dp[km]!=null?", D+ "+ex.dp[km]+" m":"")+". Vérifiez la date et le dénivelé sur le site de la course.";
+    $("rtab").classList.add("hidden");
   }
-  ds.onchange=pick;
 })();
 
 function renderGoal(W){
@@ -1715,7 +1788,7 @@ $("mv-d").onchange=()=>{
 $("mv-reset").onclick=()=>{const W=weekPlan(+$("mv-w").value);delete swaps[iso(W.mon)];saveSwaps();renderPlan()};
 function kcalFor(min,rpe,spd,sport){
   if(!profile||!(min>0))return 0;
-  const met=spd>3&&spd<25?spd:({CYCLING:4+0.8*rpe,SWIMMING:4+0.9*rpe,OTHER:3+0.7*rpe}[sport]||6+0.6*rpe);
+  const met=spd>3&&spd<25?spd:({CYCLING:4+0.8*rpe,MTB:4.5+0.8*rpe,GRAVEL:4+0.8*rpe,TRAINER:4+0.8*rpe,WALK:2.3+0.5*rpe,SWIMMING:4+0.9*rpe,OTHER:3+0.7*rpe}[sport]||6+0.6*rpe);
   return Math.round(met*profile.weight*min/60);
 }
 if(profile){let ch=false;sessions.forEach(s=>{if(s.kcal==null){s.kcal=kcalFor(s.min,s.rpe,0);ch=true}});if(ch)persist()}
@@ -1723,7 +1796,11 @@ if(profile){let ch=false;sessions.forEach(s=>{if(s.kcal==null){s.kcal=kcalFor(s.
 function guessSport(t){
   t=(t||"").toLowerCase();
   if(t.includes("run")||t==="9")return t.includes("trail")?"RUN_TRAIL":"RUN_ROUTE";
-  if(t.includes("bik")||t.includes("cycl")||t==="1")return "CYCLING";
+  if(t.includes("mount")||t.includes("mtb")||t.includes("vtt"))return "MTB";
+  if(t.includes("gravel"))return "GRAVEL";
+  if(t.includes("indoor")||t.includes("virtual")||t.includes("trainer")||t.includes("spin"))return "TRAINER";
+  if(t.includes("walk")||t.includes("hik")||t.includes("marche")||t.includes("rando"))return "WALK";
+  if(t.includes("bik")||t.includes("cycl")||t.includes("ride")||t==="1")return "CYCLING";
   if(t.includes("swim"))return "SWIMMING";
   return "OTHER";
 }
@@ -1780,7 +1857,7 @@ function parseTCX(txt){
   });
   return {sport:guessSport(act.getAttribute("Sport")),date:iso(new Date(st||Date.now())),min:Math.round(sec/60),sec:Math.round(sec),ts:st?new Date(st).getTime():0,hr:hw?Math.round(hs/hw):0,km:m/1000,dplus:gainOf(eles),pts:mkTrace(raw)};
 }
-function fitSport(n,sub){return n===1?(sub===3?"RUN_TRAIL":"RUN_ROUTE"):n===2?"CYCLING":n===5?"SWIMMING":"OTHER"}
+function fitSport(n,sub){return n===1?(sub===3?"RUN_TRAIL":"RUN_ROUTE"):n===2?(sub===8?"MTB":sub===46?"GRAVEL":(sub===6||sub===5)?"TRAINER":"CYCLING"):(n===11||n===17)?"WALK":n===5?"SWIMMING":"OTHER"}
 function parseFIT(buf){
   const v=new DataView(buf);
   if(buf.byteLength<14||String.fromCharCode(v.getUint8(8),v.getUint8(9),v.getUint8(10),v.getUint8(11))!==".FIT")return null;
@@ -1835,7 +1912,7 @@ const readDur=()=>(+$("a-h").value||0)*3600+(+$("a-m").value||0)*60+(+$("a-s").v
 function setDur(sec){$("a-h").value=sec?Math.floor(sec/3600):"";$("a-m").value=sec?Math.floor(sec%3600/60):"";$("a-s").value=sec?Math.round(sec%60):""}
 const fmtHMS=s=>Math.floor(s/3600)+":"+pad2(Math.floor(s%3600/60))+":"+pad2(Math.round(s%60));
 const durText=s=>s.sec?fmtHMS(s.sec):s.min+" min";
-const sameFam=(x,y)=>{const r=v=>!v||v==="RUN_ROUTE"||v==="RUN_TRAIL";return x===y||(r(x)&&r(y))};
+const sameFam=(x,y)=>{const r=v=>!v||v==="RUN_ROUTE"||v==="RUN_TRAIL",b=v=>v==="CYCLING"||v==="MTB"||v==="GRAVEL"||v==="TRAINER";return x===y||(r(x)&&r(y))||(b(x)&&b(y))};
 /* Doublon : la sortie existe déjà (ex. enregistrée avec le GPS du téléphone) et la montre apporte plus de données.
    On complète la sortie existante (même id, même RPE) puis le doublon n'est pas créé. Renvoie true si quelque chose a changé. */
 function mergeDup(ex,rec,pts){
@@ -1929,7 +2006,7 @@ function startEdit(s){
 const amsg=t=>$("a-msg").textContent=t;
 (function(){
   const s=$("a-sport");
-  ["CYCLING","SWIMMING","OTHER","RUN_ROUTE","RUN_TRAIL"].forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=SPORTS[k];s.appendChild(o)});
+  ["RUN_ROUTE","RUN_TRAIL","WALK","CYCLING","MTB","GRAVEL","TRAINER","SWIMMING","OTHER"].forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=SPORTS[k];s.appendChild(o)});
   $("a-date").value=today();
 })();
 $("a-rpe").oninput=e=>$("a-rpev").textContent=e.target.value;
@@ -2019,7 +2096,7 @@ function renderDetail(){
   if(!s||!pts)return;
   $("d-body").classList.remove("hidden");
   const sn=$("d-snap");if(maps[detailId]){sn.src=maps[detailId];sn.classList.remove("hidden")}else{sn.classList.add("hidden");sn.removeAttribute("src")}
-  const run=isRun(s),n=pts.length;
+  const run=isPace(s),n=pts.length;
   $("d-info").textContent=[fmtDate(s.date),durText(s),s.km?dec(s.km)+" km":"",s.dplus?"+"+s.dplus+" m":"",s.hr?s.hr+" bpm":""].filter(Boolean).join(" · ");
   const X=pts.map(p=>(p[1]/1000).toFixed(1));
   const line=(id,vals,color,o)=>{
