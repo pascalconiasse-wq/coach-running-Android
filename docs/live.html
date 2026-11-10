@@ -24,9 +24,19 @@ h1{margin:0;font-size:20px}
 footer{padding:0 16px 20px;color:var(--mut);font-size:12px}
 .live{display:inline-block;width:9px;height:9px;border-radius:50%;background:#18b26b;margin-right:6px}
 .off{background:var(--mut)}
+#sosbar{position:fixed;left:0;right:0;top:0;z-index:2000;background:#e5484d;color:#fff;padding:14px 16px;text-align:center;font-weight:800;font-size:20px;animation:sosf .8s steps(2,jump-none) infinite;box-shadow:0 4px 18px rgba(0,0,0,.4)}
+#sosbar small{display:block;font-weight:600;font-size:14px;opacity:.95;margin-top:4px}
+#sosbar a,#sosbar button{display:inline-block;margin:8px 6px 0;padding:10px 14px;border-radius:10px;border:0;background:#fff;color:#b3141a;font:800 16px system-ui;text-decoration:none}
+@keyframes sosf{0%{background:#e5484d}100%{background:#9b0d12}}
+body.sos{box-shadow:inset 0 0 0 6px #e5484d}
+body.sos header{padding-top:150px}
+.sosmk{width:46px;height:46px;border-radius:50%;background:#e5484d;color:#fff;font:800 14px/46px system-ui;text-align:center;border:3px solid #fff;box-shadow:0 0 0 0 rgba(229,72,77,.8);animation:sosp 1.2s infinite}
+@keyframes sosp{0%{box-shadow:0 0 0 0 rgba(229,72,77,.85)}100%{box-shadow:0 0 0 38px rgba(229,72,77,0)}}
+#sosok{position:fixed;left:12px;right:12px;top:12px;z-index:2000;background:#18b26b;color:#fff;padding:12px;border-radius:12px;text-align:center;font-weight:700}
 </style>
 </head>
 <body>
+<div id="sosbar" style="display:none"></div><div id="sosok" style="display:none">Alerte SOS annulée : tout va bien.</div>
 <header><h1 id="t">Suivi en direct</h1><div id="st">Chargement…</div></header>
 <div id="map"></div>
 <div id="grid">
@@ -74,7 +84,7 @@ function drawProf(cv,pts,fg,fill,line){
     var cs=getComputedStyle(document.body);drawProf($("alt"),o,cs.color,"rgba(46,196,196,.30)","#1fb5b5");
   }
   function update(data){
-    if(!data||!data.pts){$("st").textContent="La séance n’a pas encore démarré. Cette page se mettra à jour toute seule.";return}
+    if(!data||!data.pts){if(data&&data.sos&&data.sos.on)return;$("st").textContent="La séance n’a pas encore démarré. Cette page se mettra à jour toute seule.";return}
     var meta=data.meta||{},keys=Object.keys(data.pts).sort(),P=keys.map(function(k){return data.pts[k]}).filter(function(p){return p&&p.length>=3});
     if(!P.length)return;
     $("t").textContent=(meta.name?meta.name+" : ":"")+"suivi en direct";
@@ -99,9 +109,30 @@ function drawProf(cv,pts,fg,fill,line){
     if(!line){line=L.polyline(ll,{color:"#e5484d",weight:5}).addTo(map);mark=L.circleMarker(ll[ll.length-1],{radius:8,color:"#fff",weight:3,fillColor:"#2f6bff",fillOpacity:1}).addTo(map);map.fitBounds(line.getBounds(),{padding:[30,30],maxZoom:16});fitted=true}
     else{line.setLatLngs(ll);mark.setLatLng(ll[ll.length-1]);if(follow)map.panTo(ll[ll.length-1],{animate:false})}
   }
+  var sosMk=null,sosSeen=false,sosAud=null,sosSnd=false,sosT=null,sosBeep=null,baseTitle=document.title;
+  function beep(){try{if(!sosAud)sosAud=new (window.AudioContext||window.webkitAudioContext)();var o=sosAud.createOscillator(),g=sosAud.createGain();o.type="square";o.frequency.value=960;g.gain.value=.25;o.connect(g);g.connect(sosAud.destination);o.start();o.stop(sosAud.currentTime+.35)}catch(e){}}
+  function sosSound(on){sosSnd=on;clearInterval(sosBeep);if(on){beep();sosBeep=setInterval(function(){beep();try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}},1200)}}
+  window.sosToggleSound=function(){sosSound(!sosSnd);var b=$("sosbtn");if(b)b.textContent=sosSnd?"🔇 Couper le son":"🔊 Activer l’alarme"};
+  function sos(data){
+    var o=data&&data.sos;
+    if(o&&o.on){
+      var nm=(data.meta&&data.meta.name)||"Le coureur",d=new Date(o.t||Date.now()),hh=("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+      $("sosbar").style.display="block";document.body.classList.add("sos");
+      $("sosbar").innerHTML="🆘 ALERTE SOS — "+nm.replace(/[<>&]/g,"")+" a besoin d’aide<small>Alerte lancée à "+hh+" · position mise à jour en direct</small>"+
+        '<a href="https://www.google.com/maps/dir/?api=1&destination='+o.lat+','+o.lon+'" target="_blank">🧭 Itinéraire</a><a href="https://maps.google.com/?q='+o.lat+','+o.lon+'" target="_blank">📍 Ouvrir dans Maps</a><button id="sosbtn" onclick="sosToggleSound()">'+(sosSnd?"🔇 Couper le son":"🔊 Activer l’alarme")+'</button><a href="tel:112">📞 Appeler le 112</a>';
+      var ll=[o.lat,o.lon];
+      if(!sosMk){sosMk=L.marker(ll,{icon:L.divIcon({className:"",html:'<div class="sosmk">SOS</div>',iconSize:[46,46],iconAnchor:[23,23]}),zIndexOffset:5000}).addTo(map);map.setView(ll,16);follow=false}
+      else sosMk.setLatLng(ll);
+      if(!sosSeen){sosSeen=true;try{navigator.vibrate&&navigator.vibrate([500,200,500,200,500])}catch(e){}clearInterval(sosT);sosT=setInterval(function(){document.title=document.title===baseTitle?"🆘 SOS !":baseTitle},900)}
+    }else if(sosSeen){
+      sosSeen=false;sosSound(false);clearInterval(sosT);document.title=baseTitle;$("sosbar").style.display="none";document.body.classList.remove("sos");
+      if(sosMk){map.removeLayer(sosMk);sosMk=null}
+      $("sosok").style.display="block";setTimeout(function(){$("sosok").style.display="none"},12000);
+    }
+  }
   var stop=false;
   function load(){
-    fetch("https://"+host+"/live/"+encodeURIComponent(id)+".json",{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){update(d);if(d&&d.meta&&d.meta.done)stop=true}).catch(function(){$("st").textContent="Connexion impossible, nouvelle tentative…"}).then(function(){if(!stop)setTimeout(load,10000)});
+    fetch("https://"+host+"/live/"+encodeURIComponent(id)+".json",{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){update(d);sos(d);if(d&&d.meta&&d.meta.done&&!(d.sos&&d.sos.on))stop=true}).catch(function(){$("st").textContent="Connexion impossible, nouvelle tentative…"}).then(function(){if(!stop)setTimeout(load,10000)});
   }
   load();
 })();

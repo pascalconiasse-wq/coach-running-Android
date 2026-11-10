@@ -85,6 +85,11 @@ object LiveUploader {
     @Volatile private var name = ""
     @Volatile private var startMs = 0L
     @Volatile private var finishing = false
+    @Volatile private var sosOn = false
+    @Volatile private var sosDirty = false
+    @Volatile private var sosLat = 0.0
+    @Volatile private var sosLon = 0.0
+    @Volatile private var sosT = 0L
     private var sent = 0
     private var thread: Thread? = null
 
@@ -107,6 +112,14 @@ object LiveUploader {
         t.start()
     }
 
+    fun active(): Boolean = base.isNotEmpty()
+
+    /** Alerte SOS visible sur la page de suivi. Envoi immédiat (le thread est réveillé). */
+    fun setSos(on: Boolean, lat: Double, lon: Double, t: Long) {
+        sosOn = on; sosLat = lat; sosLon = lon; sosT = t; sosDirty = true
+        thread?.interrupt()
+    }
+
     /** finish = true : dernier envoi puis séance marquée terminée. Sinon : arrêt sans rien envoyer. */
     fun end(finish: Boolean) {
         if (base.isEmpty()) return
@@ -121,6 +134,11 @@ object LiveUploader {
             upd.put("meta/name", name)
             upd.put("meta/start", startMs)
             upd.put("meta/done", done)
+            val sd = sosDirty
+            if (sd) {
+                upd.put("sos/on", sosOn)
+                if (sosOn) { upd.put("sos/lat", sosLat); upd.put("sos/lon", sosLon); upd.put("sos/t", sosT) }
+            }
             var newSent = sent
             synchronized(TrackState.points) {
                 val size = TrackState.points.size
@@ -146,7 +164,7 @@ object LiveUploader {
             c.outputStream.use { it.write(upd.toString().toByteArray()) }
             val code = c.responseCode
             c.disconnect()
-            if (code in 200..299) sent = newSent
+            if (code in 200..299) { sent = newSent; if (sd) sosDirty = false }
         } catch (e: Exception) {
             // hors réseau : on réessaiera au prochain tour avec les mêmes points
         }
@@ -460,6 +478,24 @@ class TrackBridge(
     @JavascriptInterface
     fun setLive(base: String, name: String, startMs: Long) {
         if (base.isEmpty()) LiveUploader.end(false) else LiveUploader.begin(base, name, startMs)
+    }
+
+    @JavascriptInterface
+    fun sosActive(): Boolean = LiveUploader.active()
+
+    /** SOS : on/off, dernière position connue. Réveille l'envoi vers la page de suivi. */
+    @JavascriptInterface
+    fun setSos(on: Boolean, lat: Double, lon: Double) {
+        LiveUploader.setSos(on, lat, lon, System.currentTimeMillis())
+    }
+
+    /** Vibration d'alarme (même écran éteint) : durées en ms séparées par des virgules. */
+    @JavascriptInterface
+    fun buzz(csv: String) {
+        try {
+            val p = csv.split(",").map { it.trim().toLong() }.toLongArray()
+            TrackState.buzz(act, p)
+        } catch (e: Exception) { }
     }
 
     @JavascriptInterface
