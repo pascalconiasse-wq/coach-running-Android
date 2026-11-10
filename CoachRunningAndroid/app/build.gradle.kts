@@ -16,6 +16,13 @@ android {
     // donc Android garde les autorisations lors des mises à jour.
     val ksFile = System.getenv("KEYSTORE_FILE")
     signingConfigs {
+        // Clé de secours fixe du dépôt : même signature à chaque version même sans secrets GitHub.
+        getByName("debug") {
+            storeFile = file("../../debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         if (ksFile != null) create("fixe") {
             storeFile = file(ksFile)
             storePassword = System.getenv("KEYSTORE_PASSWORD")
