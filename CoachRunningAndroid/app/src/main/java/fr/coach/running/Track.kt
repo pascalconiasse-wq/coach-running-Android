@@ -79,6 +79,54 @@ object TrackState {
     }
 }
 
+/** SOS : appelle les numéros un par un, en haut-parleur. Passe au suivant si personne n'a décroché au bout du délai. */
+object SosCaller {
+    @Volatile private var gen = 0
+
+    fun hasPerm(ctx: Context): Boolean =
+        androidx.core.content.ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.CALL_PHONE) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    fun stop() { gen++ }
+
+    private fun sleepS(sec: Int, my: Int): Boolean {
+        var left = sec * 1000L
+        while (left > 0 && gen == my) { Thread.sleep(500); left -= 500 }
+        return gen == my
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun place(ctx: Context, num: String) {
+        try {
+            val tm = ctx.getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+            val ex = Bundle()
+            ex.putBoolean(android.telecom.TelecomManager.EXTRA_START_CALL_WITH_SPEAKERPHONE, true)
+            tm.placeCall(android.net.Uri.fromParts("tel", num, null), ex)
+        } catch (e: Exception) { }
+    }
+
+    fun start(ctx: Context, nums: List<String>, firstS: Int, nextS: Int) {
+        stop()
+        if (nums.isEmpty() || firstS < 0 || !hasPerm(ctx)) return
+        val my = ++gen
+        val t = Thread {
+            try {
+                if (!sleepS(firstS, my)) return@Thread
+                var i = 0
+                while (gen == my && i < nums.size * 3) {
+                    place(ctx, nums[i % nums.size])
+                    if (!sleepS(maxOf(nextS, 30), my)) return@Thread
+                    val am = ctx.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+                    if (am.mode == android.media.AudioManager.MODE_IN_CALL) return@Thread   // quelqu'un a décroché
+                    i++
+                }
+            } catch (e: Exception) { }
+        }
+        t.isDaemon = true
+        t.start()
+    }
+}
+
 /** Envoie la trace à Firebase (REST) pour le suivi en direct, même écran éteint. */
 object LiveUploader {
     @Volatile private var base = ""        // https://HOTE/live/ID
@@ -479,6 +527,17 @@ class TrackBridge(
     fun setLive(base: String, name: String, startMs: Long) {
         if (base.isEmpty()) LiveUploader.end(false) else LiveUploader.begin(base, name, startMs)
     }
+
+    /** Appels SOS automatiques : numéros séparés par des virgules, délai avant le 1er appel et entre deux appels (secondes). */
+    @JavascriptInterface
+    fun sosCall(numbers: String, firstS: Int, nextS: Int): Boolean {
+        val l = numbers.split(",", ";").map { it.trim().replace(" ", "") }.filter { it.length >= 3 }
+        SosCaller.start(act, l, firstS, nextS)
+        return SosCaller.hasPerm(act)
+    }
+
+    @JavascriptInterface
+    fun sosCallStop() { SosCaller.stop() }
 
     @JavascriptInterface
     fun sosActive(): Boolean = LiveUploader.active()

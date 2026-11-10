@@ -332,6 +332,9 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
       <label class="f" for="l-stel">Numéros SOS (séparés par des virgules ; vide = les numéros du suivi)</label><input type="text" id="l-stel" inputmode="tel" placeholder="ex. 0612345678">
       <button type="button" class="alt" id="l-spick">Ajouter depuis mes contacts</button>
       <label class="f" for="l-sdel">Compte à rebours avant envoi (secondes, 0 = immédiat)</label><input type="number" id="l-sdel" inputmode="numeric" min="0" max="120" placeholder="30">
+      <label class="f" for="l-scall">Appel automatique en haut-parleur après (minutes, 0 = jamais)</label><input type="number" id="l-scall" inputmode="numeric" min="0" max="60" placeholder="3">
+      <label class="f" for="l-snext">Passer au numéro suivant si personne ne décroche après (minutes)</label><input type="number" id="l-snext" inputmode="numeric" min="1" max="30" placeholder="5">
+      <button type="button" class="alt" id="l-sperm">Autoriser les appels téléphoniques</button>
       <button type="button" class="alt" id="l-stest">Envoyer un SMS de test SOS</button>
       <p class="mute" id="l-smsg" role="status"></p>
     </details>
@@ -426,7 +429,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <details class="card"><summary><b>Bouton SOS</b></summary>
     <p>Pendant une séance, le bouton rouge <b>SOS</b> (bas de l’écran) se déclenche par <b>2 touches rapides</b>. Un écran rouge clignotant lance un compte à rebours (30 s par défaut, réglable de 0 à 120 s) avec alarme et vibrations : touchez <b>ANNULER</b> en cas de fausse manip.</p>
     <p>À la fin du compte à rebours : un SMS avec votre position (lien Maps) et le lien de suivi part aux <b>numéros SOS</b> ; la page de suivi affiche une alerte rouge clignotante avec un repère SOS sur la carte, un bouton Itinéraire, l’appel du 112 et une alarme sonore ; la position est mise à jour toutes les 30 s sur la page et renvoyée par SMS toutes les 3 minutes. « C’était une erreur » annule tout et envoie un SMS « fausse alerte ».</p>
-    <p>Réglages : avant de démarrer, rubrique « 🆘 Réglages SOS » (numéros, contacts, compte à rebours, SMS de test). Sans numéro SOS, ce sont les numéros du suivi qui sont utilisés. Le SOS active le suivi en direct même s’il était désactivé. Nécessite l’écran allumé pour le double appui, une autorisation SMS et du réseau.</p></details>
+    <p>Réglages : roue ⚙ (en haut de l’écran principal), rubrique « 🆘 SOS » (numéros, contacts, compte à rebours, appel automatique, SMS de test). Sans numéro SOS, ce sont les numéros du suivi qui sont utilisés. Le SOS active le suivi en direct même s’il était désactivé. Appel automatique : après le délai réglé (3 min par défaut) sans annulation, l’appli appelle le 1er numéro SOS en haut-parleur ; si personne ne décroche au bout de 5 min, elle appelle le suivant. Autorisez les appels dans les réglages SOS. Nécessite l’écran allumé pour le double appui, les autorisations SMS et appel, et du réseau.</p></details>
   <details class="card"><summary><b>Onglet Plan</b></summary>
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), zones cardio, allures de référence calculées sur vos meilleurs efforts, et test VMA facultatif qui débloque des séances de VMA. Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation. Dès qu’une activité existe pour la journée (enregistrée par l’appli, importée ou synchronisée depuis la montre), la séance du jour passe à « faite ✓ » et le détail prévu disparaît ; dans la liste de la semaine, les jours faits sont cochés et barrés.</p>
     <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance). Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
@@ -977,6 +980,8 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if(liveOn){if(b.data
    "f-fcmax":"Fréquence cardiaque maximale : sert aux zones et aux alertes. Estimée si vous ne la connaissez pas.",
    "l-sport":"Type d’activité de cette sortie, préréglé sur votre objectif. Le VTT, le gravel et le vélo affichent la vitesse en km/h.",
    "l-stel":"Numéros qui reçoivent l’alerte SOS avec votre position. Vide : les numéros du suivi.",
+   "l-scall":"Après ce délai sans annulation, l’appli appelle le 1er numéro SOS en haut-parleur (autorisation d’appel requise).",
+   "l-snext":"Si personne n’a décroché au bout de ce délai, l’appli appelle le numéro suivant, et ainsi de suite.",
    "l-sdel":"Délai avant l’envoi réel : permet d’annuler une fausse manip. 0 = envoi immédiat.",
    "l-recap":"Un récap vibre et s’affiche tous les 1 ou 5 km (km, temps, allure, D+), et part par SMS si le partage est réglé.",
    "l-maxpace":"Alerte (3 vibrations) si vous allez plus vite que cette allure.",
@@ -1207,13 +1212,13 @@ const LIVE_PAGE="https://pascalconiasse-wq.github.io/coach-running-Android/live.
 const DB_DEF="coach-running-4f54f-default-rtdb.europe-west1.firebasedatabase.app";
 const dbHost=v=>String(v||"").trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"")||DB_DEF;
 function liveSave(){
-  prefs.share=$("l-share").checked;prefs.name=$("l-name").value.trim();prefs.tels=$("l-tels").value.trim();prefs.db=dbHost($("l-db").value);prefs.sosTels=$("l-stel").value.trim();prefs.sosDelay=$("l-sdel").value.trim();persistP();
+  prefs.share=$("l-share").checked;prefs.name=$("l-name").value.trim();prefs.tels=$("l-tels").value.trim();prefs.db=dbHost($("l-db").value);prefs.sosTels=$("l-stel").value.trim();prefs.sosDelay=$("l-sdel").value.trim();prefs.sosCall=$("l-scall").value.trim();prefs.sosNext=$("l-snext").value.trim();persistP();
   $("l-sharebox").classList.toggle("hidden",!prefs.share);
 }
-["l-name","l-tels","l-db","l-stel","l-sdel"].forEach(i=>$(i).addEventListener("input",liveSave));
+["l-name","l-tels","l-db","l-stel","l-sdel","l-scall","l-snext"].forEach(i=>$(i).addEventListener("input",liveSave));
 ["l-share","l-name","l-tels","l-db"].forEach(i=>$(i).onchange=()=>{liveSave();if(i==="l-share")liveApply();if(i==="l-tels"&&prefs.tels){try{AndroidApp.sendSms("","")}catch(e){}}});
 function liveLoad(){
-  $("l-share").checked=!!prefs.share;$("l-name").value=prefs.name||"";$("l-tels").value=prefs.tels||"";$("l-db").value=dbHost(prefs.db);$("l-stel").value=prefs.sosTels||"";$("l-sdel").value=prefs.sosDelay===undefined?"":prefs.sosDelay;
+  $("l-share").checked=!!prefs.share;$("l-name").value=prefs.name||"";$("l-tels").value=prefs.tels||"";$("l-db").value=dbHost(prefs.db);$("l-stel").value=prefs.sosTels||"";$("l-sdel").value=prefs.sosDelay===undefined?"":prefs.sosDelay;$("l-scall").value=prefs.sosCall===undefined?"":prefs.sosCall;$("l-snext").value=prefs.sosNext===undefined?"":prefs.sosNext;
   $("l-sharebox").classList.toggle("hidden",!prefs.share);$("l-shmsg").textContent="";
 }
 function liveId(){if(!prefs.liveId){const a=new Uint8Array(14);(window.crypto||{}).getRandomValues?crypto.getRandomValues(a):a.forEach((_,i)=>a[i]=Math.random()*256);prefs.liveId=Array.from(a,x=>x.toString(36).padStart(2,"0").slice(-2)).join("");persistP()}return prefs.liveId}
@@ -1243,6 +1248,13 @@ $("l-sms").onclick=()=>{liveSave();liveSms(false)};
 /* ===== SOS ===== */
 let sosSt="idle",sosTimer=null,sosUp=null,sosSmsT=null,sosLastTap=0,sosAud=null,sosCnt=0,sosSent=0;
 const sosNums=()=>(prefs.sosTels||prefs.tels||"").trim();
+const sosNum=(v,d)=>{const x=parseFloat(v);return v===undefined||v===""||isNaN(x)?d:x};
+const sosCallMin=()=>Math.max(0,sosNum(prefs.sosCall,3)),sosNextMin=()=>Math.max(1,sosNum(prefs.sosNext,5));
+function sosStartCalls(){
+  const n=NAT();if(!n||!n.sosCall||sosCallMin()<=0)return "off";
+  const nums=sosNums().split(/[,;]/).map(x=>x.trim()).filter(Boolean);if(!nums.length)return "off";
+  try{return n.sosCall(nums.join(","),Math.round(sosCallMin()*60),Math.round(sosNextMin()*60))?"on":"perm"}catch(e){return "off"}
+}
 const sosDelay=()=>{const d=prefs.sosDelay;return d===undefined||d===""||isNaN(+d)?30:Math.max(0,Math.min(120,+d))};
 function sosBeep(){try{if(!sosAud)sosAud=new (window.AudioContext||window.webkitAudioContext)();const o=sosAud.createOscillator(),g=sosAud.createGain();o.type="square";o.frequency.value=900;g.gain.value=.3;o.connect(g);g.connect(sosAud.destination);o.start();o.stop(sosAud.currentTime+.3)}catch(e){}}
 function sosBuzz(pat){const n=NAT();try{if(n&&n.buzz)n.buzz(pat.join(","));else navigator.vibrate&&navigator.vibrate(pat)}catch(e){}}
@@ -1272,7 +1284,7 @@ function sosArm(){
   setTimeout(()=>{if(sosLastTap===now){sosLastTap=0;b.classList.remove("arm");b.textContent="SOS"}},700);
 }
 function sosStart(){
-  if(!sosNums()){showRecap("SOS : aucun numéro. Ajoutez-en dans « Réglages SOS » avant la séance.");sosBuzz([0,400,150,400]);return}
+  if(!sosNums()){showRecap("SOS : aucun numéro. Ajoutez-en dans la roue ⚙, rubrique « SOS ».");sosBuzz([0,400,150,400]);return}
   sosSt="count";sosCnt=sosDelay();sosShow(true);
   $("sostxt").textContent="Envoi de l’alerte SOS dans";$("sosnow").classList.remove("hidden");$("soshide").classList.add("hidden");$("soscancel").innerHTML="ANNULER<br><small>tout va bien</small>";
   clearInterval(sosTimer);
@@ -1286,9 +1298,9 @@ function sosStart(){
 }
 function sosSend(){
   clearInterval(sosTimer);sosSt="sent";
-  const r=sosSms(sosText(true));sosSent=Date.now();sosPushLive(true);
+  const r=sosSms(sosText(true));sosSent=Date.now();sosPushLive(true);const cr=sosStartCalls();
   $("sosnow").classList.add("hidden");$("soshide").classList.remove("hidden");$("soscd").textContent="✔";
-  $("sostxt").textContent=r==="ok"?"ALERTE ENVOYÉE : vos contacts ont reçu votre position.":r==="perm"?"SMS NON ENVOYÉ : autorisation SMS manquante. Appelez le 112 !":r==="none"?"Aucun numéro SOS.":"SMS NON ENVOYÉ. Appelez le 112 !";
+  $("sostxt").textContent=r==="ok"?"ALERTE ENVOYÉE : vos contacts ont reçu votre position."+(cr==="on"?" Appel automatique dans "+sosCallMin()+" min.":cr==="perm"?" (Appel automatique impossible : autorisez les appels dans les réglages ⚙.)":""):r==="perm"?"SMS NON ENVOYÉ : autorisation SMS manquante. Appelez le 112 !":r==="none"?"Aucun numéro SOS.":"SMS NON ENVOYÉ. Appelez le 112 !";
   $("soscancel").innerHTML="C’était une erreur<br><small>annuler l’alerte, tout va bien</small>";
   sosBuzz([0,800,200,800,200,800]);
   clearInterval(sosUp);sosUp=setInterval(()=>sosPushLive(true),30000);
@@ -1296,7 +1308,7 @@ function sosSend(){
   $("sosb").textContent="SOS ✔";
 }
 function sosCancel(){
-  const was=sosSt;clearInterval(sosTimer);clearInterval(sosUp);clearInterval(sosSmsT);sosSt="idle";sosShow(false);$("sosb").textContent="SOS";
+  const was=sosSt;try{const n=NAT();n&&n.sosCallStop&&n.sosCallStop()}catch(e){}clearInterval(sosTimer);clearInterval(sosUp);clearInterval(sosSmsT);sosSt="idle";sosShow(false);$("sosb").textContent="SOS";
   if(was==="sent"){
     sosPushLive(false);
     const r=sosSms((prefs.name||"Mon proche")+" : fausse alerte SOS, tout va bien. Merci !");
@@ -1305,6 +1317,7 @@ function sosCancel(){
 }
 $("sosb").onclick=sosArm;$("sosnow").onclick=()=>{if(sosSt==="count")sosSend()};$("soscancel").onclick=sosCancel;$("soshide").onclick=()=>sosShow(false);
 $("l-stest").onclick=()=>{liveSave();const r=sosSms("TEST SOS Coach Running : "+(prefs.name||"ceci")+" teste le bouton SOS. Aucune urgence.");$("l-smsg").textContent=r==="ok"?"SMS de test envoyé.":r==="perm"?"Autorisez l’envoi de SMS d’abord.":r==="none"?"Indiquez un numéro.":"Envoi impossible (SMS seulement dans l’appli Android)."};
+$("l-sperm").onclick=()=>{let r="err";try{r=AndroidApp.askCall()}catch(e){}$("l-smsg").textContent=r==="ok"?"Appels déjà autorisés.":r==="perm"?"Autorisez les appels dans la fenêtre Android, puis revenez ici.":"Disponible seulement dans l’appli Android."};
 $("l-spick").onclick=()=>{contactTo="sos";try{AndroidApp.pickContact()}catch(e){$("l-smsg").textContent="Contacts disponibles dans l’appli Android."}};
 function liveApply(){
   const n=NAT();if(!liveOn)return;
@@ -1673,7 +1686,7 @@ if(window.addEventListener)window.addEventListener("resize",()=>{if(!$("stats").
 function renderStats(){
   renderCharts();renderDetailSel();
 }
-const shareData=()=>({name:prefs.name||"",tels:prefs.tels||"",db:prefs.db||"",sosTels:prefs.sosTels||"",sosDelay:prefs.sosDelay===undefined?"":prefs.sosDelay,share:!!prefs.share});
+const shareData=()=>({name:prefs.name||"",tels:prefs.tels||"",db:prefs.db||"",sosTels:prefs.sosTels||"",sosDelay:prefs.sosDelay===undefined?"":prefs.sosDelay,sosCall:prefs.sosCall===undefined?"":prefs.sosCall,sosNext:prefs.sosNext===undefined?"":prefs.sosNext,share:!!prefs.share});
 /* Sauvegarde */
 const bmsg=t=>$("bmsg").textContent=t;
 const validList=a=>Array.isArray(a)&&a.every(s=>s&&/^\d{4}-\d{2}-\d{2}$/.test(s.date)&&Number.isFinite(s.min)&&Number.isFinite(s.rpe));
@@ -1742,7 +1755,7 @@ function doImport(text){
     if(o&&o.profile&&!profile&&validProfile(o.profile)){profile=o.profile;saveProfile()}
     if(o&&o.moves&&typeof o.moves==="object"){Object.keys(o.moves).forEach(k=>{if(!(k in moves)&&isDate(k)&&o.moves[k]>=1&&o.moves[k]<=7)moves[k]=o.moves[k]});saveMoves()}
     if(o&&o.swaps&&typeof o.swaps==="object"){Object.keys(o.swaps).forEach(k=>{if(!(k in swaps)&&isDate(k)&&Array.isArray(o.swaps[k]))swaps[k]=o.swaps[k].filter(q=>Array.isArray(q)&&q[0]>=1&&q[0]<=7&&q[1]>=1&&q[1]<=7)});saveSwaps()}
-    if(o&&o.share&&typeof o.share==="object"){["name","tels","db","sosTels","sosDelay"].forEach(k=>{if(!prefs[k]&&(typeof o.share[k]==="string"||typeof o.share[k]==="number"))prefs[k]=o.share[k]});if(prefs.share===undefined)prefs.share=!!o.share.share;persistP();liveLoad()}
+    if(o&&o.share&&typeof o.share==="object"){["name","tels","db","sosTels","sosDelay","sosCall","sosNext"].forEach(k=>{if(!prefs[k]&&(typeof o.share[k]==="string"||typeof o.share[k]==="number"))prefs[k]=o.share[k]});if(prefs.share===undefined)prefs.share=!!o.share.share;persistP();liveLoad()}
     persist();persistT();renderStats();
     bmsg(n+" séance(s) importée(s) sur "+list.length+".");
   }catch(e){bmsg("Import impossible : choisissez une sauvegarde Coach Running (.json).")}
@@ -2391,10 +2404,12 @@ if(window.AndroidHealth){$("health").classList.remove("hidden");setTimeout(healt
   const box=$("l-sharebox"),sc=mk("Partage du suivi en direct");
   sc.insertAdjacentHTML("beforeend",'<p class="mute">Le lien est envoyé par SMS tout seul au démarrage d’une séance si « Partager mon suivi » est coché dans « Avant de partir ».</p>');
   [...box.children].forEach(el=>{if(el.tagName!=="P"||el.id==="l-shmsg")sc.appendChild(el)});
+  const sosd=$("l-sosbox"),sosc=mk("🆘 SOS");
+  [...sosd.children].forEach(el=>{if(el.tagName!=="SUMMARY")sosc.appendChild(el)});sosd.remove();
   const pc=mk("Mon profil de coureur");
   pc.insertAdjacentHTML("beforeend",'<p class="mute">Âge, niveau, objectif, jours d’entraînement.</p>');pc.appendChild($("editp"));
   cards.unshift(pc);
-  cards.push(sc);
+  cards.push(sc);cards.push(sosc);
   /* import et synchronisation */
   [$("a-imp"),$("h-go")].forEach(b=>{const c=b&&b.closest(".card");if(c&&!cards.includes(c))cards.push(c)});
   /* sauvegarde */

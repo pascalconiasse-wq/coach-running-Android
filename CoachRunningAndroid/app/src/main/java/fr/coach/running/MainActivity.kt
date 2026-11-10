@@ -275,6 +275,14 @@ class AppBridge(private val act: MainActivity, private val web: android.webkit.W
     private fun smsManager(): android.telephony.SmsManager =
         if (Build.VERSION.SDK_INT >= 31) act.getSystemService(android.telephony.SmsManager::class.java) else android.telephony.SmsManager.getDefault()
 
+    /** Autorisation d'appeler (SOS). Renvoie "ok" si déjà accordée, sinon "perm" (demande affichée). */
+    @android.webkit.JavascriptInterface
+    fun askCall(): String {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(act, android.Manifest.permission.CALL_PHONE) == android.content.pm.PackageManager.PERMISSION_GRANTED) return "ok"
+        act.runOnUiThread { androidx.core.app.ActivityCompat.requestPermissions(act, arrayOf(android.Manifest.permission.CALL_PHONE), 78) }
+        return "perm"
+    }
+
     /** Envoie un SMS à chaque numéro (séparés par des virgules). Renvoie "ok", "perm" (autorisation demandée) ou "err". */
     @android.webkit.JavascriptInterface
     fun sendSms(numbers: String, text: String): String {
