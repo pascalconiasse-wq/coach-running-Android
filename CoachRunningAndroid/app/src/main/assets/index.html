@@ -334,7 +334,10 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
       <label class="f" for="l-sdel">Compte à rebours avant envoi (secondes, 0 = immédiat)</label><input type="number" id="l-sdel" inputmode="numeric" min="0" max="120" placeholder="30">
       <label class="f" for="l-scall">Appel automatique en haut-parleur après (minutes, 0 = jamais)</label><input type="number" id="l-scall" inputmode="numeric" min="0" max="60" placeholder="3">
       <label class="f" for="l-snext">Passer au numéro suivant si personne ne décroche après (minutes)</label><input type="number" id="l-snext" inputmode="numeric" min="1" max="30" placeholder="5">
+      <p class="mute" id="l-sstat" role="status"></p>
+      <button type="button" class="alt" id="l-sperm0">Autoriser les SMS</button>
       <button type="button" class="alt" id="l-sperm">Autoriser les appels téléphoniques</button>
+      <button type="button" class="alt" id="l-sset">Ouvrir les réglages Android de l’appli</button>
       <button type="button" class="alt" id="l-stest">Envoyer un SMS de test SOS</button>
       <p class="mute" id="l-smsg" role="status"></p>
     </details>
@@ -1319,7 +1322,18 @@ function sosCancel(){
 }
 $("sosb").onclick=sosArm;$("sosnow").onclick=()=>{if(sosSt==="count")sosSend()};$("soscancel").onclick=sosCancel;$("soshide").onclick=()=>sosShow(false);
 $("l-stest").onclick=()=>{liveSave();const r=sosSms("TEST SOS Coach Running : "+(prefs.name||"ceci")+" teste le bouton SOS. Aucune urgence.");$("l-smsg").textContent=r==="ok"?"SMS de test envoyé.":r==="perm"?"Autorisez l’envoi de SMS d’abord.":r==="none"?"Indiquez un numéro.":"Envoi impossible (SMS seulement dans l’appli Android)."};
-$("l-sperm").onclick=()=>{let r="err";try{r=AndroidApp.askCall()}catch(e){}$("l-smsg").textContent=r==="ok"?"Appels déjà autorisés.":r==="perm"?"Autorisez les appels dans la fenêtre Android, puis revenez ici.":"Disponible seulement dans l’appli Android."};
+function sosStat(){
+  const A=window.AndroidApp;if(!A||!A.smsOk){$("l-sstat").textContent="Autorisations : disponibles seulement dans l’appli Android.";return}
+  let sm=false,ca=false;try{sm=A.smsOk();ca=A.callOk()}catch(e){}
+  $("l-sstat").textContent="SMS : "+(sm?"autorisés ✔":"pas encore autorisés ✖")+" · Appels : "+(ca?"autorisés ✔":"pas encore autorisés ✖");
+}
+$("l-sperm0").onclick=()=>{let r="err";try{r=AndroidApp.sendSms("","")}catch(e){}
+  $("l-smsg").textContent=r==="ok"?"SMS déjà autorisés.":r==="perm"?"Répondez « Autoriser » dans la fenêtre Android. Si elle n’apparaît pas ou si l’option est grisée : touchez « Ouvrir les réglages Android de l’appli », puis ⋮ en haut à droite > « Autoriser les paramètres restreints », puis revenez ici.":"Disponible seulement dans l’appli Android.";
+  setTimeout(sosStat,1500)};
+$("l-sset").onclick=()=>{try{AndroidApp.openSettings()}catch(e){$("l-smsg").textContent="Disponible seulement dans l’appli Android."}};
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)sosStat()});
+setTimeout(sosStat,800);
+$("l-sperm").onclick=()=>{let r="err";try{r=AndroidApp.askCall()}catch(e){}$("l-smsg").textContent=r==="ok"?"Appels déjà autorisés.":r==="perm"?"Autorisez les appels dans la fenêtre Android, puis revenez ici.":"Disponible seulement dans l’appli Android.";setTimeout(sosStat,1500)};
 $("l-spick").onclick=()=>{contactTo="sos";try{AndroidApp.pickContact()}catch(e){$("l-smsg").textContent="Contacts disponibles dans l’appli Android."}};
 function liveApply(){
   const n=NAT();if(!liveOn)return;

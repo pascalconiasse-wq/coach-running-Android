@@ -275,6 +275,23 @@ class AppBridge(private val act: MainActivity, private val web: android.webkit.W
     private fun smsManager(): android.telephony.SmsManager =
         if (Build.VERSION.SDK_INT >= 31) act.getSystemService(android.telephony.SmsManager::class.java) else android.telephony.SmsManager.getDefault()
 
+    @android.webkit.JavascriptInterface
+    fun smsOk(): Boolean = androidx.core.content.ContextCompat.checkSelfPermission(act, android.Manifest.permission.SEND_SMS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    @android.webkit.JavascriptInterface
+    fun callOk(): Boolean = androidx.core.content.ContextCompat.checkSelfPermission(act, android.Manifest.permission.CALL_PHONE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    /** Ouvre l'écran Android « Infos de l'appli » (autorisations, paramètres restreints). */
+    @android.webkit.JavascriptInterface
+    fun openSettings() {
+        act.runOnUiThread {
+            try {
+                act.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    android.net.Uri.parse("package:" + act.packageName)))
+            } catch (e: Exception) { }
+        }
+    }
+
     /** Autorisation d'appeler (SOS). Renvoie "ok" si déjà accordée, sinon "perm" (demande affichée). */
     @android.webkit.JavascriptInterface
     fun askCall(): String {
