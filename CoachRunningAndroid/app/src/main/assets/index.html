@@ -328,7 +328,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <label class="f" for="l-cap">FC max pour cette séance (bpm, vide = aucune)</label>
     <input type="number" id="l-cap" inputmode="numeric" min="90" max="230">
     <details id="l-sosbox"><summary><b>🆘 Réglages SOS</b></summary>
-      <p class="mute">Pendant la séance, un bouton SOS rouge : touchez-le 2 fois vite. Après un compte à rebours (pour annuler une fausse manip), un SMS avec votre position part aux numéros SOS, une alerte clignotante s’affiche sur la carte du suivi, et la position est renvoyée toutes les 3 minutes.</p>
+      <p class="mute">Pendant la séance, un bouton SOS rouge : touchez-le 3 fois vite. Après un compte à rebours (pour annuler une fausse manip), un SMS avec votre position part aux numéros SOS, une alerte clignotante s’affiche sur la carte du suivi, et la position est renvoyée toutes les 3 minutes.</p>
       <label class="f" for="l-stel">Numéros SOS (séparés par des virgules ; vide = les numéros du suivi)</label><input type="text" id="l-stel" inputmode="tel" placeholder="ex. 0612345678">
       <button type="button" class="alt" id="l-spick">Ajouter depuis mes contacts</button>
       <label class="f" for="l-sdel">Compte à rebours avant envoi (secondes, 0 = immédiat)</label><input type="number" id="l-sdel" inputmode="numeric" min="0" max="120" placeholder="30">
@@ -427,9 +427,9 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p><b>Types d’activité</b> : course route, trail, marche, VTT, gravel, vélo route (home trainer et natation par saisie manuelle ou import de la montre). Avant de démarrer, le choix « Activité » est préréglé sur le terrain de votre objectif, modifiable ; en vélo, VTT et gravel la vitesse est affichée en km/h.</p>
     <p><b>Aide contextuelle</b> : touchez les boutons ? à côté des réglages pour une explication courte.</p></details>
   <details class="card"><summary><b>Bouton SOS</b></summary>
-    <p>Pendant une séance, le bouton rouge <b>SOS</b> (bas de l’écran) se déclenche par <b>2 touches rapides</b>. Un écran rouge clignotant lance un compte à rebours (30 s par défaut, réglable de 0 à 120 s) avec alarme et vibrations : touchez <b>ANNULER</b> en cas de fausse manip.</p>
+    <p>Pendant une séance, le bouton rouge <b>SOS</b> (bas de l’écran) se déclenche par <b>3 touches rapides</b>. Un écran rouge clignotant lance un compte à rebours (30 s par défaut, réglable de 0 à 120 s) avec alarme et vibrations : touchez <b>ANNULER</b> en cas de fausse manip.</p>
     <p>À la fin du compte à rebours : un SMS avec votre position (lien Maps) et le lien de suivi part aux <b>numéros SOS</b> ; la page de suivi affiche une alerte rouge clignotante avec un repère SOS sur la carte, un bouton Itinéraire, l’appel du 112 et une alarme sonore ; la position est mise à jour toutes les 30 s sur la page et renvoyée par SMS toutes les 3 minutes. « C’était une erreur » annule tout et envoie un SMS « fausse alerte ».</p>
-    <p>Réglages : roue ⚙ (en haut de l’écran principal), rubrique « 🆘 SOS » (numéros, contacts, compte à rebours, appel automatique, SMS de test). Sans numéro SOS, ce sont les numéros du suivi qui sont utilisés. Le SOS active le suivi en direct même s’il était désactivé. Appel automatique : après le délai réglé (3 min par défaut) sans annulation, l’appli appelle le 1er numéro SOS en haut-parleur ; si personne ne décroche au bout de 5 min, elle appelle le suivant. Autorisez les appels dans les réglages SOS. Nécessite l’écran allumé pour le double appui, les autorisations SMS et appel, et du réseau.</p></details>
+    <p>Réglages : roue ⚙ (en haut de l’écran principal), rubrique « 🆘 SOS » (numéros, contacts, compte à rebours, appel automatique, SMS de test). Sans numéro SOS, ce sont les numéros du suivi qui sont utilisés. Le SOS active le suivi en direct même s’il était désactivé. Appel automatique : après le délai réglé (3 min par défaut) sans annulation, l’appli appelle le 1er numéro SOS en haut-parleur ; si personne ne décroche au bout de 5 min, elle appelle le suivant. Autorisez les appels dans les réglages SOS. Nécessite l’écran allumé pour le triple appui, les autorisations SMS et appel, et du réseau.</p></details>
   <details class="card"><summary><b>Onglet Plan</b></summary>
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), zones cardio, allures de référence calculées sur vos meilleurs efforts, et test VMA facultatif qui débloque des séances de VMA. Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation. Dès qu’une activité existe pour la journée (enregistrée par l’appli, importée ou synchronisée depuis la montre), la séance du jour passe à « faite ✓ » et le détail prévu disparaît ; dans la liste de la semaine, les jours faits sont cochés et barrés.</p>
     <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance). Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
@@ -1246,7 +1246,7 @@ window.onContact=(nom,num)=>{
 $("l-sms").onclick=()=>{liveSave();liveSms(false)};
 
 /* ===== SOS ===== */
-let sosSt="idle",sosTimer=null,sosUp=null,sosSmsT=null,sosLastTap=0,sosAud=null,sosCnt=0,sosSent=0;
+let sosSt="idle",sosTimer=null,sosUp=null,sosSmsT=null,sosLastTap=0,sosTaps=0,sosAud=null,sosCnt=0,sosSent=0;
 const sosNums=()=>(prefs.sosTels||prefs.tels||"").trim();
 const sosNum=(v,d)=>{const x=parseFloat(v);return v===undefined||v===""||isNaN(x)?d:x};
 const sosCallMin=()=>Math.max(0,sosNum(prefs.sosCall,3)),sosNextMin=()=>Math.max(1,sosNum(prefs.sosNext,5));
@@ -1279,9 +1279,11 @@ function sosShow(on){$("sosov").classList.toggle("hidden",!on)}
 function sosArm(){
   const b=$("sosb"),now=Date.now();
   if(sosSt!=="idle"){sosShow(true);return}
-  if(now-sosLastTap<700){sosLastTap=0;b.classList.remove("arm");b.textContent="SOS";sosStart();return}
-  sosLastTap=now;b.classList.add("arm");b.textContent="Encore 1×";sosBuzz([0,60]);
-  setTimeout(()=>{if(sosLastTap===now){sosLastTap=0;b.classList.remove("arm");b.textContent="SOS"}},700);
+  if(now-sosLastTap>900)sosTaps=0;
+  sosTaps++;sosLastTap=now;
+  if(sosTaps>=3){sosTaps=0;sosLastTap=0;b.classList.remove("arm");b.textContent="SOS";sosStart();return}
+  b.classList.add("arm");b.textContent=sosTaps===1?"Encore 2×":"Encore 1×";sosBuzz([0,60]);
+  setTimeout(()=>{if(sosLastTap===now){sosTaps=0;sosLastTap=0;b.classList.remove("arm");b.textContent="SOS"}},900);
 }
 function sosStart(){
   if(!sosNums()){showRecap("SOS : aucun numéro. Ajoutez-en dans la roue ⚙, rubrique « SOS ».");sosBuzz([0,400,150,400]);return}
