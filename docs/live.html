@@ -110,20 +110,22 @@ function drawProf(cv,pts,fg,fill,line){
     else{line.setLatLngs(ll);mark.setLatLng(ll[ll.length-1]);if(follow)map.panTo(ll[ll.length-1],{animate:false})}
   }
   var sosMk=null,sosSeen=false,sosAud=null,sosSnd=false,sosT=null,sosBeep=null,baseTitle=document.title;
-  function beep(){try{if(!sosAud)sosAud=new (window.AudioContext||window.webkitAudioContext)();var o=sosAud.createOscillator(),g=sosAud.createGain();o.type="square";o.frequency.value=960;g.gain.value=.25;o.connect(g);g.connect(sosAud.destination);o.start();o.stop(sosAud.currentTime+.35)}catch(e){}}
+  function beep(){try{if(!sosAud)sosAud=new (window.AudioContext||window.webkitAudioContext)();if(sosAud.state==="suspended")sosAud.resume();var o=sosAud.createOscillator(),g=sosAud.createGain();o.type="square";o.frequency.value=960;g.gain.value=.25;o.connect(g);g.connect(sosAud.destination);o.start();o.stop(sosAud.currentTime+.35)}catch(e){}}
   function sosSound(on){sosSnd=on;clearInterval(sosBeep);if(on){beep();sosBeep=setInterval(function(){beep();try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}},1200)}}
-  window.sosToggleSound=function(){sosSound(!sosSnd);var b=$("sosbtn");if(b)b.textContent=sosSnd?"🔇 Couper le son":"🔊 Activer l’alarme"};
+  function sosLbl(){var b=$("sosbtn");if(b)b.textContent=sosSnd?"🔇 Arrêter la sonnerie":"🔊 Relancer la sonnerie";var h=$("soshint");if(h)h.style.display=(sosSnd&&sosAud&&sosAud.state!=="running")?"block":"none"}
+  window.sosToggleSound=function(){sosSound(!sosSnd);sosLbl()};
+  ["touchstart","click","keydown","scroll","pointerdown"].forEach(function(e){document.addEventListener(e,function(){if(sosAud&&sosAud.state==="suspended")sosAud.resume().then(sosLbl);try{if(sosSnd&&navigator.vibrate)navigator.vibrate([300,150,300])}catch(x){}},{passive:true})});
   function sos(data){
     var o=data&&data.sos;
     if(o&&o.on){
       var nm=(data.meta&&data.meta.name)||"Le coureur",d=new Date(o.t||Date.now()),hh=("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
       $("sosbar").style.display="block";document.body.classList.add("sos");
       $("sosbar").innerHTML="🆘 ALERTE SOS — "+nm.replace(/[<>&]/g,"")+" a besoin d’aide<small>Alerte lancée à "+hh+" · position mise à jour en direct</small>"+
-        '<a href="https://www.google.com/maps/dir/?api=1&destination='+o.lat+','+o.lon+'" target="_blank">🧭 Itinéraire</a><a href="https://maps.google.com/?q='+o.lat+','+o.lon+'" target="_blank">📍 Ouvrir dans Maps</a><button id="sosbtn" onclick="sosToggleSound()">'+(sosSnd?"🔇 Couper le son":"🔊 Activer l’alarme")+'</button><a href="tel:112">📞 Appeler le 112</a>';
+        '<a href="https://www.google.com/maps/dir/?api=1&destination='+o.lat+','+o.lon+'" target="_blank">🧭 Itinéraire</a><a href="https://maps.google.com/?q='+o.lat+','+o.lon+'" target="_blank">📍 Ouvrir dans Maps</a><button id="sosbtn" onclick="sosToggleSound()">'+(sosSnd?"🔇 Arrêter la sonnerie":"🔊 Relancer la sonnerie")+'</button><small id="soshint" style="display:none">Touchez l’écran pour activer le son</small><a href="tel:112">📞 Appeler le 112</a>';
       var ll=[o.lat,o.lon];
       if(!sosMk){sosMk=L.marker(ll,{icon:L.divIcon({className:"",html:'<div class="sosmk">SOS</div>',iconSize:[46,46],iconAnchor:[23,23]}),zIndexOffset:5000}).addTo(map);map.setView(ll,16);follow=false}
       else sosMk.setLatLng(ll);
-      if(!sosSeen){sosSeen=true;try{navigator.vibrate&&navigator.vibrate([500,200,500,200,500])}catch(e){}clearInterval(sosT);sosT=setInterval(function(){document.title=document.title===baseTitle?"🆘 SOS !":baseTitle},900)}
+      if(!sosSeen){sosSeen=true;sosSound(true);setTimeout(sosLbl,400);try{navigator.vibrate&&navigator.vibrate([500,200,500,200,500])}catch(e){}clearInterval(sosT);sosT=setInterval(function(){document.title=document.title===baseTitle?"🆘 SOS !":baseTitle},900)}
     }else if(sosSeen){
       sosSeen=false;sosSound(false);clearInterval(sosT);document.title=baseTitle;$("sosbar").style.display="none";document.body.classList.remove("sos");
       if(sosMk){map.removeLayer(sosMk);sosMk=null}
