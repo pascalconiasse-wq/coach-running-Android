@@ -154,6 +154,9 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <input type="number" id="f-age" inputmode="numeric" min="12" max="90">
     <label class="f" for="f-w">Poids (kg)</label>
     <input type="number" id="f-w" inputmode="decimal" min="30" max="200" step="0.1">
+    <label class="f" for="f-hrcap">FC à ne pas dépasser en endurance (bpm, facultatif)</label>
+    <input type="number" id="f-hrcap" inputmode="numeric" min="90" max="220" placeholder="vide = automatique">
+    <p class="mute" id="f-hrcapi"></p>
     <label class="f" for="f-fcmax">Fréquence cardiaque maximale (bpm, facultatif)</label>
     <input type="number" id="f-fcmax" inputmode="numeric" min="120" max="230" placeholder="ex. 185">
     <p class="mute">Mesurée lors d’un effort maximal ou relevée sur votre montre. Laissez vide pour une estimation d’après l’âge.</p>
@@ -207,7 +210,8 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
 
 <div id="rtab" class="hidden" role="dialog" aria-label="Courses de la région">
   <div class="rbox">
-    <div class="rhd"><b>Courses de la région</b><button type="button" class="alt" id="rclose">Fermer</button></div>
+    <div class="rhd"><b>Courses de la région</b><span><button type="button" class="alt" id="rrefresh">↻</button> <button type="button" class="alt" id="rclose">Fermer</button></span></div>
+    <p class="mute" id="rmeta" role="status"></p>
     <input type="search" id="rq" placeholder="Rechercher (nom, lieu, distance)…">
     <div class="rscroll"><table id="rt"><thead><tr><th>Date</th><th>Course</th><th>Distance</th><th>D+</th></tr></thead><tbody></tbody></table></div>
   </div>
@@ -434,7 +438,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <details class="card"><summary><b>Premiers pas</b></summary>
     <p>Au premier lancement, renseignez âge, poids, niveau, jours disponibles et votre objectif principal (distance, date, dénivelé). Vous pourrez les modifier plus tard avec la roue ⚙ (en haut à droite) : « Mon profil de coureur ». L’appli construit le plan jusqu’à la course : fondation, développement, spécifique, affûtage. Elle recalcule seule quand vous courez ailleurs (montre, import).</p></details>
   <details class="card"><summary><b>Choisir une course et mode sans objectif</b></summary>
-    <p><b>Tableau des courses</b> : dans le profil, et aussi dans « Autres objectifs » du plan, « Choisir dans le tableau des courses » liste les courses de la région, une ligne par distance (date, course, distance, D+). Tapez sur une ligne pour remplir l’objectif ; la recherche filtre par nom, lieu ou distance. Vérifiez toujours la date et le dénivelé chez l’organisateur.</p>
+    <p><b>Tableau des courses</b> : dans le profil, et aussi dans « Autres objectifs » du plan, « Choisir dans le tableau des courses » liste les courses <b>à moins de 150 km de votre position, sur les 18 prochains mois</b>, une ligne par distance (date, course, distance, D+). Les courses passées disparaissent. La liste se met à jour toute seule sur internet (tous les 2 jours, ou avec le bouton ↻) ; sans réseau, la liste intégrée à l’appli est utilisée. Tapez sur une ligne pour remplir l’objectif ; la recherche filtre par nom, lieu ou distance. Vérifiez toujours la date et le dénivelé chez l’organisateur.</p>
     <p><b>Sans objectif</b> : cochez « Sans objectif » dans le profil (⚙ puis Mon profil). Plus de plan ni de coaching : l’appli enregistre seulement vos sorties (GPS, cardio, altitude, suivi en direct, sauvegarde). Décochez pour retrouver le coaching.</p>
     <p><b>Types d’activité</b> : course route, trail, marche, VTT, gravel, vélo route, équitation (home trainer et natation par saisie manuelle ou import de la montre). Avant de démarrer, le choix « Activité » est préréglé sur le terrain de votre objectif, modifiable ; en vélo, VTT et gravel la vitesse est affichée en km/h.</p>
     <p><b>Aide contextuelle</b> : touchez les boutons ? à côté des réglages pour une explication courte.</p></details>
@@ -449,6 +453,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p>Réglages : roue ⚙ (en haut de l’écran principal), rubrique « 🆘 SOS » (numéros, contacts, compte à rebours, appel automatique, SMS de test). Sans numéro SOS, ce sont les numéros du suivi qui sont utilisés. Le SOS active le suivi en direct même s’il était désactivé. Appel automatique : après le délai réglé (3 min par défaut) sans annulation, l’appli appelle le 1er numéro SOS en haut-parleur ; si personne ne décroche au bout de 5 min, elle appelle le suivant. Autorisez les appels dans les réglages SOS. Nécessite l’écran allumé pour le triple appui, les autorisations SMS et appel, et du réseau.</p></details>
   <details class="card"><summary><b>Onglet Plan</b></summary>
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), zones cardio, allures de référence calculées sur vos meilleurs efforts, et test VMA facultatif qui débloque des séances de VMA. Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation. Dès qu’une activité existe pour la journée (enregistrée par l’appli, importée ou synchronisée depuis la montre), la séance du jour passe à « faite ✓ » et le détail prévu disparaît ; dans la liste de la semaine, les jours faits sont cochés et barrés.</p>
+    <p><b>FC à ne pas dépasser</b> : dans le profil (⚙ puis Mon profil), « FC à ne pas dépasser en endurance » remplace le calcul automatique si celui-ci est trop bas (parcours avec beaucoup de côtes). La valeur est proposée comme alerte « FC max » au départ de la séance (modifiable séance par séance), et les alertes des autres types de séance sont décalées d’autant.</p>
     <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance), à saisir ou à choisir dans le même tableau des courses de la région que l’objectif principal. Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
   <details class="card"><summary><b>Séance en direct</b></summary>
     <p><b>Bilan du dimanche</b> : chaque dimanche à 19 h, une notification résume la semaine (séances faites, volume, D+), votre position par rapport à l’objectif (semaines restantes, plus longue sortie récente par rapport à celle visée) et indique si la charge de la semaine suivante est diminuée, augmentée ou inchangée. Le même texte est dans l’onglet Plan (« Semaine prochaine »). Ouvrez l’appli après votre dernière sortie pour qu’il soit à jour.</p>
@@ -461,6 +466,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <details class="card"><summary><b>Activités et montre COROS</b></summary>
     <p>« Synchroniser maintenant » (roue ⚙, rubrique synchronisation) lit Health Connect (30 jours) : synchronisez d’abord la montre vers COROS, qui doit écrire dans Health Connect. Une sortie déjà enregistrée par le téléphone est fusionnée avec celle de la montre : on garde les données en plus (FC, dénivelé, calories ; la trace GPS de la montre si elle en a une, sinon celle du téléphone enrichie de la FC et de l’altitude) et le doublon disparaît. Un doublon est reconnu quand les départs sont à moins de 15 min et les durées proches. Import de fichiers FIT, GPX, TCX possible depuis la roue ⚙. Garmin : uniquement via Health Connect ou export de fichier.</p></details>
   <details class="card"><summary><b>Courbes et détail</b></summary>
+    <p><b>Partager une trace</b> : dans le détail d’une sortie, « 📤 Partager la trace (GPX) » ouvre la fenêtre de partage Android (messagerie, mail, Drive…) pour envoyer le fichier GPX à quelqu’un. Il faut que la sortie ait une trace GPS.</p>
     <p>Pour chaque activité : plan IGN ou photos aériennes au choix (ou image enregistrée pendant la séance), courbes d’allure, FC et altitude. Le dénivelé est corrigé avec l’altimétrie IGN quand elle répond.</p></details>
   <details class="card" open><summary><b>Sauvegarde et mises à jour</b></summary>
     <p id="upd-st" class="mute">Version : vérification…</p><button class="alt" id="upd-chk">Vérifier les mises à jour</button>
@@ -488,6 +494,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <div id="d-body" class="hidden">
       <img id="d-snap" class="hidden" alt="Carte enregistrée pendant la séance"><div id="map"></div><p class="mute" id="d-mapmsg"></p>
       <div id="d-sum" class="dsum"></div>
+      <button type="button" class="alt" id="d-gpx">📤 Partager la trace (GPX)</button><p class="mute" id="d-gmsg" role="status"></p>
       <h3 class="dt" id="d-pace-t">Allure</h3><canvas id="c-pace"></canvas>
       <h3 class="dt">Altitude (m)</h3><canvas id="c-alt"></canvas>
       <h3 class="dt">Fréquence cardiaque (bpm)</h3><canvas id="c-hr"></canvas>
@@ -734,7 +741,12 @@ function hrZones(){
   return {max:mx,rest:rs,est:est,method:rs?"réserve cardiaque":"% de la FC max",z:ZINFO.map((zi,i)=>({n:i+1,name:zi[0],color:zi[1],lo:f(B[i]),hi:f(B[i+1])}))};
 }
 function zoneOf(b){const Z=hrZones().z;return b<Z[0].lo?null:(Z.find(z=>b<z.hi)||Z[4])}
-const capFor=t=>SESSZ[t]?hrZones().z[SESSZ[t]-1].hi:0;
+const capFor=t=>{
+  if(!SESSZ[t])return 0;
+  const z=hrZones().z,base=z[SESSZ[t]-1].hi,hc=profile&&+profile.hrCap;
+  return hc>=90?Math.max(90,Math.round(base+hc-z[1].hi)):base;
+};
+function autoCapTxt(){try{const z=hrZones().z;return "Valeur automatique actuelle : "+z[1].hi+" bpm (haut de la zone Endurance). Montez-la si vos sorties comptent beaucoup de côtes ; elle devient aussi l’alerte « FC max » proposée au départ."}catch(e){return ""}}
 /* Meilleure sortie récente (course sur route, effort soutenu) convertie en temps équivalent sur 10 km */
 let _arKey="",_arVal=null;
 function autoRef(){
@@ -997,6 +1009,7 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if(liveOn){if(b.data
    "f-race":"Le tableau liste les courses de la région, une ligne par distance. Un appui remplit l’objectif ; vérifiez date et D+ chez l’organisateur.",
    "f-gd":"Distance de votre course cible. « Autre » permet de saisir km et dénivelé.",
    "f-gdate":"Date de la course : le plan se construit à rebours à partir d’elle (montée en charge puis affûtage).",
+   "f-hrcap":"FC à ne pas dépasser en endurance : si elle vous paraît trop basse (beaucoup de côtes, le cardio monte vite), fixez votre valeur. Elle décale aussi les alertes des autres séances. Vide = calcul automatique.",
    "f-fcmax":"Fréquence cardiaque maximale : sert aux zones et aux alertes. Estimée si vous ne la connaissez pas.",
    "l-sport":"Type d’activité de cette sortie, préréglé sur votre objectif. Le VTT, le gravel et le vélo affichent la vitesse en km/h ; l’équitation est proposée aussi (charge légère).",
    "l-rgpx":"Charge un parcours GPX : il apparaît en bleu sur la carte (et sur la page de suivi des proches), votre tracé fait est en rouge.",
@@ -1167,6 +1180,7 @@ function setBad(){
 let curPace=0;
 
 /* Un point [t,lat,lon,alt,précision,FC] */
+let posSaved=0;
 function addPt(t,la,lo,alt,hr){
   if(hr>0){lastHr=hr;hrSamples.push(hr)}
   if(lastPt){
@@ -1179,7 +1193,7 @@ function addPt(t,la,lo,alt,hr){
   if(alt!=null&&isFinite(alt)){gEle.push(alt);if(gEle.length>7)gEle.shift();ele=gEle.reduce((a,b)=>a+b,0)/gEle.length}
   if(ele!=null){if(gBase===null)gBase=ele;else if(ele>gBase+4){gGain+=ele-gBase;gBase=ele}else if(ele<gBase)gBase=ele}
   const p={t:t,lat:la,lon:lo,ele:ele,hr:hr>0?hr:(lastHr||null)};
-  gRaw.push(p);lastPt=p;
+  gRaw.push(p);lastPt=p;if(t-posSaved>60000){posSaved=t;try{localStorage.setItem("coach_pos",JSON.stringify([la,lo]))}catch(e){}}
   /* allure sur ~15 s */
   let j=gRaw.length-1;while(j>0&&t-gRaw[j].t<15000)j--;
   curPace=0;
@@ -1904,7 +1918,7 @@ $("pasteok").onclick=()=>doImport($("paste").value);
 /* Formulaire de profil */
 function openSetup(){
   const p=profile||{};
-  $("f-age").value=p.age||"";$("f-w").value=p.weight||"";$("f-fcmax").value=p.fcmax||"";$("f-fcrest").value=p.fcrest||"";$("f-lvl").value=p.level||"debutant";
+  $("f-age").value=p.age||"";$("f-w").value=p.weight||"";$("f-fcmax").value=p.fcmax||"";$("f-hrcap").value=p.hrCap||"";$("f-hrcapi").textContent=autoCapTxt();$("f-fcrest").value=p.fcrest||"";$("f-lvl").value=p.level||"debutant";
   $("f-dist").value=p.res?String(p.res.km):"";$("f-time").value=p.res?fmtT(p.res.sec):"";
   $("f-days").value=p.days||3;$("f-ter").value=p.terrain||"route";
   $("f-gd").value=p.goal?(p.goal.custom?"custom":String(p.goal.km)):"";
@@ -1919,7 +1933,8 @@ $("psave").onclick=()=>{
   const age=+$("f-age").value,w=+$("f-w").value,msg=$("fmsg");
   if(!(age>=12&&age<=90)){msg.textContent="Indiquez un âge entre 12 et 90 ans.";return}
   if(!(w>=30&&w<=200)){msg.textContent="Indiquez un poids entre 30 et 200 kg.";return}
-  const fcmax=+$("f-fcmax").value||0,fcrest=+$("f-fcrest").value||0;
+  const fcmax=+$("f-fcmax").value||0,fcrest=+$("f-fcrest").value||0,hrCap=+$("f-hrcap").value||0;
+  if(hrCap&&!(hrCap>=90&&hrCap<=220)){msg.textContent="FC à ne pas dépasser : indiquez une valeur entre 90 et 220 bpm.";return}
   if(fcmax&&!(fcmax>=120&&fcmax<=230)){msg.textContent="FC maximale : indiquez une valeur entre 120 et 230 bpm.";return}
   if(fcrest&&!(fcrest>=30&&fcrest<=100)){msg.textContent="FC de repos : indiquez une valeur entre 30 et 100 bpm.";return}
   if(fcmax&&fcrest&&fcrest>fcmax-30){msg.textContent="La FC de repos doit être nettement inférieure à la FC maximale.";return}
@@ -1944,7 +1959,7 @@ $("psave").onclick=()=>{
     }
     goal={km:km,date:gdv,sec:gs,dplus:dp,custom:gk==="custom"};
   }
-  profile={free:free,age:age,weight:w,level:$("f-lvl").value,res:res,days:+$("f-days").value,terrain:$("f-ter").value,goal:goal,fcmax:fcmax,fcrest:fcrest,vma:profile&&profile.vma>0?profile.vma:undefined,vmaDate:profile&&profile.vma>0?profile.vmaDate:undefined,extra:profile&&profile.extra?profile.extra:undefined};
+  profile={free:free,age:age,weight:w,level:$("f-lvl").value,res:res,days:+$("f-days").value,terrain:$("f-ter").value,goal:goal,fcmax:fcmax,fcrest:fcrest,hrCap:hrCap||undefined,vma:profile&&profile.vma>0?profile.vma:undefined,vmaDate:profile&&profile.vma>0?profile.vmaDate:undefined,extra:profile&&profile.extra?profile.extra:undefined};
   saveProfile();show("plan");
 };
 $("prest").onclick=()=>{if(profile){show("plan");return}show("help");if(window.AndroidBle&&AndroidBle.readBackup)restoreBackup()};
@@ -1954,53 +1969,92 @@ const MINW=[[5,6],[10,8],[21.0975,10],[42.195,14],[80,20],[160,28]];
 function toggleCustom(){$("gcustom").classList.toggle("hidden",$("f-gd").value!=="custom")}
 $("f-gd").onchange=toggleCustom;
 /* Courses de la région : [nom, lieu, date exacte "AAAA-MM-JJ" ou mois "AAAA-MM", distances km, trail] — à vérifier chez l'organisateur */
-const RACES=[
-["SaintéLyon","Lyon → Saint-Étienne","2026-11-28",[24,45,82,164],1],
-["Foulée vénissiane","Vénissieux","2026-11-22",[5,10,21.1],0],
-["Marathon international du Beaujolais","Villefranche-sur-Saône","2026-11-21",[21.1,42.195],0],
-["Trail Saint-Héand","Saint-Héand (42)","2026-11-08",[8,12,18,30,50],1],
-["Raid pédestre Le Puy – Firminy","Le Puy-en-Velay","2026-11-22",[39,69],1],
-["Corrida de Meyzieu","Meyzieu","2026-12-20",[5,10],0],
-["Les lumières de la Muzelle","Les Deux Alpes","2027-01-16",[11,16,21,42],1],
-["La Romagnatoise","Romagnat (63)","2027-01-30",[8.2,13.7,26.5,38,45],1],
-["Hivernale des Givrés","Verrières-en-Forez (42)","2027-02-06",[8.1,13.6,22.9,34.6,42.2],1],
-["Les foulées san priotes","Saint-Priest","2027-02-21",[5.8,10,21.1],0],
-["Trail de Vulcain","Volvic (63)","2027-03-06",[11,13.5,27,48,77],1],
-["Forez Trails","Augerolles (63)","2027-03-07",[12,24,34,51],1],
-["Trail des cabornis","Chasselay","2027-03",[13,20,35,42,53],1],
-["Trail suc des vents","Saint-Alban-d'Ay (07)","2027-03",[12,23,36,54],1],
-["La Vourloise","Vourles","2027-03",[10,12,17,24],1],
-["Caluire Urban Trail","Caluire-et-Cuire","2027-03",[8,16,24],1],
-["10 km de Bron","Bron","2027-03",[10],0],
-["Run for planet Lyon","Marcy-l'Étoile","2027-04-04",[5,10],0],
-["Trail du lac de Paladru","Paladru (38)","2027-04-16",[12,17,33,45,55,85],1],
-["Foulées de Villeurbanne","Villeurbanne","2027-04",[5,10,21.1],0],
-["Courses de Chassieu","Chassieu","2027-04",[5,10,21.1],0],
-["Mont d'Or Trail","Poleymieux-au-Mont-d'Or","2027-04",[10,19],1],
-["La Saint Ju Trail","Saint-Julien (69)","2027-04",[13,18,38,68],1],
-["Bellimontrail","Bellevue-la-Montagne (43)","2027-04",[11,20,30,42.195],1],
-["Zeoff – Massif du Pilat","Saint-Clair-du-Rhône","2027-04",[57,81],1],
-["VVX – Volvic Volcanic Expérience","Volvic (63)","2027-05-06",[21,26,46,85,111],1],
-["Trail des coursières","Saint-Martin-en-Haut (69)","2027-05-07",[12,24,52,104,163],1],
-["Trail Beaume-Drobie","Valgorge (07)","2027-05-22",[11,20,32,51.4],1],
-["Eco-run des Cardons","Vaulx-en-Velin","2027-05",[11,13,22],1],
-["Course des Héros Lyon","Lyon","2027-06",[5,10],0],
-["Trail du Saint-Jacques by UTMB","Le Puy-en-Velay","2027-06-18",[12,28,55,88,140],1,{dp:{12:200,28:750,55:2100,88:3600,140:6000},dt:{12:"2027-06-19",28:"2027-06-20",55:"2027-06-20",88:"2027-06-19",140:"2027-06-18"},lab:"18-20 juin 2027"}],
-["Course des deux forts","Irigny","2027-07",[9,15],1],
-["Course Solidaire La Mornantaise","Mornant","2027-09",[9,15,27],1],
-["Les foulées de Vince","Feyzin","2027-09",[5,10,21.2],0],
-["Run in Lyon","Lyon","2027-10",[5,10,21.1,42.195],0]
+let RACES=[
+["SaintéLyon","Lyon → Saint-Étienne","2026-11-28",[24,45,82,164],1,{"ll":[45.6,4.6]}],
+["Foulée vénissiane","Vénissieux","2026-11-22",[5,10,21.1],0,{"ll":[45.697,4.887]}],
+["Marathon international du Beaujolais","Villefranche-sur-Saône","2026-11-21",[21.1,42.195],0,{"ll":[45.99,4.72]}],
+["Trail Saint-Héand","Saint-Héand (42)","2026-11-08",[8,12,18,30,50],1,{"ll":[45.49,4.35]}],
+["Raid pédestre Le Puy – Firminy","Le Puy-en-Velay","2026-11-22",[39,69],1,{"ll":[45.043,3.885]}],
+["Corrida de Meyzieu","Meyzieu","2026-12-20",[5,10],0,{"ll":[45.767,5.003]}],
+["Les lumières de la Muzelle","Les Deux Alpes","2027-01-16",[11,16,21,42],1,{"ll":[45.012,6.123]}],
+["La Romagnatoise","Romagnat (63)","2027-01-30",[8.2,13.7,26.5,38,45],1,{"ll":[45.74,3.08]}],
+["Hivernale des Givrés","Verrières-en-Forez (42)","2027-02-06",[8.1,13.6,22.9,34.6,42.2],1,{"ll":[45.57,4.03]}],
+["Les foulées san priotes","Saint-Priest","2027-02-21",[5.8,10,21.1],0,{"ll":[45.696,4.944]}],
+["Trail de Vulcain","Volvic (63)","2027-03-06",[11,13.5,27,48,77],1,{"ll":[45.87,3.04]}],
+["Forez Trails","Augerolles (63)","2027-03-07",[12,24,34,51],1,{"ll":[45.78,3.5]}],
+["Trail des cabornis","Chasselay","2027-03",[13,20,35,42,53],1,{"ll":[45.87,4.77]}],
+["Trail suc des vents","Saint-Alban-d'Ay (07)","2027-03",[12,23,36,54],1,{"ll":[45.17,4.6]}],
+["La Vourloise","Vourles","2027-03",[10,12,17,24],1,{"ll":[45.64,4.78]}],
+["Caluire Urban Trail","Caluire-et-Cuire","2027-03",[8,16,24],1,{"ll":[45.8,4.85]}],
+["10 km de Bron","Bron","2027-03",[10],0,{"ll":[45.73,4.91]}],
+["Run for planet Lyon","Marcy-l'Étoile","2027-04-04",[5,10],0,{"ll":[45.78,4.7]}],
+["Trail du lac de Paladru","Paladru (38)","2027-04-16",[12,17,33,45,55,85],1,{"ll":[45.46,5.55]}],
+["Foulées de Villeurbanne","Villeurbanne","2027-04",[5,10,21.1],0,{"ll":[45.77,4.88]}],
+["Courses de Chassieu","Chassieu","2027-04",[5,10,21.1],0,{"ll":[45.74,4.97]}],
+["Mont d'Or Trail","Poleymieux-au-Mont-d'Or","2027-04",[10,19],1,{"ll":[45.86,4.8]}],
+["La Saint Ju Trail","Saint-Julien (69)","2027-04",[13,18,38,68],1,{"ll":[45.99,4.76]}],
+["Bellimontrail","Bellevue-la-Montagne (43)","2027-04",[11,20,30,42.195],1,{"ll":[45.33,3.75]}],
+["Zeoff – Massif du Pilat","Saint-Clair-du-Rhône","2027-04",[57,81],1,{"ll":[45.42,4.78]}],
+["VVX – Volvic Volcanic Expérience","Volvic (63)","2027-05-06",[21,26,46,85,111],1,{"ll":[45.87,3.04]}],
+["Trail des coursières","Saint-Martin-en-Haut (69)","2027-05-07",[12,24,52,104,163],1,{"ll":[45.62,4.61]}],
+["Trail Beaume-Drobie","Valgorge (07)","2027-05-22",[11,20,32,51.4],1,{"ll":[44.62,4.1]}],
+["Eco-run des Cardons","Vaulx-en-Velin","2027-05",[11,13,22],1,{"ll":[45.78,4.92]}],
+["Course des Héros Lyon","Lyon","2027-06",[5,10],0,{"ll":[45.764,4.835]}],
+["Trail du Saint-Jacques by UTMB","Le Puy-en-Velay","2027-06-18",[12,28,55,88,140],1,{"dp":{"12":200,"28":750,"55":2100,"88":3600,"140":6000},"dt":{"12":"2027-06-19","28":"2027-06-20","55":"2027-06-20","88":"2027-06-19","140":"2027-06-18"},"lab":"18-20 juin 2027","ll":[45.043,3.885]}],
+["Course des deux forts","Irigny","2027-07",[9,15],1,{"ll":[45.68,4.82]}],
+["Course Solidaire La Mornantaise","Mornant","2027-09",[9,15,27],1,{"ll":[45.62,4.67]}],
+["Les foulées de Vince","Feyzin","2027-09",[5,10,21.2],0,{"ll":[45.67,4.86]}],
+["Run in Lyon","Lyon","2027-10",[5,10,21.1,42.195],0,{"ll":[45.764,4.835]}],
+["Trail du Grand Velay (TGV)","Polignac (43)","2027-03-07",[10,18,31],1,{"ll":[45.08,3.87],"dp":{"10":400,"18":800,"31":1200},"lab":"7 mars 2027 (date à confirmer)"}]
 ];
 const MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
 (function(){
   const fmt=k=>String(k).replace(".",",")+" km";
-  const rows=[];
-  RACES.forEach((r,i)=>r[3].forEach(k=>rows.push({r:r,k:k})));
-  rows.sort((a,b)=>a.r[2]<b.r[2]?-1:a.r[2]>b.r[2]?1:a.k-b.k);
-  const dlab=(r,k)=>{const ex=r[5]||{},d=(ex.dt&&ex.dt[k])||r[2];return d.length>7?(+d.slice(8,10))+" "+MOIS[+d.slice(5,7)-1]+" "+d.slice(2,4):MOIS[+d.slice(5,7)-1]+" "+d.slice(2,4)+" (à confirmer)"};
+  const RAD=150,MONTHS=18,RURL="https://pascalconiasse-wq.github.io/coach-running-android/courses.json";
+  const LYON=[45.764,4.835];
+  function racePos(){
+    try{const A=window.AndroidApp;if(A&&A.lastLocation){const v=String(A.lastLocation()||"");if(v.includes(",")){const q=v.split(",").map(parseFloat);if(isFinite(q[0])&&isFinite(q[1])){localStorage.setItem("coach_pos",JSON.stringify(q));return {ll:q,src:"votre position"}}}}}catch(e){}
+    try{const q=JSON.parse(localStorage.getItem("coach_pos")||"null");if(q&&isFinite(q[0])&&isFinite(q[1]))return {ll:q,src:"votre dernière position connue"}}catch(e){}
+    return {ll:LYON,src:"Lyon (position inconnue)"};
+  }
+  const pd=(d,end)=>{if(!d)return null;const y=+d.slice(0,4),m=+d.slice(5,7)-1;if(d.length>7)return new Date(y,m,+d.slice(8,10),end?23:0,end?59:0);return end?new Date(y,m+1,0,23,59):new Date(y,m,1)};
+  function buildRows(){
+    const now=new Date(),lim=new Date(now.getFullYear(),now.getMonth()+MONTHS,now.getDate()),pos=racePos(),rows=[];
+    RACES.forEach(r=>{
+      const ex=r[5]||{};
+      if(ex.ll&&hav(pos.ll[0],pos.ll[1],ex.ll[0],ex.ll[1])>RAD)return;
+      (r[3]||[]).forEach(k=>{
+        const d=(ex.dt&&ex.dt[k])||r[2],a=pd(d,false),b=pd(d,true);
+        if(!a||b<now||a>lim)return;
+        rows.push({r:r,k:k,a:a});
+      });
+    });
+    rows.sort((x,y)=>x.a-y.a||x.k-y.k);
+    return {rows:rows,pos:pos};
+  }
+  function loadRemote(){
+    try{const c=JSON.parse(localStorage.getItem("coach_races")||"null");if(c&&Array.isArray(c.data)&&c.data.length)RACES=c.data}catch(e){}
+  }
+  function refreshRaces(force,done){
+    let t=0;try{t=(JSON.parse(localStorage.getItem("coach_races")||"null")||{}).t||0}catch(e){}
+    if(!force&&Date.now()-t<2*864e5){done&&done(false);return}
+    fetch(RURL+"?v="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(d=>{
+      if(!Array.isArray(d))throw 0;
+      d=d.filter(r=>Array.isArray(r)&&typeof r[0]==="string"&&typeof r[1]==="string"&&typeof r[2]==="string"&&Array.isArray(r[3])&&r[3].every(x=>typeof x==="number"));
+      if(d.length<3)throw 0;
+      RACES=d;localStorage.setItem("coach_races",JSON.stringify({t:Date.now(),data:d}));done&&done(true);
+    }).catch(()=>{done&&done(false)});
+  }
+  loadRemote();setTimeout(()=>refreshRaces(false),2500);
+  const dlab=(r,k)=>{const ex=r[5]||{},d=(ex.dt&&ex.dt[k])||r[2],cf=ex.lab&&/confirmer/.test(ex.lab);
+    if(d.length>7)return (+d.slice(8,10))+" "+MOIS[+d.slice(5,7)-1]+" "+d.slice(2,4)+(cf?" (à confirmer)":"");
+    return MOIS[+d.slice(5,7)-1]+" "+d.slice(2,4)+" (à confirmer)"};
   const tb=$("rt").tBodies[0];
   function draw(){
     const q=$("rq").value.trim().toLowerCase();tb.innerHTML="";
+    const B=buildRows(),rows=B.rows;
+    let up="";try{const t=(JSON.parse(localStorage.getItem("coach_races")||"null")||{}).t;up=t?" · liste mise à jour le "+new Date(t).toLocaleDateString("fr-FR"):" · liste intégrée à l’appli"}catch(e){}
+    $("rmeta").textContent="Épreuves à moins de "+RAD+" km de "+B.pos.src+", sur les "+MONTHS+" prochains mois ("+rows.length+" distances)"+up+". Les courses passées disparaissent.";
     rows.forEach(x=>{
       const r=x.r,ex=r[5]||{},dp=ex.dp&&ex.dp[x.k]!=null?ex.dp[x.k]+" m":"–";
       const txt=(r[0]+" "+r[1]+" "+fmt(x.k)+" "+dlab(r,x.k)).toLowerCase();
@@ -2013,7 +2067,7 @@ const MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept."
     if(!tb.rows.length){const tr=document.createElement("tr");tr.innerHTML='<td colspan="4">Aucune course trouvée.</td>';tb.appendChild(tr)}
   }
   let cb=null;
-  const open=f=>{cb=f;$("rq").value="";draw();$("rtab").classList.remove("hidden")};
+  const open=f=>{cb=f;$("rq").value="";draw();$("rtab").classList.remove("hidden");refreshRaces(false,ok=>{if(ok)draw()})};
   $("f-race").onclick=()=>open(pick);
   $("x-race").onclick=()=>open(pickX);
   function pickX(r,km){
@@ -2022,6 +2076,7 @@ const MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept."
     $("x-msg").textContent=dt?"Course sélectionnée : vérifiez la date chez l’organisateur, puis « Ajouter ».":"Date à saisir (non connue), puis « Ajouter ».";
     $("rtab").classList.add("hidden");
   }
+  $("rrefresh").onclick=()=>{$("rmeta").textContent="Mise à jour de la liste…";refreshRaces(true,ok=>{draw();if(!ok)$("rmeta").textContent="Mise à jour impossible (pas de réseau ?). "+$("rmeta").textContent})};
   $("rclose").onclick=()=>$("rtab").classList.add("hidden");
   $("rq").oninput=draw;
   function pick(r,km){
@@ -2443,6 +2498,22 @@ function detailSummary(s,pts,run){
   $("d-sum").innerHTML="";
   box.forEach(b=>{const d=document.createElement("div"),x=document.createElement("b"),y=document.createElement("span");x.textContent=b[1];y.textContent=b[0];d.append(x,y);$("d-sum").appendChild(d)});
 }
+function traceGpx(s,pts){
+  const esc=x=>String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  const rows=pts.filter(r=>r[5]!=null&&r[6]!=null);if(rows.length<2)return null;
+  let g='<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Coach Running" xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"><trk><name>'+esc("Coach Running "+s.date+" "+(SPORTS[s.sport||"RUN_ROUTE"]||""))+'</name><trkseg>\n';
+  rows.forEach(r=>{g+='<trkpt lat="'+r[5].toFixed(5)+'" lon="'+r[6].toFixed(5)+'">'+(r[2]!=null?'<ele>'+r[2]+'</ele>':'')+(s.ts?'<time>'+new Date(s.ts+r[0]*1000).toISOString()+'</time>':'')+(r[3]>0?'<extensions><gpxtpx:TrackPointExtension><gpxtpx:hr>'+r[3]+'</gpxtpx:hr></gpxtpx:TrackPointExtension></extensions>':'')+'</trkpt>\n'});
+  return g+'</trkseg></trk></gpx>';
+}
+$("d-gpx").onclick=async()=>{
+  const m=$("d-gmsg"),s=sessions.find(x=>x.id===detailId),pts=s&&traces[s.id];m.textContent="";
+  if(!s||!pts){m.textContent="Aucune trace pour cette sortie.";return}
+  const g=traceGpx(s,pts);if(!g){m.textContent="Cette sortie n’a pas de trace GPS (seulement distance et durée).";return}
+  const name="Coach-Running_"+s.date+"_"+(SPORTS[s.sport||"RUN_ROUTE"]||"sortie").replace(/[^A-Za-z0-9]/g,"")+".gpx";
+  try{if(window.AndroidBle&&AndroidBle.shareFile&&AndroidBle.shareFile(name,"application/gpx+xml",g)){m.textContent="Choisissez l’appli ou la personne dans la fenêtre qui s’ouvre.";return}}catch(e){}
+  try{const f=new File([g],name,{type:"application/gpx+xml"});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}catch(e){}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([g],{type:"application/gpx+xml"}));a.download=name;a.click();m.textContent="Fichier GPX téléchargé.";
+};
 function drawMap(pts){
   const co=pts.filter(p=>p[5]!=null&&p[6]!=null).map(p=>[p[5],p[6]]),box=$("map"),msg=$("d-mapmsg");
   if(co.length<2){box.classList.add("hidden");msg.textContent="Pas de position GPS dans cette activité.";return}

@@ -37,6 +37,29 @@ class DeviceBridge(private val act: ComponentActivity, private val web: WebView)
         return write(name, mime, data.toByteArray())
     }
 
+    /** Partage un fichier texte (GPX…) avec une autre appli : messagerie, mail, Drive… */
+    @JavascriptInterface
+    fun shareFile(name: String, mime: String, data: String): Boolean {
+        return try {
+            val dir = java.io.File(act.cacheDir, "share")
+            dir.mkdirs()
+            dir.listFiles()?.forEach { it.delete() }
+            val safe = name.replace(Regex("[^A-Za-z0-9._ -]"), "_")
+            val f = java.io.File(dir, safe)
+            f.writeText(data)
+            val uri = androidx.core.content.FileProvider.getUriForFile(act, act.packageName + ".files", f)
+            val i = android.content.Intent(android.content.Intent.ACTION_SEND)
+            i.type = mime
+            i.putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            i.putExtra(android.content.Intent.EXTRA_SUBJECT, safe)
+            i.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            act.runOnUiThread { act.startActivity(android.content.Intent.createChooser(i, "Envoyer la trace")) }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     /** Fichier binaire (image de la carte…) fourni en base64, dans Téléchargements/Coach Running. */
     @JavascriptInterface
     fun saveBase64(name: String, mime: String, b64: String): Boolean {

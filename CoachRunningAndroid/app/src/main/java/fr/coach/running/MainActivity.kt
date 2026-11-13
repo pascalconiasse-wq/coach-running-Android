@@ -275,6 +275,26 @@ class AppBridge(private val act: MainActivity, private val web: android.webkit.W
     private fun smsManager(): android.telephony.SmsManager =
         if (Build.VERSION.SDK_INT >= 31) act.getSystemService(android.telephony.SmsManager::class.java) else android.telephony.SmsManager.getDefault()
 
+    /** Dernière position connue ("lat,lon") ou "" si pas d'autorisation / pas de position. */
+    @android.webkit.JavascriptInterface
+    fun lastLocation(): String {
+        try {
+            val cc = androidx.core.content.ContextCompat.checkSelfPermission(act, android.Manifest.permission.ACCESS_FINE_LOCATION)
+            val cd = androidx.core.content.ContextCompat.checkSelfPermission(act, android.Manifest.permission.ACCESS_COARSE_LOCATION)
+            if (cc != android.content.pm.PackageManager.PERMISSION_GRANTED && cd != android.content.pm.PackageManager.PERMISSION_GRANTED) return ""
+            val lm = act.getSystemService(android.content.Context.LOCATION_SERVICE) as android.location.LocationManager
+            var best: android.location.Location? = null
+            for (p in lm.getProviders(true)) {
+                val l = try { lm.getLastKnownLocation(p) } catch (e: SecurityException) { null }
+                if (l != null && (best == null || l.time > best.time)) best = l
+            }
+            val b = best ?: return ""
+            return b.latitude.toString() + "," + b.longitude.toString()
+        } catch (e: Exception) {
+            return ""
+        }
+    }
+
     @android.webkit.JavascriptInterface
     fun smsOk(): Boolean = androidx.core.content.ContextCompat.checkSelfPermission(act, android.Manifest.permission.SEND_SMS) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
