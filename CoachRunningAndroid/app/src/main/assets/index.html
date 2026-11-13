@@ -303,6 +303,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
       </div>
       <div class="lhz" id="hrz"></div>
       <div class="lhz" id="lgps"></div>
+      <div class="lhz hidden" id="lroute"></div>
     </div>
     <button id="lrec" class="lbtn" aria-label="Recentrer la carte">⌖</button>
     <button id="lfull" class="lbtn" style="top:60px" aria-label="Réglages / plein écran">⚙</button>
@@ -319,6 +320,13 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <div class="card">
     <label class="f" for="l-sport">Activité</label>
     <select id="l-sport"></select>
+    <label class="f" for="l-rgpx">Parcours à suivre (fichier GPX, facultatif)</label>
+    <p class="mute" id="l-rinfo">Aucun parcours chargé.</p>
+    <button type="button" class="alt" id="l-rgpx">📂 Choisir un fichier GPX</button>
+    <button type="button" class="alt hidden" id="l-rclr">Retirer le parcours</button>
+    <input type="file" id="l-rfile" class="hidden" accept=".gpx,.xml,text/xml,application/gpx+xml,application/octet-stream">
+    <label class="f" for="l-offm">Alerte si je m’écarte du parcours de plus de (mètres, 0 = aucune)</label>
+    <input type="number" id="l-offm" inputmode="numeric" min="0" max="2000" placeholder="50">
     <label class="f" for="l-recap">Récap avec vibration tous les</label>
     <select id="l-recap"><option value="0">Aucun</option><option value="1">1 km</option><option value="5">5 km</option></select>
     <label class="f" for="l-dur">Durée prévue (min) : 4 vibrations à l’échéance, l’enregistrement continue</label>
@@ -429,6 +437,10 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p><b>Sans objectif</b> : cochez « Sans objectif » dans le profil (⚙ puis Mon profil). Plus de plan ni de coaching : l’appli enregistre seulement vos sorties (GPS, cardio, altitude, suivi en direct, sauvegarde). Décochez pour retrouver le coaching.</p>
     <p><b>Types d’activité</b> : course route, trail, marche, VTT, gravel, vélo route, équitation (home trainer et natation par saisie manuelle ou import de la montre). Avant de démarrer, le choix « Activité » est préréglé sur le terrain de votre objectif, modifiable ; en vélo, VTT et gravel la vitesse est affichée en km/h.</p>
     <p><b>Aide contextuelle</b> : touchez les boutons ? à côté des réglages pour une explication courte.</p></details>
+  <details class="card"><summary><b>Suivre un parcours GPX</b></summary>
+    <p>Avant de démarrer une séance, « 📂 Choisir un fichier GPX » charge un parcours (Komoot, Strava, site de course, montre…). Il reste mémorisé jusqu’à « Retirer le parcours ».</p>
+    <p>Sur la carte de la séance, le <b>parcours prévu est en bleu</b> (départ vert, arrivée noire) et <b>votre tracé fait est en rouge</b> : si le rouge quitte le bleu, vous vous écartez. Le point jaune est votre position. Sous les chiffres, l’appli affiche les km et le D+ restants.</p>
+    <p>Alerte : si vous vous éloignez du parcours de plus de la distance réglée (50 m par défaut, 0 = aucune alerte) pendant 3 positions de suite, le téléphone vibre et « HORS PARCOURS » s’affiche ; un message confirme le retour sur le tracé. Ce n’est pas un guidage vocal : l’appli montre le tracé et votre position.</p></details>
   <details class="card"><summary><b>Bouton SOS</b></summary>
     <p>Pendant une séance, le bouton rouge <b>SOS</b> (bas de l’écran) se déclenche par <b>3 touches rapides</b>. Un écran rouge clignotant lance un compte à rebours (30 s par défaut, réglable de 0 à 120 s) avec alarme et vibrations : touchez <b>ANNULER</b> en cas de fausse manip.</p>
     <p>À la fin du compte à rebours : un SMS avec votre position (lien Maps) et le lien de suivi part aux <b>numéros SOS</b> ; la page de suivi affiche une alerte rouge clignotante avec un repère SOS sur la carte, un bouton Itinéraire, l’appel du 112 et une alarme sonore ; la position est mise à jour toutes les 30 s sur la page et renvoyée par SMS toutes les 3 minutes. « C’était une erreur » annule tout et envoie un SMS « fausse alerte ».</p>
@@ -985,6 +997,7 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if(liveOn){if(b.data
    "f-gdate":"Date de la course : le plan se construit à rebours à partir d’elle (montée en charge puis affûtage).",
    "f-fcmax":"Fréquence cardiaque maximale : sert aux zones et aux alertes. Estimée si vous ne la connaissez pas.",
    "l-sport":"Type d’activité de cette sortie, préréglé sur votre objectif. Le VTT, le gravel et le vélo affichent la vitesse en km/h ; l’équitation est proposée aussi (charge légère).",
+   "l-offm":"Si vous vous éloignez du parcours GPX de plus de cette distance (3 positions de suite), le téléphone vibre et un message s’affiche. Le tracé fait est en rouge, le parcours prévu en bleu.",
    "l-stel":"Numéros qui reçoivent l’alerte SOS avec votre position. Vide : les numéros du suivi.",
    "l-scall":"Après ce délai sans annulation, l’appli appelle le 1er numéro SOS en haut-parleur (autorisation d’appel requise).",
    "l-snext":"Si personne n’a décroché au bout de ce délai, l’appli appelle le numéro suivant, et ainsi de suite.",
@@ -1039,6 +1052,81 @@ function keepScreen(on){
 function saveLive(){if(!liveOn)return;try{localStorage.setItem(LKEY,JSON.stringify({t0:t0,sport:liveSport,recap:recapKm,maxPace:$("l-maxpace").value,cap:liveCapHr,dur:$("l-dur").value,live:prefs.liveId||"",tgt:$("livetgt").textContent}))}catch(e){}}
 let liveSport="RUN_ROUTE",targetMin=0,targetShown=false;
 
+/* ===== Parcours GPX à suivre ===== */
+let route=null,routeLayers=[],offCnt=0,offAlertT=0,wasOff=false;
+function loadRoute(){try{const r=JSON.parse(localStorage.getItem("coach_route")||"null");route=r&&r.pts&&r.pts.length>1?r:null}catch(e){route=null}if(route)prepRoute()}
+function prepRoute(){
+  const P=route.pts;route.cum=[0];route.gc=[0];let g=0;
+  for(let i=1;i<P.length;i++){
+    route.cum.push(route.cum[i-1]+hav(P[i-1][0],P[i-1][1],P[i][0],P[i][1]));
+    if(P[i][2]!=null&&P[i-1][2]!=null){const d=P[i][2]-P[i-1][2];if(d>0)g+=d}
+    route.gc.push(g);
+  }
+  route.km=route.cum[P.length-1];route.gain=g;
+}
+function parseRouteGpx(txt){
+  const doc=new DOMParser().parseFromString(txt,"application/xml");
+  let el=[...doc.getElementsByTagName("trkpt")];if(el.length<2)el=[...doc.getElementsByTagName("rtept")];
+  if(el.length<2)return null;
+  let pts=el.map(e=>{const le=e.getElementsByTagName("ele")[0];return [parseFloat(e.getAttribute("lat")),parseFloat(e.getAttribute("lon")),le?parseFloat(le.textContent):null]}).filter(p=>isFinite(p[0])&&isFinite(p[1]));
+  if(pts.length<2)return null;
+  const step=Math.ceil(pts.length/2500);if(step>1){const l=pts[pts.length-1];pts=pts.filter((p,i)=>i%step===0);pts.push(l)}
+  const nm=doc.getElementsByTagName("name")[0];
+  return {name:nm?nm.textContent.trim().slice(0,60):"",pts:pts.map(p=>[Math.round(p[0]*1e6)/1e6,Math.round(p[1]*1e6)/1e6,p[2]==null||!isFinite(p[2])?null:Math.round(p[2])])};
+}
+function routeInfo(){
+  const i=$("l-rinfo"),c=$("l-rclr");
+  if(route){i.textContent="✔ "+(route.name||"Parcours")+" · "+route.km.toFixed(1).replace(".",",")+" km · D+ "+Math.round(route.gain)+" m";c.classList.remove("hidden")}
+  else{i.textContent="Aucun parcours chargé.";c.classList.add("hidden")}
+}
+function drawRoute(){
+  if(!lmap)return;
+  routeLayers.forEach(l=>lmap.removeLayer(l));routeLayers=[];
+  if(!route)return;
+  const ll=route.pts.map(p=>[p[0],p[1]]);
+  const pl=L.polyline(ll,{color:"#2F6BFF",weight:8,opacity:.55}).addTo(lmap);routeLayers.push(pl);
+  const dot=(c,f)=>L.circleMarker(c,{radius:8,color:"#fff",weight:3,fillColor:f,fillOpacity:1}).addTo(lmap);
+  routeLayers.push(dot(ll[0],"#18B26B"));routeLayers.push(dot(ll[ll.length-1],"#14203A"));
+  try{lmap.fitBounds(pl.getBounds(),{padding:[30,30]})}catch(e){}
+}
+function routeNear(la,lo){
+  const P=route.pts,k=Math.cos(la*Math.PI/180),X=(lo)*111.32*k,Y=la*110.57;
+  let best=1e9,bi=0,bt=0;
+  for(let i=0;i<P.length-1;i++){
+    const ax=P[i][1]*111.32*k,ay=P[i][0]*110.57,bx=P[i+1][1]*111.32*k,by=P[i+1][0]*110.57,dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;
+    let t=l2>0?((X-ax)*dx+(Y-ay)*dy)/l2:0;t=Math.max(0,Math.min(1,t));
+    const d=Math.hypot(X-(ax+t*dx),Y-(ay+t*dy));
+    if(d<best){best=d;bi=i;bt=t}
+  }
+  return {d:best*1000,i:bi,t:bt};
+}
+function routeFix(la,lo){
+  if(!route)return;
+  const n=routeNear(la,lo),el=$("lroute");
+  const prog=route.cum[n.i]+(route.cum[n.i+1]-route.cum[n.i])*n.t,rest=Math.max(0,route.km-prog),gr=Math.max(0,Math.round(route.gain-route.gc[n.i]));
+  const lim=prefs.offM===undefined||prefs.offM===""||isNaN(+prefs.offM)?50:+prefs.offM;
+  const off=lim>0&&n.d>lim;
+  offCnt=off?offCnt+1:0;
+  const out=off&&offCnt>=3;
+  el.classList.remove("hidden");
+  el.textContent=out?"⚠ HORS PARCOURS : "+Math.round(n.d)+" m · reste "+rest.toFixed(1).replace(".",",")+" km":"Parcours : reste "+rest.toFixed(1).replace(".",",")+" km · D+ "+gr+" m";
+  el.style.color=out?"#ff6b6b":"";el.style.fontWeight=out?"800":"";
+  const now=Date.now();
+  if(out&&now-offAlertT>45000){offAlertT=now;wasOff=true;sosBuzz([0,400,150,400,150,400]);showRecap("⚠ Vous êtes hors du parcours ("+Math.round(n.d)+" m). Le tracé fait est en rouge, le parcours prévu en bleu.")}
+  if(!off&&wasOff&&offCnt===0){wasOff=false;sosBuzz([0,120,80,120]);showRecap("✔ De retour sur le parcours")}
+}
+$("l-rgpx").onclick=()=>$("l-rfile").click();
+$("l-rfile").onchange=async e=>{
+  const f=e.target.files[0];e.target.value="";if(!f)return;
+  try{
+    const r=parseRouteGpx(await f.text());
+    if(!r){$("l-rinfo").textContent="Fichier GPX illisible (aucune trace trouvée).";return}
+    if(!r.name)r.name=f.name.replace(/\.gpx$/i,"");
+    localStorage.setItem("coach_route",JSON.stringify(r));loadRoute();routeInfo();drawRoute();
+  }catch(err){$("l-rinfo").textContent="Fichier GPX illisible."}
+};
+$("l-rclr").onclick=()=>{try{localStorage.removeItem("coach_route")}catch(e){}route=null;routeInfo();drawRoute();$("lroute").classList.add("hidden")};
+loadRoute();routeInfo();
 function liveMap(){
   try{
     if(!lmap&&typeof L!=="undefined"&&L.map){
@@ -1046,7 +1134,7 @@ function liveMap(){
       L.tileLayer(OSM,{maxZoom:19,attribution:OSMA}).addTo(lmap);
       lmap.on("dragstart",()=>{follow=false});
     }
-    if(lmap){if(lline)lmap.removeLayer(lline);if(lmark)lmap.removeLayer(lmark);lline=lmark=null;follow=true;setTimeout(()=>lmap.invalidateSize(),200)}
+    if(lmap){if(lline)lmap.removeLayer(lline);if(lmark)lmap.removeLayer(lmark);lline=lmark=null;follow=true;offCnt=0;wasOff=false;drawRoute();$("lroute").classList.toggle("hidden",!route);if(route)$("lroute").textContent="Parcours : reste "+route.km.toFixed(1).replace(".",",")+" km · D+ "+Math.round(route.gain)+" m";setTimeout(()=>lmap.invalidateSize(),200)}
   }catch(e){}
 }
 function setFull(f){$("lwrap").classList.toggle("full",f);$("lfull").textContent=f?"⚙":"⛶";setTimeout(()=>{try{lmap&&lmap.invalidateSize()}catch(e){}profT=0;drawAlt()},150)}
@@ -1104,7 +1192,8 @@ function addPt(t,la,lo,alt,hr){
   }
   if(lmap){
     const ll=[la,lo];
-    if(!lline){lline=L.polyline([ll],{color:"#E5484D",weight:5}).addTo(lmap);lmark=L.circleMarker(ll,{radius:8,color:"#fff",weight:3,fillColor:"#2F6BFF",fillOpacity:1}).addTo(lmap);lmap.setView(ll,16)}
+    routeFix(la,lo);
+    if(!lline){lline=L.polyline([ll],{color:"#E5484D",weight:5}).addTo(lmap);lmark=L.circleMarker(ll,{radius:8,color:"#fff",weight:3,fillColor:"#FFC400",fillOpacity:1}).addTo(lmap);lmap.setView(ll,16)}
     else{lline.addLatLng(ll);lmark.setLatLng(ll);if(follow)lmap.panTo(ll,{animate:false})}
   }
 }
@@ -1218,13 +1307,13 @@ const LIVE_PAGE="https://pascalconiasse-wq.github.io/coach-running-Android/live.
 const DB_DEF="coach-running-4f54f-default-rtdb.europe-west1.firebasedatabase.app";
 const dbHost=v=>String(v||"").trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"")||DB_DEF;
 function liveSave(){
-  prefs.share=$("l-share").checked;prefs.name=$("l-name").value.trim();prefs.tels=$("l-tels").value.trim();prefs.db=dbHost($("l-db").value);prefs.sosTels=$("l-stel").value.trim();prefs.sosDelay=$("l-sdel").value.trim();prefs.sosCall=$("l-scall").value.trim();prefs.sosNext=$("l-snext").value.trim();persistP();
+  prefs.share=$("l-share").checked;prefs.name=$("l-name").value.trim();prefs.tels=$("l-tels").value.trim();prefs.db=dbHost($("l-db").value);prefs.sosTels=$("l-stel").value.trim();prefs.sosDelay=$("l-sdel").value.trim();prefs.offM=$("l-offm").value.trim();prefs.sosCall=$("l-scall").value.trim();prefs.sosNext=$("l-snext").value.trim();persistP();
   $("l-sharebox").classList.toggle("hidden",!prefs.share);
 }
-["l-name","l-tels","l-db","l-stel","l-sdel","l-scall","l-snext"].forEach(i=>$(i).addEventListener("input",liveSave));
+["l-name","l-tels","l-db","l-stel","l-sdel","l-scall","l-snext","l-offm"].forEach(i=>$(i).addEventListener("input",liveSave));
 ["l-share","l-name","l-tels","l-db"].forEach(i=>$(i).onchange=()=>{liveSave();if(i==="l-share")liveApply();if(i==="l-tels"&&prefs.tels){try{AndroidApp.sendSms("","")}catch(e){}}});
 function liveLoad(){
-  $("l-share").checked=!!prefs.share;$("l-name").value=prefs.name||"";$("l-tels").value=prefs.tels||"";$("l-db").value=dbHost(prefs.db);$("l-stel").value=prefs.sosTels||"";$("l-sdel").value=prefs.sosDelay===undefined?"":prefs.sosDelay;$("l-scall").value=prefs.sosCall===undefined?"":prefs.sosCall;$("l-snext").value=prefs.sosNext===undefined?"":prefs.sosNext;
+  $("l-share").checked=!!prefs.share;$("l-name").value=prefs.name||"";$("l-tels").value=prefs.tels||"";$("l-db").value=dbHost(prefs.db);$("l-stel").value=prefs.sosTels||"";$("l-sdel").value=prefs.sosDelay===undefined?"":prefs.sosDelay;$("l-offm").value=prefs.offM===undefined?"":prefs.offM;$("l-scall").value=prefs.sosCall===undefined?"":prefs.sosCall;$("l-snext").value=prefs.sosNext===undefined?"":prefs.sosNext;
   $("l-sharebox").classList.toggle("hidden",!prefs.share);$("l-shmsg").textContent="";
 }
 function liveId(){if(!prefs.liveId){const a=new Uint8Array(14);(window.crypto||{}).getRandomValues?crypto.getRandomValues(a):a.forEach((_,i)=>a[i]=Math.random()*256);prefs.liveId=Array.from(a,x=>x.toString(36).padStart(2,"0").slice(-2)).join("");persistP()}return prefs.liveId}
