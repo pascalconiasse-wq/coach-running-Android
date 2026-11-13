@@ -230,6 +230,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <h2>Autres objectifs</h2>
     <p class="mute">Courses secondaires : elles allègent la semaine concernée, mais l’objectif principal reste prioritaire.</p>
     <ul id="xlist"></ul>
+    <button type="button" class="alt" id="x-race">📋 Choisir dans le tableau des courses</button>
     <label class="f" for="x-name">Nom</label><input type="text" id="x-name" placeholder="ex. 10 km de la ville">
     <label class="f" for="x-date">Date</label><input type="date" id="x-date">
     <label class="f" for="x-km">Distance (km)</label><input type="number" id="x-km" inputmode="decimal" min="1" max="250" step="0.1">
@@ -433,7 +434,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <details class="card"><summary><b>Premiers pas</b></summary>
     <p>Au premier lancement, renseignez âge, poids, niveau, jours disponibles et votre objectif principal (distance, date, dénivelé). Vous pourrez les modifier plus tard avec la roue ⚙ (en haut à droite) : « Mon profil de coureur ». L’appli construit le plan jusqu’à la course : fondation, développement, spécifique, affûtage. Elle recalcule seule quand vous courez ailleurs (montre, import).</p></details>
   <details class="card"><summary><b>Choisir une course et mode sans objectif</b></summary>
-    <p><b>Tableau des courses</b> : dans le profil, « Choisir dans le tableau des courses » liste les courses de la région, une ligne par distance (date, course, distance, D+). Tapez sur une ligne pour remplir l’objectif ; la recherche filtre par nom, lieu ou distance. Vérifiez toujours la date et le dénivelé chez l’organisateur.</p>
+    <p><b>Tableau des courses</b> : dans le profil, et aussi dans « Autres objectifs » du plan, « Choisir dans le tableau des courses » liste les courses de la région, une ligne par distance (date, course, distance, D+). Tapez sur une ligne pour remplir l’objectif ; la recherche filtre par nom, lieu ou distance. Vérifiez toujours la date et le dénivelé chez l’organisateur.</p>
     <p><b>Sans objectif</b> : cochez « Sans objectif » dans le profil (⚙ puis Mon profil). Plus de plan ni de coaching : l’appli enregistre seulement vos sorties (GPS, cardio, altitude, suivi en direct, sauvegarde). Décochez pour retrouver le coaching.</p>
     <p><b>Types d’activité</b> : course route, trail, marche, VTT, gravel, vélo route, équitation (home trainer et natation par saisie manuelle ou import de la montre). Avant de démarrer, le choix « Activité » est préréglé sur le terrain de votre objectif, modifiable ; en vélo, VTT et gravel la vitesse est affichée en km/h.</p>
     <p><b>Aide contextuelle</b> : touchez les boutons ? à côté des réglages pour une explication courte.</p></details>
@@ -448,7 +449,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p>Réglages : roue ⚙ (en haut de l’écran principal), rubrique « 🆘 SOS » (numéros, contacts, compte à rebours, appel automatique, SMS de test). Sans numéro SOS, ce sont les numéros du suivi qui sont utilisés. Le SOS active le suivi en direct même s’il était désactivé. Appel automatique : après le délai réglé (3 min par défaut) sans annulation, l’appli appelle le 1er numéro SOS en haut-parleur ; si personne ne décroche au bout de 5 min, elle appelle le suivant. Autorisez les appels dans les réglages SOS. Nécessite l’écran allumé pour le triple appui, les autorisations SMS et appel, et du réseau.</p></details>
   <details class="card"><summary><b>Onglet Plan</b></summary>
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), zones cardio, allures de référence calculées sur vos meilleurs efforts, et test VMA facultatif qui débloque des séances de VMA. Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation. Dès qu’une activité existe pour la journée (enregistrée par l’appli, importée ou synchronisée depuis la montre), la séance du jour passe à « faite ✓ » et le détail prévu disparaît ; dans la liste de la semaine, les jours faits sont cochés et barrés.</p>
-    <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance). Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
+    <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance), à saisir ou à choisir dans le même tableau des courses de la région que l’objectif principal. Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
   <details class="card"><summary><b>Séance en direct</b></summary>
     <p><b>Bilan du dimanche</b> : chaque dimanche à 19 h, une notification résume la semaine (séances faites, volume, D+), votre position par rapport à l’objectif (semaines restantes, plus longue sortie récente par rapport à celle visée) et indique si la charge de la semaine suivante est diminuée, augmentée ou inchangée. Le même texte est dans l’onglet Plan (« Semaine prochaine »). Ouvrez l’appli après votre dernière sortie pour qu’il soit à jour.</p>
     <p><b>Suivi en direct</b> : réglez une fois dans la roue ⚙ « Partage du suivi en direct » : votre prénom et les numéros qui recevront le lien (« Ajouter depuis mes contacts » les choisit dans votre répertoire). Avant chaque séance, cochez « Partager mon suivi » dans « Avant de partir » : au démarrage, le lien part tout seul par SMS (vous pouvez aussi le renvoyer à la main depuis la roue). Vos proches touchent le lien, sans rien installer : ils voient la carte avec votre trace, l’allure, le D+ et la FC, mise à jour toutes les 10 s, même écran éteint, et après la séance la trace complète. Le lien est secret et propre à chaque séance. Sous les données, un profil d’altitude se dessine en même temps que la course (point blanc = position actuelle). La première fois, Android demande l’autorisation d’envoyer des SMS ; si elle est refusée, ouvrez Réglages > Applications > Coach Running, autorisez les paramètres restreints, puis Autorisations > SMS.</p>
@@ -2007,11 +2008,20 @@ const MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept."
       const tr=document.createElement("tr");
       tr.innerHTML='<td>'+dlab(r,x.k)+'</td><td><span class="rn"></span><span class="rtr '+(r[4]?'':'road')+'">'+(r[4]?'Trail':'Route')+'</span><div class="rl"></div></td><td><b>'+fmt(x.k)+'</b></td><td>'+dp+'</td>';
       tr.querySelector(".rn").textContent=r[0];tr.querySelector(".rl").textContent=r[1];
-      tr.onclick=()=>pick(r,x.k);tb.appendChild(tr);
+      tr.onclick=()=>cb(r,x.k);tb.appendChild(tr);
     });
     if(!tb.rows.length){const tr=document.createElement("tr");tr.innerHTML='<td colspan="4">Aucune course trouvée.</td>';tb.appendChild(tr)}
   }
-  $("f-race").onclick=()=>{$("rq").value="";draw();$("rtab").classList.remove("hidden")};
+  let cb=null;
+  const open=f=>{cb=f;$("rq").value="";draw();$("rtab").classList.remove("hidden")};
+  $("f-race").onclick=()=>open(pick);
+  $("x-race").onclick=()=>open(pickX);
+  function pickX(r,km){
+    const ex=r[5]||{},dt=(ex.dt&&ex.dt[km])||(r[2].length>7?r[2]:"");
+    $("x-name").value=r[0]+" "+String(km).replace(".",",")+" km";$("x-date").value=dt;$("x-km").value=km;
+    $("x-msg").textContent=dt?"Course sélectionnée : vérifiez la date chez l’organisateur, puis « Ajouter ».":"Date à saisir (non connue), puis « Ajouter ».";
+    $("rtab").classList.add("hidden");
+  }
   $("rclose").onclick=()=>$("rtab").classList.add("hidden");
   $("rq").oninput=draw;
   function pick(r,km){
