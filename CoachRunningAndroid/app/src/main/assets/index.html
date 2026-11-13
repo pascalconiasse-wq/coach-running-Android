@@ -440,7 +440,8 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <details class="card"><summary><b>Suivre un parcours GPX</b></summary>
     <p>Avant de démarrer une séance, « 📂 Choisir un fichier GPX » charge un parcours (Komoot, Strava, site de course, montre…). Il reste mémorisé jusqu’à « Retirer le parcours ».</p>
     <p>Sur la carte de la séance, le <b>parcours prévu est en bleu</b> (départ vert, arrivée noire) et <b>votre tracé fait est en rouge</b> : si le rouge quitte le bleu, vous vous écartez. Le point jaune est votre position. Sous les chiffres, l’appli affiche les km et le D+ restants.</p>
-    <p>Alerte : si vous vous éloignez du parcours de plus de la distance réglée (50 m par défaut, 0 = aucune alerte) pendant 3 positions de suite, le téléphone vibre et « HORS PARCOURS » s’affiche ; un message confirme le retour sur le tracé. Ce n’est pas un guidage vocal : l’appli montre le tracé et votre position.</p></details>
+    <p>Alerte : si vous vous éloignez du parcours de plus de la distance réglée (50 m par défaut, 0 = aucune alerte) pendant 3 positions de suite, le téléphone vibre et « HORS PARCOURS » s’affiche ; un message confirme le retour sur le tracé. Ce n’est pas un guidage vocal : l’appli montre le tracé et votre position.</p>
+    <p><b>Page de suivi des proches</b> : si le partage est activé, le parcours prévu (en bleu, avec son nom, ses km et son D+) s’affiche aussi sur la carte de la page famille, avec votre tracé réel en rouge. Il est envoyé au démarrage de la séance et s’efface du suivi quand vous retirez le parcours.</p></details>
   <details class="card"><summary><b>Bouton SOS</b></summary>
     <p>Pendant une séance, le bouton rouge <b>SOS</b> (bas de l’écran) se déclenche par <b>3 touches rapides</b>. Un écran rouge clignotant lance un compte à rebours (30 s par défaut, réglable de 0 à 120 s) avec alarme et vibrations : touchez <b>ANNULER</b> en cas de fausse manip.</p>
     <p>À la fin du compte à rebours : un SMS avec votre position (lien Maps) et le lien de suivi part aux <b>numéros SOS</b> ; la page de suivi affiche une alerte rouge clignotante avec un repère SOS sur la carte, un bouton Itinéraire, l’appel du 112 et une alarme sonore ; la position est mise à jour toutes les 30 s sur la page et renvoyée par SMS toutes les 3 minutes. « C’était une erreur » annule tout et envoie un SMS « fausse alerte ».</p>
@@ -997,6 +998,7 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if(liveOn){if(b.data
    "f-gdate":"Date de la course : le plan se construit à rebours à partir d’elle (montée en charge puis affûtage).",
    "f-fcmax":"Fréquence cardiaque maximale : sert aux zones et aux alertes. Estimée si vous ne la connaissez pas.",
    "l-sport":"Type d’activité de cette sortie, préréglé sur votre objectif. Le VTT, le gravel et le vélo affichent la vitesse en km/h ; l’équitation est proposée aussi (charge légère).",
+   "l-rgpx":"Charge un parcours GPX : il apparaît en bleu sur la carte (et sur la page de suivi des proches), votre tracé fait est en rouge.",
    "l-offm":"Si vous vous éloignez du parcours GPX de plus de cette distance (3 positions de suite), le téléphone vibre et un message s’affiche. Le tracé fait est en rouge, le parcours prévu en bleu.",
    "l-stel":"Numéros qui reçoivent l’alerte SOS avec votre position. Vide : les numéros du suivi.",
    "l-scall":"Après ce délai sans annulation, l’appli appelle le 1er numéro SOS en haut-parleur (autorisation d’appel requise).",
@@ -1368,6 +1370,7 @@ function sosPushLive(on){
   try{
     if(on&&!(n.sosActive&&n.sosActive())&&n.setLive)n.setLive("https://"+dbHost(prefs.db)+"/live/"+liveId(),prefs.name||"",t0);
     n.setSos(on,lastPt?lastPt.lat:0,lastPt?lastPt.lon:0);
+    if(on)pushRoute(false);
   }catch(e){}
 }
 function sosShow(on){$("sosov").classList.toggle("hidden",!on)}
@@ -1427,12 +1430,24 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)sosStat()}
 setTimeout(sosStat,800);
 $("l-sperm").onclick=()=>{let r="err";try{r=AndroidApp.askCall()}catch(e){}$("l-smsg").textContent=r==="ok"?"Appels déjà autorisés.":r==="perm"?"Autorisez les appels dans la fenêtre Android, puis revenez ici.":"Disponible seulement dans l’appli Android.";setTimeout(sosStat,1500)};
 $("l-spick").onclick=()=>{contactTo="sos";try{AndroidApp.pickContact()}catch(e){$("l-smsg").textContent="Contacts disponibles dans l’appli Android."}};
+let routeSig="";
+function pushRoute(force){
+  if(!liveReady())return;
+  const sig=(route?route.name+"|"+route.pts.length+"|"+route.km:"none")+"|"+liveId();
+  if(!force&&sig===routeSig)return;routeSig=sig;
+  let body="null";
+  if(route){
+    const P=route.pts,st=Math.max(1,Math.ceil(P.length/400));let q=P.filter((p,i)=>i%st===0);if(q[q.length-1]!==P[P.length-1])q.push(P[P.length-1]);
+    body=JSON.stringify({name:route.name||"",km:Math.round(route.km*10)/10,gain:Math.round(route.gain),pts:q.map(p=>[p[0],p[1]])});
+  }
+  fetch("https://"+dbHost(prefs.db)+"/live/"+liveId()+"/route.json",{method:"PUT",body:body}).then(r=>{if(!r.ok)routeSig=""}).catch(()=>{routeSig=""});
+}
 function liveApply(){
   const n=NAT();if(!liveOn)return;
   if(liveReady()){
     if(n&&n.setLive){try{n.setLive("https://"+dbHost(prefs.db)+"/live/"+liveId(),prefs.name||"",t0)}catch(e){}}
     else jsPushStart();
-    $("l-shmsg").textContent="Suivi partagé en cours.";
+    $("l-shmsg").textContent="Suivi partagé en cours.";routeSig="";pushRoute(true);
   }else{if(n&&n.setLive){try{n.setLive("","",0)}catch(e){}}}
 }
 /* navigateur sans le pont Android : envoi depuis la page (arrière-plan non garanti) */
