@@ -169,7 +169,11 @@ class MainActivity : Activity() {
     // ---------- Déroulé ----------
     private fun choisir(s: Station) {
         if (s.telephone.isNullOrBlank()) { erreur("${s.nom} n'a pas de numéro."); return }
-        if (s.ip.isNullOrBlank()) { erreur("${s.nom} n'a pas d'IP (champ e-mail vide)."); return }
+        if (s.ip.isNullOrBlank()) {
+            val detail = if (s.champs.isEmpty()) "aucun champ lu" else s.champs.joinToString("\n")
+            erreur("Aucune adresse IP trouvée pour ${s.nom}.\n\nChamps lus dans la fiche :\n$detail")
+            return
+        }
 
         val avertVpn = if (Vpn.estActif(this)) "" else "\n\n⚠ Le VPN n'est pas actif."
         AlertDialog.Builder(this)
