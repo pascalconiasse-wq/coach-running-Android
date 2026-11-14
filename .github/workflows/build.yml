@@ -17,7 +17,10 @@ jobs:
           distribution: temurin
           java-version: 17
       - name: Compiler
+        env:
+          APPEL_STATION_KEY_PASSWORD: ${{ secrets.APPEL_STATION_KEY_PASSWORD }}
         run: |
+          if [ -z "$APPEL_STATION_KEY_PASSWORD" ]; then echo "::error::Secret APPEL_STATION_KEY_PASSWORD absent"; exit 1; fi
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/build.log || { grep -E "error:|e: |FAILED|What went wrong" -A3 /tmp/build.log | head -40 | sed 's/^/::error::/'; exit 1; }
           cp app/build/outputs/apk/release/*.apk AppelStation.apk

@@ -18,10 +18,14 @@ android {
 
     signingConfigs {
         create("fixe") {
-            storeFile = file("appelstation.jks")
-            storePassword = "appelstation"
+            // Clé protégée par un mot de passe stocké dans les secrets GitHub
+            // (APPEL_STATION_KEY_PASSWORD), jamais dans le dépôt.
+            val mdp = System.getenv("APPEL_STATION_KEY_PASSWORD") ?: ""
+            storeFile = file("appelstation-v2.p12")
+            storeType = "PKCS12"
+            storePassword = mdp
             keyAlias = "appelstation"
-            keyPassword = "appelstation"
+            keyPassword = mdp
         }
     }
 
