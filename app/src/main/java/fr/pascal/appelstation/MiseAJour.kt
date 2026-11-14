@@ -8,7 +8,7 @@ import java.net.URL
 /** Cherche sur GitHub une version d'Appel Station plus récente que celle installée. */
 object MiseAJour {
     private const val API =
-        "https://api.github.com/repos/pascalconiasse-wq/coach-running-Android/releases?per_page=50"
+        "https://api.github.com/repos/pascalconiasse-wq/coach-running-Android/releases?per_page=100"
     private const val PREFIXE = "appel-station-v"
 
     data class Version(val numero: Int, val lienApk: String)
