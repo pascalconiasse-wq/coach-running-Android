@@ -6,16 +6,19 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
-      - run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+      - name: Compiler
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee /tmp/build.log || { grep -E "error:|e: |FAILED|What went wrong" -A3 /tmp/build.log | head -40 | sed 's/^/::error::/'; exit 1; }
+          cp app/build/outputs/apk/release/*.apk AppelStation.apk
       - uses: actions/upload-artifact@v4
         with:
           name: AppelStation-apk
-          path: app/build/outputs/apk/release/*.apk
+          path: AppelStation.apk
