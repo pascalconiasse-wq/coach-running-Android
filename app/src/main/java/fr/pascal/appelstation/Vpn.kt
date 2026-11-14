@@ -19,9 +19,18 @@ object Vpn {
         }
     }
 
+    /** Appli VPN réellement installée : celle des réglages, sinon l'autre. */
+    private fun appli(activity: Activity, prefs: Prefs): Int {
+        fun installe(p: String) = try { activity.packageManager.getPackageInfo(p, 0); true } catch (_: Exception) { false }
+        val voulue = if (prefs.appliVpn == 1) PKG_BLINKT else PKG_CONNECT
+        val autre = if (prefs.appliVpn == 1) PKG_CONNECT else PKG_BLINKT
+        return if (!installe(voulue) && installe(autre)) 1 - prefs.appliVpn else prefs.appliVpn
+    }
+
     /** Coupe la connexion OpenVPN. */
     fun desactiver(activity: Activity, prefs: Prefs) {
-        val intent = if (prefs.appliVpn == 1) {
+        val choix = appli(activity, prefs)
+        val intent = if (choix == 1) {
             Intent(Intent.ACTION_MAIN).apply {
                 setClassName(PKG_BLINKT, "de.blinkt.openvpn.api.DisconnectVPN")
             }
@@ -36,7 +45,7 @@ object Vpn {
         } catch (_: Exception) {
             // à défaut : ouvrir l'appli VPN pour couper à la main
             activity.packageManager.getLaunchIntentForPackage(
-                if (prefs.appliVpn == 1) PKG_BLINKT else PKG_CONNECT
+                if (choix == 1) PKG_BLINKT else PKG_CONNECT
             )?.let {
                 activity.startActivity(it)
                 Toast.makeText(activity, "Coupez le VPN dans l'appli OpenVPN", Toast.LENGTH_LONG).show()
@@ -47,10 +56,11 @@ object Vpn {
     /** Lance la connexion OpenVPN selon les réglages. */
     fun activer(activity: Activity, prefs: Prefs) {
         val profil = prefs.profilVpn.trim()
-        val pkg = if (prefs.appliVpn == 1) PKG_BLINKT else PKG_CONNECT
+        val choix = appli(activity, prefs)
+        val pkg = if (choix == 1) PKG_BLINKT else PKG_CONNECT
 
         if (profil.isNotEmpty()) {
-            val intent = if (prefs.appliVpn == 1) {
+            val intent = if (choix == 1) {
                 // OpenVPN for Android : démarre directement le profil nommé
                 Intent(Intent.ACTION_MAIN).apply {
                     setClassName(PKG_BLINKT, "de.blinkt.openvpn.api.ConnectVPN")

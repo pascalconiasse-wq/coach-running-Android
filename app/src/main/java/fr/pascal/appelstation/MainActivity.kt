@@ -25,6 +25,10 @@ class MainActivity : Activity() {
     private lateinit var btnVpn: Button
     private lateinit var recherche: EditText
     private lateinit var liste: ListView
+    private lateinit var txtVide: TextView
+    private var auPremierPlan = false
+    /** Connexion à faire dès que l'appli revient au premier plan. */
+    private var connexionEnAttente: Station? = null
     private var toutes: List<Station> = emptyList()
     private var affichees: List<Station> = emptyList()
     private var vpnDejaLance = false
@@ -56,7 +60,8 @@ class MainActivity : Activity() {
         bandeau.addView(btnVpn)
 
         recherche = EditText(this).apply {
-            hint = "Filtrer les stations…"
+            hint = "Nom de la station…"
+            textSize = 20f
             setSingleLine()
             addTextChangedListener(object : TextWatcher {
                 override fun afterTextChanged(s: Editable?) = filtrer()
@@ -67,6 +72,11 @@ class MainActivity : Activity() {
         liste = ListView(this).apply {
             setOnItemClickListener { _, _, pos, _ -> choisir(affichees[pos]) }
         }
+        txtVide = TextView(this).apply {
+            text = "Tapez le nom ou le début du nom de la station"
+            gravity = Gravity.CENTER
+            setPadding(pad, pad * 3, pad, pad)
+        }
 
         setContentView(LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -75,18 +85,29 @@ class MainActivity : Activity() {
                 setMargins(pad, 0, pad, 0)
             })
             addView(liste, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
+            addView(txtVide, MATCH_PARENT, WRAP_CONTENT)
             addView(btnFermer, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
                 setMargins(pad, pad / 2, pad, pad)
             })
         })
 
+        liste.emptyView = txtVide
         demanderPermissions()
+        recherche.requestFocus()
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+    }
+
+    override fun onPause() {
+        auPremierPlan = false
+        super.onPause()
     }
 
     override fun onResume() {
         super.onResume()
+        auPremierPlan = true
         majVpn()
-        if (aLaPermission(Manifest.permission.READ_CONTACTS)) chargerStations()
+        if (toutes.isEmpty() && aLaPermission(Manifest.permission.READ_CONTACTS)) chargerStations()
+        connexionEnAttente?.let { connexionEnAttente = null; connecter(it); return }
         if (prefs.vpnAuDemarrage && !vpnDejaLance && !Vpn.estActif(this)) {
             vpnDejaLance = true
             Vpn.activer(this, prefs)
@@ -154,7 +175,7 @@ class MainActivity : Activity() {
 
     private fun filtrer() {
         val f = recherche.text.toString().trim()
-        affichees = if (f.isEmpty()) toutes else toutes.filter { it.nom.contains(f, ignoreCase = true) }
+        affichees = if (f.isEmpty()) emptyList() else toutes.filter { correspond(it.nom, f) }
         liste.adapter = object : ArrayAdapter<Station>(this, android.R.layout.simple_list_item_2, android.R.id.text1, affichees) {
             override fun getView(pos: Int, convertView: android.view.View?, parent: android.view.ViewGroup) =
                 super.getView(pos, convertView, parent).also { v ->
@@ -166,6 +187,13 @@ class MainActivity : Activity() {
         }
     }
 
+    /** Vrai si le nom (avec ou sans « Station ») ou l'un de ses mots commence par la saisie. */
+    private fun correspond(nom: String, saisie: String): Boolean {
+        val sansPrefixe = nom.removePrefix(prefs.prefixe).trimStart(' ', '-', '_', ':')
+        if (nom.startsWith(saisie, true) || sansPrefixe.startsWith(saisie, true)) return true
+        return sansPrefixe.split(' ', '-', '_', '\'', '(').any { it.startsWith(saisie, true) }
+    }
+
     // ---------- Déroulé ----------
     private fun choisir(s: Station) {
         if (s.telephone.isNullOrBlank()) { erreur("${s.nom} n'a pas de numéro."); return }
@@ -175,14 +203,9 @@ class MainActivity : Activity() {
             return
         }
 
-        val avertVpn = if (Vpn.estActif(this)) "" else "\n\n⚠ Le VPN n'est pas actif."
-        AlertDialog.Builder(this)
-            .setTitle(s.nom)
-            .setMessage("Envoyer « ${prefs.texteSms} » au ${s.telephone},\npuis se connecter à ${s.ip} après ${prefs.delaiSecondes} s ?$avertVpn")
-            .setPositiveButton("Envoyer") { _, _ -> envoyerSms(s) }
-            .setNeutralButton(if (avertVpn.isEmpty()) null else "Activer VPN") { _, _ -> Vpn.activer(this, prefs) }
-            .setNegativeButton("Annuler", null)
-            .show()
+        // Tout s'enchaîne seul : VPN (si coupé), SMS, attente, connexion
+        if (!Vpn.estActif(this)) Vpn.activer(this, prefs)
+        envoyerSms(s)
     }
 
     private fun envoyerSms(s: Station) {
@@ -226,7 +249,12 @@ class MainActivity : Activity() {
             }
             override fun onFinish() {
                 if (dlg.isShowing) dlg.dismiss()
-                connecter(s)
+                // Android interdit d'ouvrir le navigateur depuis l'arrière-plan :
+                // si l'appli VPN est devant, on connecte au retour dans l'appli.
+                if (auPremierPlan) connecter(s) else {
+                    connexionEnAttente = s
+                    Toast.makeText(this@MainActivity, "Revenez dans Appel Station pour la connexion", Toast.LENGTH_LONG).show()
+                }
             }
         }.start()
     }
