@@ -23,11 +23,11 @@ object Vpn {
     private fun installe(activity: Activity, p: String) =
         try { activity.packageManager.getPackageInfo(p, 0); true } catch (_: Exception) { false }
 
-    /** Appli VPN réellement installée : OpenVPN for Android en priorité si présent. */
-    private fun appli(activity: Activity, prefs: Prefs): Int {
-        val voulue = if (prefs.appliVpn == 1) PKG_BLINKT else PKG_CONNECT
-        if (installe(activity, PKG_BLINKT) && (prefs.appliVpn == 1 || !installe(activity, voulue))) return 1
-        return if (installe(activity, PKG_CONNECT)) 0 else prefs.appliVpn
+    /** OpenVPN for Android dès qu'il est installé (le seul pilotable sans l'ouvrir). */
+    private fun appli(activity: Activity, prefs: Prefs): Int = when {
+        installe(activity, PKG_BLINKT) -> 1
+        installe(activity, PKG_CONNECT) -> 0
+        else -> prefs.appliVpn
     }
 
     private fun message(activity: Activity, txt: String) =

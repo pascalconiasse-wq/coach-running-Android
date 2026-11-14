@@ -25,7 +25,7 @@ class Prefs(context: Context) {
 
     /** 0 = OpenVPN Connect, 1 = OpenVPN for Android */
     var appliVpn: Int
-        get() = sp.getInt("appliVpn", 0)
+        get() = sp.getInt("appliVpn", 1)
         set(v) = sp.edit().putInt("appliVpn", v).apply()
 
     /** Nom du profil (facultatif : vide = juste ouvrir l'appli VPN). */
