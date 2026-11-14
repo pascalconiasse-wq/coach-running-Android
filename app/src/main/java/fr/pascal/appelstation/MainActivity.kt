@@ -50,14 +50,17 @@ class MainActivity : Activity() {
             setOnClickListener { Vpn.activer(this@MainActivity, prefs) }
         }
         val btnFermer = Button(this).apply {
-            text = "Fermer (coupe le VPN)"
-            textSize = 18f
+            text = "Fermer"
+            textSize = 16f
             setTextColor(Color.WHITE)
             setBackgroundColor(Color.rgb(200, 40, 40))
             setOnClickListener { quitter() }
         }
         bandeau.addView(txtVpn, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
         bandeau.addView(btnVpn)
+        bandeau.addView(btnFermer, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply {
+            marginStart = pad / 2
+        })
 
         recherche = EditText(this).apply {
             hint = "Nom de la station…"
@@ -86,9 +89,6 @@ class MainActivity : Activity() {
             })
             addView(liste, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
             addView(txtVide, MATCH_PARENT, WRAP_CONTENT)
-            addView(btnFermer, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
-                setMargins(pad, pad / 2, pad, pad)
-            })
         })
 
         liste.emptyView = txtVide
