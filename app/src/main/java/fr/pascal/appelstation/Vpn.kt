@@ -42,11 +42,23 @@ object Vpn {
 
     private fun activerBlinkt(activity: Activity, prefs: Prefs) {
         OpenVpnApi.avecService(activity) { b ->
-            if (b == null) { ouvrirAppli(activity, PKG_BLINKT); return@avecService }
+            if (b == null) {
+                message(activity, "Impossible de joindre OpenVPN for Android (voir menu ⋮ > Diagnostic VPN)")
+                ouvrirAppli(activity, PKG_BLINKT); return@avecService
+            }
             try {
                 // 1re fois : OpenVPN demande d'autoriser Appel Station
-                OpenVpnApi.prepare(b, activity.packageName)?.let {
-                    activity.startActivityForResult(it, REQ_AUTORISATION)
+                OpenVpnApi.prepare(b, activity.packageName)?.let { intent ->
+                    activity.runOnUiThread {
+                        android.app.AlertDialog.Builder(activity)
+                            .setTitle("Autorisation OpenVPN (une seule fois)")
+                            .setMessage("OpenVPN for Android va demander si Appel Station peut le piloter.\n\nRépondez OK / Autoriser : ensuite le VPN se connectera tout seul, sans ouvrir OpenVPN.")
+                            .setPositiveButton("Continuer") { _, _ ->
+                                activity.startActivityForResult(intent, REQ_AUTORISATION)
+                            }
+                            .setNegativeButton("Annuler", null)
+                            .show()
+                    }
                     return@avecService
                 }
                 val profils = OpenVpnApi.profils(b)
@@ -79,6 +91,35 @@ object Vpn {
             } catch (_: Exception) { }
         }
         ouvrirAppli(activity, PKG_CONNECT)
+    }
+
+    /** Texte de diagnostic, à afficher et à envoyer pour dépannage. */
+    fun diagnostic(activity: Activity, prefs: Prefs, resultat: (String) -> Unit) {
+        val sb = StringBuilder()
+        sb.append("OpenVPN for Android installé : ${installe(activity, PKG_BLINKT)}\n")
+        sb.append("OpenVPN Connect installé : ${installe(activity, PKG_CONNECT)}\n")
+        sb.append("Appli utilisée : ${if (appli(activity, prefs) == 1) "OpenVPN for Android" else "OpenVPN Connect"}\n")
+        sb.append("Profil réglé : « ${prefs.profilVpn} »\n")
+        sb.append("VPN actif : ${estActif(activity)}\n\n")
+        if (!installe(activity, PKG_BLINKT)) { resultat(sb.toString()); return }
+        OpenVpnApi.avecService(activity) { b ->
+            if (b == null) sb.append("Connexion au service OpenVPN : ÉCHEC\n")
+            else {
+                sb.append("Connexion au service OpenVPN : OK\n")
+                try {
+                    val i = OpenVpnApi.prepare(b, activity.packageName)
+                    sb.append("Appel Station autorisée : ${i == null}\n")
+                    if (i == null) {
+                        val p = OpenVpnApi.profils(b)
+                        sb.append("Profils (${p.size}) :\n")
+                        p.forEach { sb.append(" - ${it.nom}\n") }
+                    }
+                } catch (e: Exception) {
+                    sb.append("Erreur : ${e.javaClass.simpleName} ${e.message}\n")
+                }
+            }
+            activity.runOnUiThread { resultat(sb.toString()) }
+        }
     }
 
     // ------------------------------------------------------------------

@@ -133,6 +133,7 @@ class MainActivity : Activity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menu.add(0, 1, 0, "Actualiser")
         menu.add(0, 2, 1, "Réglages")
+        menu.add(0, 3, 2, "Diagnostic VPN")
         return true
     }
 
@@ -140,6 +141,10 @@ class MainActivity : Activity() {
         when (item.itemId) {
             1 -> { majVpn(); chargerStations() }
             2 -> startActivity(Intent(this, SettingsActivity::class.java))
+            3 -> Vpn.diagnostic(this, prefs) { txt ->
+                AlertDialog.Builder(this).setTitle("Diagnostic VPN").setMessage(txt)
+                    .setPositiveButton("OK", null).show()
+            }
         }
         return true
     }
@@ -157,7 +162,10 @@ class MainActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         // Autorisation donnée dans OpenVPN for Android : on lance la connexion
-        if (requestCode == Vpn.REQ_AUTORISATION && resultCode == RESULT_OK) Vpn.activer(this, prefs)
+        if (requestCode == Vpn.REQ_AUTORISATION) {
+            if (resultCode == RESULT_OK) Vpn.activer(this, prefs)
+            else Toast.makeText(this, "Autorisation OpenVPN refusée ou annulée", Toast.LENGTH_LONG).show()
+        }
     }
 
     override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, res: IntArray) {
