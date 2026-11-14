@@ -94,7 +94,6 @@ class MainActivity : Activity() {
         liste.emptyView = txtVide
         demanderPermissions()
         recherche.requestFocus()
-        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
     }
 
     override fun onPause() {
@@ -120,8 +119,9 @@ class MainActivity : Activity() {
 
     private fun quitter() {
         compteARebours?.cancel()
-        if (prefs.vpnCoupeEnQuittant && Vpn.estActif(this)) Vpn.desactiver(this, prefs)
-        finishAndRemoveTask()
+        if (prefs.vpnCoupeEnQuittant && Vpn.estActif(this))
+            Vpn.desactiver(this, prefs) { finishAndRemoveTask() }
+        else finishAndRemoveTask()
     }
 
     override fun onDestroy() {
@@ -151,6 +151,13 @@ class MainActivity : Activity() {
         val manquantes = arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.SEND_SMS)
             .filterNot { aLaPermission(it) }
         if (manquantes.isNotEmpty()) requestPermissions(manquantes.toTypedArray(), 10)
+    }
+
+    @Deprecated("Activity simple")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        // Autorisation donnée dans OpenVPN for Android : on lance la connexion
+        if (requestCode == Vpn.REQ_AUTORISATION && resultCode == RESULT_OK) Vpn.activer(this, prefs)
     }
 
     override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, res: IntArray) {

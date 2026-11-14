@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 15 : pas d'affichage sous la barre d'état (évite la fenêtre cachée en haut) -->
+    <style name="Theme.AppelStation" parent="@android:style/Theme.Material.Light.DarkActionBar">
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
+</resources>
