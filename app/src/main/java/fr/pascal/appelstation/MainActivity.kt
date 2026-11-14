@@ -96,7 +96,16 @@ class MainActivity : Activity() {
         recherche.requestFocus()
     }
 
+    /** Rafraîchit le voyant VPN toutes les 2 s tant que l'appli est affichée. */
+    private val rafraichir = object : Runnable {
+        override fun run() {
+            majVpn()
+            txtVpn.postDelayed(this, 2000)
+        }
+    }
+
     override fun onPause() {
+        txtVpn.removeCallbacks(rafraichir)
         auPremierPlan = false
         super.onPause()
     }
@@ -104,7 +113,8 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         auPremierPlan = true
-        majVpn()
+        txtVpn.removeCallbacks(rafraichir)
+        rafraichir.run()
         if (toutes.isEmpty() && aLaPermission(Manifest.permission.READ_CONTACTS)) chargerStations()
         connexionEnAttente?.let { connexionEnAttente = null; connecter(it); return }
         if (prefs.vpnAuDemarrage && !vpnDejaLance && !Vpn.estActif(this)) {
