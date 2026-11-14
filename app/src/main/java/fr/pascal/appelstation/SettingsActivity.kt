@@ -70,7 +70,7 @@ class SettingsActivity : Activity() {
         super.onPause()
         prefs.prefixe = edPrefixe.text.toString().ifBlank { "Station" }
         prefs.texteSms = edSms.text.toString().ifBlank { "Tut" }
-        prefs.delaiSecondes = edDelai.text.toString().toIntOrNull()?.coerceIn(0, 600) ?: 20
+        prefs.delaiSecondes = edDelai.text.toString().toIntOrNull()?.coerceIn(0, 600) ?: 40
         prefs.modeleUrl = edUrl.text.toString().ifBlank { "http://{ip}" }
         prefs.appliVpn = spVpn.selectedItemPosition
         prefs.profilVpn = edProfil.text.toString()

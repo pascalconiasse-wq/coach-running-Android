@@ -15,7 +15,7 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putString("texteSms", v).apply()
 
     var delaiSecondes: Int
-        get() = sp.getInt("delai", 20)
+        get() = sp.getInt("delai", 40)
         set(v) = sp.edit().putInt("delai", v).apply()
 
     /** Modèle d'adresse ; {ip} est remplacé par l'IP de la fiche. */
