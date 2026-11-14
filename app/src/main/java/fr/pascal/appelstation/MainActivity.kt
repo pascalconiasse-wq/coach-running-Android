@@ -26,6 +26,7 @@ class MainActivity : Activity() {
     private lateinit var recherche: EditText
     private lateinit var liste: ListView
     private lateinit var txtVide: TextView
+    private lateinit var btnMaj: Button
     private var auPremierPlan = false
     /** Connexion à faire dès que l'appli revient au premier plan. */
     private var connexionEnAttente: Station? = null
@@ -81,8 +82,17 @@ class MainActivity : Activity() {
             setPadding(pad, pad * 3, pad, pad)
         }
 
+        btnMaj = Button(this).apply {
+            visibility = android.view.View.GONE
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.rgb(46, 125, 50))
+        }
+
         setContentView(LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            addView(btnMaj, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
+                setMargins(pad, pad / 2, pad, 0)
+            })
             addView(bandeau, MATCH_PARENT, WRAP_CONTENT)
             addView(recherche, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply {
                 setMargins(pad, 0, pad, 0)
@@ -92,6 +102,8 @@ class MainActivity : Activity() {
         })
 
         liste.emptyView = txtVide
+        title = "Appel Station  v1.${MiseAJour.versionInstallee(this)}"
+        verifierMaj(silencieux = true)
         demanderPermissions()
         recherche.requestFocus()
     }
@@ -144,6 +156,8 @@ class MainActivity : Activity() {
         menu.add(0, 1, 0, "Actualiser")
         menu.add(0, 2, 1, "Réglages")
         menu.add(0, 3, 2, "Diagnostic VPN")
+        menu.add(0, 4, 3, "Rechercher une mise à jour")
+        menu.add(0, 5, 4, "Version v1.${MiseAJour.versionInstallee(this)}").isEnabled = false
         return true
     }
 
@@ -151,12 +165,30 @@ class MainActivity : Activity() {
         when (item.itemId) {
             1 -> { majVpn(); chargerStations() }
             2 -> startActivity(Intent(this, SettingsActivity::class.java))
+            4 -> verifierMaj(silencieux = false)
             3 -> Vpn.diagnostic(this, prefs) { txt ->
                 AlertDialog.Builder(this).setTitle("Diagnostic VPN").setMessage(txt)
                     .setPositiveButton("OK", null).show()
             }
         }
         return true
+    }
+
+    // ---------- Mise à jour ----------
+    private fun verifierMaj(silencieux: Boolean) {
+        MiseAJour.verifier(this) { v ->
+            if (v == null) {
+                btnMaj.visibility = android.view.View.GONE
+                if (!silencieux) Toast.makeText(this,
+                    "Appel Station est à jour (v1.${MiseAJour.versionInstallee(this)})", Toast.LENGTH_LONG).show()
+            } else {
+                btnMaj.text = "Nouvelle version v1.${v.numero} disponible — Mettre à jour"
+                btnMaj.visibility = android.view.View.VISIBLE
+                btnMaj.setOnClickListener {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(v.lienApk)))
+                }
+            }
+        }
     }
 
     // ---------- Permissions ----------
