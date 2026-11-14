@@ -41,7 +41,8 @@ object Vpn {
             }
         }
         try {
-            activity.startActivity(intent)
+            if (choix == 1) activity.startActivityForResult(intent, 4243)
+            else activity.startActivity(intent)
         } catch (_: Exception) {
             // à défaut : ouvrir l'appli VPN pour couper à la main
             activity.packageManager.getLaunchIntentForPackage(
@@ -51,6 +52,16 @@ object Vpn {
                 Toast.makeText(activity, "Coupez le VPN dans l'appli OpenVPN", Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    /** Au bout de 15 s, prévient si le VPN n'est toujours pas monté. */
+    private fun verifierPlusTard(activity: Activity, profil: String) {
+        activity.window.decorView.postDelayed({
+            if (!activity.isFinishing && !estActif(activity))
+                Toast.makeText(activity,
+                    "VPN toujours coupé : vérifiez que le profil s'appelle exactement « $profil » dans OpenVPN for Android",
+                    Toast.LENGTH_LONG).show()
+        }, 15000)
     }
 
     /** Lance la connexion OpenVPN selon les réglages. */
@@ -76,7 +87,11 @@ object Vpn {
                 }
             }
             try {
-                activity.startActivity(intent)
+                // startActivityForResult obligatoire : OpenVPN for Android vérifie
+                // quelle appli l'appelle (getCallingPackage), sinon il ignore la demande.
+                if (choix == 1) activity.startActivityForResult(intent, 4242)
+                else activity.startActivity(intent)
+                verifierPlusTard(activity, profil)
                 return
             } catch (_: Exception) {
                 // on retombe sur la simple ouverture de l'appli
