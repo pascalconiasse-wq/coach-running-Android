@@ -11,15 +11,25 @@ android {
         applicationId = "fr.pascal.appelstation"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        val numero = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
+        versionCode = numero
+        versionName = "1.$numero"
+    }
+
+    signingConfigs {
+        create("fixe") {
+            storeFile = file("appelstation.jks")
+            storePassword = "appelstation"
+            keyAlias = "appelstation"
+            keyPassword = "appelstation"
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Signée avec la clé debug pour pouvoir l'installer directement
-            signingConfig = signingConfigs.getByName("debug")
+            // Clé fixe : chaque nouvelle version s'installe par-dessus l'ancienne
+            signingConfig = signingConfigs.getByName("fixe")
         }
     }
     compileOptions {
