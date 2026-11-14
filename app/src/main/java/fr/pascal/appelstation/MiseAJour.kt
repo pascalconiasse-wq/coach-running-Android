@@ -21,8 +21,8 @@ object MiseAJour {
         Thread {
             val trouvee = try {
                 val cx = URL(API).openConnection() as HttpURLConnection
-                cx.connectTimeout = 8000
-                cx.readTimeout = 8000
+                cx.connectTimeout = 5000
+                cx.readTimeout = 5000
                 cx.setRequestProperty("Accept", "application/vnd.github+json")
                 val texte = cx.inputStream.bufferedReader().use { it.readText() }
                 val versions = JSONArray(texte)

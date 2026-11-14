@@ -27,6 +27,8 @@ class MainActivity : Activity() {
     private lateinit var liste: ListView
     private lateinit var txtVide: TextView
     private lateinit var btnMaj: Button
+    /** Le VPN n'est allumé qu'après la recherche de mise à jour (GitHub est bloqué via le VPN). */
+    private var majVerifiee = false
     private var auPremierPlan = false
     /** Connexion à faire dès que l'appli revient au premier plan. */
     private var connexionEnAttente: Station? = null
@@ -129,7 +131,7 @@ class MainActivity : Activity() {
         rafraichir.run()
         if (toutes.isEmpty() && aLaPermission(Manifest.permission.READ_CONTACTS)) chargerStations()
         connexionEnAttente?.let { connexionEnAttente = null; connecter(it); return }
-        if (prefs.vpnAuDemarrage && !vpnDejaLance && !Vpn.estActif(this)) {
+        if (majVerifiee && prefs.vpnAuDemarrage && !vpnDejaLance && !Vpn.estActif(this)) {
             vpnDejaLance = true
             Vpn.activer(this, prefs)
         }
@@ -177,6 +179,13 @@ class MainActivity : Activity() {
     // ---------- Mise à jour ----------
     private fun verifierMaj(silencieux: Boolean) {
         MiseAJour.verifier(this) { v ->
+            if (!majVerifiee) {
+                majVerifiee = true
+                if (prefs.vpnAuDemarrage && !vpnDejaLance && !Vpn.estActif(this) && auPremierPlan) {
+                    vpnDejaLance = true
+                    Vpn.activer(this, prefs)
+                }
+            }
             if (v == null) {
                 btnMaj.visibility = android.view.View.GONE
                 if (!silencieux) Toast.makeText(this,
@@ -185,7 +194,12 @@ class MainActivity : Activity() {
                 btnMaj.text = "Nouvelle version v1.${v.numero} disponible — Mettre à jour"
                 btnMaj.visibility = android.view.View.VISIBLE
                 btnMaj.setOnClickListener {
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(v.lienApk)))
+                    val ouvrir = { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(v.lienApk))) }
+                    // GitHub n'est pas joignable à travers le VPN : on le coupe d'abord
+                    if (Vpn.estActif(this)) {
+                        Toast.makeText(this, "Coupure du VPN pour télécharger…", Toast.LENGTH_SHORT).show()
+                        Vpn.desactiver(this, prefs) { txtVpn.postDelayed({ ouvrir() }, 2500) }
+                    } else ouvrir()
                 }
             }
         }
