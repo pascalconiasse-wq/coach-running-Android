@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -22,3 +25,11 @@ jobs:
         with:
           name: AppelStation-apk
           path: AppelStation.apk
+      - name: Publier (pré-version, ne touche pas aux mises à jour de Coach Running)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: appel-station-v${{ github.run_number }}
+          name: Appel Station ${{ github.run_number }}
+          files: AppelStation.apk
+          prerelease: true
+          make_latest: "false"
