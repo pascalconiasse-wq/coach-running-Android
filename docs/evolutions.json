@@ -1,5 +1,13 @@
 [
  {
+  "v": "1.118 · préversion",
+  "d": "15 nov. 2026",
+  "items": [
+   "Réglages › Sauvegarde et mises à jour : cadre « Évolutions des versions » qui ouvre la liste des nouveautés de chaque version, dans l’appli."
+  ],
+  "rel": "test"
+ },
+ {
   "v": "1.117 · préversion",
   "d": "15 nov. 2026",
   "items": [

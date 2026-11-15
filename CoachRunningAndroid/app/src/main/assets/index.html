@@ -160,6 +160,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
 </style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="evolutions.js"></script>
 </head>
 <body>
 <header class="hero"><div class="logo" aria-hidden="true">🏃</div><div><h1>Coach Running</h1><div class="sub" id="sub">Votre coach au quotidien</div></div><button id="gear" aria-label="Réglages">⚙</button></header>
@@ -227,6 +228,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
   </div>
 </div>
 
+<div id="evov" class="hidden" style="position:fixed;inset:0;z-index:70;background:rgba(10,18,40,.55);display:none;align-items:flex-end"><div class="rbox"><div class="rhd"><b>Évolutions des versions</b><button id="evo-x">Fermer</button></div><div class="rscroll" id="evo-list"></div></div></div>
 <div id="rtab" class="hidden" role="dialog" aria-label="Courses de la région">
   <div class="rbox">
     <div class="rhd"><b>Courses de la région</b><span><button type="button" class="alt" id="rrefresh">↻</button> <button type="button" class="alt" id="rclose">Fermer</button></span></div>
@@ -512,6 +514,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Terminer</b> demande toujours confirmation (bouton, retour Android, onglets). La séance est enregistrée avec sa carte, copiée dans Téléchargements/Coach Running (GPX + image de la carte), et une sauvegarde complète est écrite tout de suite. Si l’appli est fermée en cours de route, elle reprend la séance.</p></details>
   <details class="card"><summary><b>Historique, montre COROS et compteur Bryton</b></summary>
     <p><b>Zones cardiaques</b> : dans l’onglet Courbes, la courbe « Fréquence cardiaque » (moyenne des séances) et celle du détail d’une activité sont fond coloré par vos zones (Z1 à Z5, les mêmes que dans Plan), avec leur légende en bpm. Sous la carte d’une sortie, une légende donne les couleurs des pentes.</p>
+    <p><b>Évolutions des versions</b> : dans la roue ⚙, rubrique « Sauvegarde et mises à jour », le cadre « Évolutions des versions » ouvre la liste de ce que chaque version a apporté (équivalent du PDF des évolutions, intégré à l’appli).</p>
     <p><b>Récap annuelle</b> : en haut de l’Historique, choisissez une année pour voir le nombre d’activités, la durée, les kilomètres et le dénivelé positif. Elle suit le filtre par type d’activité. Les récaps mensuels affichent aussi les kilomètres.</p>
     <p><b>Ajouter et trier</b> : le bouton « Ajouter une activité » en haut de l’Historique ouvre le formulaire (il se referme après l’enregistrement ou « Annuler »). Sous le bouton, des filtres par type d’activité (course, trail, VTT, vélo…) n’affichent que le sport choisi ; « Tous » les réaffiche.</p>
     <p><b>Compteur Bryton</b> : Bryton Active n’écrit pas dans Health Connect. Deux solutions : (1) Bryton Active → Strava (synchro automatique) puis Strava → Health Connect (durée, distance, calories) ; (2) dans Bryton Active ouvrir la sortie, exporter le fichier .fit ou .gpx et l’importer ici avec « Choisir un ou plusieurs fichiers » (trace GPS, FC et D+ complets).</p>
@@ -522,6 +525,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p>Pour chaque activité : plan IGN ou photos aériennes au choix (ou image enregistrée pendant la séance), courbes d’allure, FC et altitude. Le dénivelé est corrigé avec l’altimétrie IGN quand elle répond.</p></details>
   <details class="card" open><summary><b>Sauvegarde et mises à jour</b></summary>
     <p id="upd-st" class="mute">Version : vérification…</p><button class="alt" id="upd-chk">Vérifier les mises à jour</button>
+    <div style="border:2px solid var(--acc);border-radius:16px;padding:12px;margin:12px 0"><b>Évolutions des versions</b><p class="mute" style="margin:4px 0 8px">Ce que chaque version a apporté, de la plus récente à la plus ancienne (comme le PDF des évolutions).</p><button class="alt" id="evo-open">📋 Voir les évolutions</button></div>
     <p>Roue ⚙, « Exporter l’historique » : sauvegarde complète (profil, séances, traces, cartes, prénom et numéros du partage) dans Téléchargements/Coach Running ; le fichier « Coach-Running_sauvegarde.json » remplace le précédent. Restaurez-la après une désinstallation. Au lancement, l’appli compare sa version à la dernière Release GitHub et affiche « Mise à jour disponible » : touchez pour télécharger l’APK puis installez-le. Pour un proche qui installe l’appli : même page des Releases (github.com/pascalconiasse-wq/coach-running-Android/releases), autoriser l’installation d’applis inconnues ; il sera averti des mises à jour à l’ouverture de l’appli.</p></details>
   <details class="card"><summary><b>Problèmes fréquents</b></summary>
     <p>Km ou D+ manquants : autorisez la position « tout le temps » et ne limitez pas la batterie de l’appli. Pas de GPS : sortez, attendez « GPS OK ». Pas de FC : activez la diffusion cardio de la montre. Séance absente après synchro : vérifiez les autorisations Health Connect. SMS qui ne part pas : autorisez les paramètres restreints puis la permission SMS (voir « Séance en direct »).</p>
@@ -2764,6 +2768,19 @@ if(window.AndroidHealth){$("health").classList.remove("hidden");setTimeout(healt
   $("gear").onclick=()=>{if(liveOn)return;show("help")};
   let ref=title;cards.forEach(c=>{ref.after(c);ref=c});
 })();
+/* Évolutions des versions (liste intégrée à l’appli, évolutions.js) */
+$("evo-open").onclick=()=>{
+  const box=$("evo-list");box.innerHTML="";
+  (window.EVOL||[]).forEach(h=>{
+    const d=document.createElement("div");d.style.cssText="margin:0 0 14px";
+    const t=document.createElement("b");t.textContent="Version "+h.v;const dt=document.createElement("span");dt.className="mute";dt.style.marginLeft="8px";dt.textContent=h.d;
+    const u=document.createElement("ul");u.style.cssText="list-style:disc;padding-left:20px;margin:4px 0 0";
+    h.items.forEach(i=>{const l=document.createElement("li");l.style.cssText="display:list-item;border:0;padding:2px 0";l.textContent=i;u.appendChild(l)});
+    d.append(t,dt,u);box.appendChild(d)});
+  if(!box.children.length)box.textContent="Aucune évolution disponible.";
+  $("evov").style.display="flex";
+};
+$("evo-x").onclick=()=>{$("evov").style.display="none"};
 if(profile)show("plan");else openSetup();
 resumeLive();
 </script>
