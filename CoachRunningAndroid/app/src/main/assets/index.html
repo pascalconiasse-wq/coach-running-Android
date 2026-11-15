@@ -193,7 +193,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <label class="f" for="f-days">Jours de course par semaine</label>
     <select id="f-days"><option value="1">1 jour</option><option value="2">2 jours</option><option value="3">3 jours</option><option value="4">4 jours</option><option value="5">5 jours</option><option value="6">6 jours</option><option value="7">7 jours</option></select>
     <label class="f" for="f-ter">Terrain</label>
-    <select id="f-ter"><option value="route">Route</option><option value="trail">Trail</option></select>
+    <select id="f-ter"><option value="route">Route</option><option value="trail">Trail</option><option value="mixte">Mixte (route et trail)</option></select>
     <label class="f" for="f-race">Trouver une course de la région (facultatif)</label>
     <button type="button" class="alt" id="f-race">📋 Choisir dans le tableau des courses</button>
     <p class="mute" id="f-rmsg">Courses autour de Lyon, de la Loire et de la Haute-Loire. Dates et distances à vérifier sur le site de l’organisateur ; le dénivelé n’est pas renseigné.</p>
@@ -495,6 +495,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p>Réglages : roue ⚙ (en haut de l’écran principal), rubrique « 🆘 SOS » (numéros, contacts, compte à rebours, appel automatique, SMS de test). Sans numéro SOS, ce sont les numéros du suivi qui sont utilisés. Le SOS active le suivi en direct même s’il était désactivé. Appel automatique : après le délai réglé (3 min par défaut) sans annulation, l’appli appelle le 1er numéro SOS en haut-parleur ; si personne ne décroche au bout de 5 min, elle appelle le suivant. Autorisez les appels dans les réglages SOS. Nécessite l’écran allumé pour le triple appui, les autorisations SMS et appel, et du réseau.</p></details>
   <details class="card"><summary><b>Onglet Plan</b></summary>
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), allures de référence calculées sur vos meilleurs efforts, (le test VMA facultatif, qui débloque des séances de VMA, est dans l’onglet Profil). Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation. Dès qu’une activité existe pour la journée (enregistrée par l’appli, importée ou synchronisée depuis la montre), la séance du jour passe à « faite ✓ » et le détail prévu disparaît ; dans la liste de la semaine, les jours faits sont cochés et barrés.</p>
+    <p><b>Terrain « Mixte »</b> (profil) : utile surtout sans objectif ; avec un objectif, le terrain suit le dénivelé de la course. En mixte, la sortie longue est en terrain varié, le fractionné alterne une semaine en côtes et une semaine sur route, les footings restent sur route, et un renforcement s’ajoute à partir de 4 séances par semaine.</p>
     <p><b>Présentation</b> : fond clair uni, cartes blanches espacées et lisibles, sans bandeau coloré ; seul le cadre de chaque carte est coloré (bleu, vert, orange, rose en alternance) pour bien séparer les rubriques.</p>
     <p><b>Déplacer une séance</b> : dans Plan, le bouton « Déplacer une séance » ouvre le menu (semaine, séance, nouveau jour). Il se referme après le déplacement ou avec « Fermer ».</p>
     <p><b>Onglet Profil</b> : il contient seulement vos caractéristiques physiques (âge, poids, niveau, objectif), vos zones cardio, la FC max / repos / à ne pas dépasser, et la VMA avec son test. Le reste (partage du suivi, SOS, synchronisation, sauvegarde, notice) est dans la roue ⚙ en haut à droite de l’écran.</p>
@@ -606,7 +607,7 @@ const PKEY="coach_profile";
 let profile=null;
 try{profile=JSON.parse(localStorage.getItem(PKEY))}catch(e){}
 const saveProfile=()=>{try{localStorage.setItem(PKEY,JSON.stringify(profile))}catch(e){}};
-const validProfile=p=>p&&p.age>=12&&p.age<=90&&p.weight>=30&&p.weight<=200&&p.days>=1&&p.days<=7&&["debutant","inter","confirme"].includes(p.level)&&["route","trail"].includes(p.terrain)&&(!p.goal||(p.goal.km>0&&isDate(p.goal.date)));
+const validProfile=p=>p&&p.age>=12&&p.age<=90&&p.weight>=30&&p.weight<=200&&p.days>=1&&p.days<=7&&["debutant","inter","confirme"].includes(p.level)&&["route","trail","mixte"].includes(p.terrain)&&(!p.goal||(p.goal.km>0&&isDate(p.goal.date)));
 if(!validProfile(profile))profile=null;
 const DN=["","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
 const WEEK={1:[7],2:[2,7],3:[2,4,7],4:[1,3,5,7],5:[1,2,4,5,7],6:[1,2,3,5,6,7],7:[1,2,3,4,5,6,7]};
@@ -650,6 +651,7 @@ const goalName=()=>{const g=profile&&profile.goal;if(!g)return "";if(!g.custom)r
 const vk=f=>dec(profile.vma*f),vp=f=>fmtP(3600/(profile.vma*f));
 function sessInfo(t,c){
   if(t==="REST")return {t:t};
+  const K=c.kind,tr=K==="trail"||(K==="mixte"&&(t===LG||(t===I&&c.mp===1)));c={...c,kind:tr?"trail":"route"};
   if(t===LG)return {t:t,m:c.longMin,d:c.kind==="trail"?"Sortie longue en terrain varié"+(c.dpl?", environ "+c.dpl+" m D+":"")+", marche rapide dans les fortes pentes, testez votre ravitaillement":"Sortie longue à allure facile, pensez à vous hydrater"+(c.spec?", dont "+roundTo(c.longMin*0.3,5)+" min à allure course":"")};
   if(t===E)return {t:t,m:c.easyMin,d:c.kind==="trail"?"Footing facile sur chemin, terrain varié":"Allure conversationnelle"};
   if(t===T&&profile&&profile.vma&&c.kind!=="trail"&&!c.spec)return {t:t,m:25+c.tMin,d:"15 min d’échauffement, "+c.tMin+" min à 85–88 % de la VMA ("+vk(.85)+"–"+vk(.88)+" km/h, soit "+vp(.88)+"–"+vp(.85)+" /km), retour au calme"};
@@ -693,7 +695,7 @@ function weekCtx(mon){
   let xr=null;
   if(!taper)(profile.extra||[]).forEach(e=>{const w=Math.round((mondayOf(new Date(e.date+"T00:00:00"))-mon)/(7*DAY));if((w===0||w===1)&&(!xr||w<xr.w))xr={name:e.name,km:e.km,w:w,date:e.date}});
   if(xr)frac*=xr.w===0?.6:.85;
-  return {xr:xr,phase:phase,wl:wl,dpl:dpl,kind:kind,spec:spec,longMin:roundTo(longMax*frac,5),
+  return {xr:xr,phase:phase,wl:wl,dpl:dpl,kind:kind,mp:Math.round(mon.getTime()/(7*DAY))%2,spec:spec,longMin:roundTo(longMax*frac,5),
     easyMin:phase==="Course"?25:roundTo({debutant:30,inter:40,confirme:50}[lvl]*(taper?.8:1),5),
     reps:{debutant:5,inter:6,confirme:8}[lvl]+(phase==="Spécifique"?2:0),
     tMin:{debutant:10,inter:15,confirme:20}[lvl]+(phase==="Spécifique"?5:0)};
@@ -751,7 +753,7 @@ function weekPlan(off,raw){
     if(c.spec&&s===I)s=T;
     days[d]=sessInfo(s,c);
   });
-  if(c.kind==="trail"&&n>=4&&(c.phase==="Fondation"||c.phase==="Développement"||c.phase==="Spécifique")){
+  if((c.kind==="trail"||c.kind==="mixte")&&n>=4&&(c.phase==="Fondation"||c.phase==="Développement"||c.phase==="Spécifique")){
     const es=Object.keys(days).filter(d=>days[d].t===E);
     if(es.length>=2)days[es[es.length-1]]=sessInfo("STRENGTH",c);
   }
@@ -1013,7 +1015,7 @@ function renderPlan(){
     $("today").style.setProperty("--tc","#2F6BFF");return;
   }
   const W=weekPlan(),plan=W.days,planned=plan[todayIdx()].t,r=recommend(planned);
-  $("sess").textContent=(W.ctx.kind==="trail"?"Trail":"Course route")+" : "+NAMES[r.session];
+  $("sess").textContent=(W.ctx.kind==="trail"?"Trail":W.ctx.kind==="mixte"?"Course mixte":"Course route")+" : "+NAMES[r.session];
   $("why").textContent=r.session!==planned?"Séance allégée : votre charge sur 7 jours dépasse 1,5 fois votre moyenne.":planned==="REST"?"Jour de repos prévu dans votre semaine.":"Séance prévue dans votre semaine.";
   const info=r.session===planned?plan[todayIdx()]:sessInfo(r.session,W.ctx);
   $("tgt").textContent=[info.m?info.m+" min":"",info.d,target(r.session,W.ctx.kind)].filter(Boolean).join(" · ");
