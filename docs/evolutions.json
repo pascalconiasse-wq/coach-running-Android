@@ -1,9 +1,10 @@
 [
  {
-  "v": "1.120 · préversion",
+  "v": "1.121 · préversion",
   "d": "15 nov. 2026",
   "items": [
-   "Fin de séance : l’intensité perçue (RPE) est proposée automatiquement d’après la FC moyenne quand la FC est enregistrée (modifiable)."
+   "Fin de séance : l’intensité perçue (RPE) est proposée automatiquement d’après la FC moyenne quand la FC est enregistrée (modifiable).",
+   "RPE des séances passées recalculé une seule fois d’après leur FC moyenne."
   ],
   "rel": "test"
  },
