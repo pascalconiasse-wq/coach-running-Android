@@ -396,6 +396,12 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
 
 <section id="acts" class="hidden">
   <div class="card">
+    <h2>Historique</h2>
+    <button id="a-new">➕ Ajouter une activité</button>
+    <p class="mute" id="a-msg" role="status"></p>
+    <div id="a-filt" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+  </div>
+  <div class="card hidden" id="a-form">
     <h2>Ajouter une activité</h2>
     <p class="mute">Vélo, natation ou autre sport : elle compte dans votre charge de travail. Une date à venir ajoute une activité prévue, que le plan prend en compte.</p>
     <label class="f" for="a-sport">Sport</label>
@@ -415,8 +421,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <label class="f" for="a-rpe">Intensité perçue (RPE) : <b id="a-rpev">5</b>/10</label>
     <input type="range" id="a-rpe" min="1" max="10" step="1" value="5">
     <button id="a-add">Ajouter l’activité</button>
-    <button class="alt hidden" id="a-cancel">Annuler la modification</button>
-    <p class="mute" id="a-msg" role="status"></p>
+    <button class="alt" id="a-cancel">Annuler</button>
   </div>
   <div class="card">
     <h2>Importer depuis ma montre ou mon compteur</h2>
@@ -465,6 +470,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p><b>Récap</b> tous les 1 km ou 5 km (ou aucun) : deux vibrations et un bandeau. <b>Alertes</b> : si vous dépassez l’allure max ou la FC max réglées, trois vibrations et l’indication passe en rouge. La FC demande une ceinture ou une montre qui diffuse la fréquence en Bluetooth (bouton « Connecter »).</p>
     <p><b>Terminer</b> demande toujours confirmation (bouton, retour Android, onglets). La séance est enregistrée avec sa carte, copiée dans Téléchargements/Coach Running (GPX + image de la carte), et une sauvegarde complète est écrite tout de suite. Si l’appli est fermée en cours de route, elle reprend la séance.</p></details>
   <details class="card"><summary><b>Historique, montre COROS et compteur Bryton</b></summary>
+    <p><b>Ajouter et trier</b> : le bouton « Ajouter une activité » en haut de l’Historique ouvre le formulaire (il se referme après l’enregistrement ou « Annuler »). Sous le bouton, des filtres par type d’activité (course, trail, VTT, vélo…) n’affichent que le sport choisi ; « Tous » les réaffiche.</p>
     <p><b>Compteur Bryton</b> : Bryton Active n’écrit pas dans Health Connect. Deux solutions : (1) Bryton Active → Strava (synchro automatique) puis Strava → Health Connect (durée, distance, calories) ; (2) dans Bryton Active ouvrir la sortie, exporter le fichier .fit ou .gpx et l’importer ici avec « Choisir un ou plusieurs fichiers » (trace GPS, FC et D+ complets).</p>
     <p><b>Pente en couleur</b> : sur la carte, le parcours GPX chargé et le tracé déjà parcouru sont colorés par tronçon de ≈100 m selon la pente (bleu : descente, vert : plat, jaune/orange/rouge : montée, violet : &gt; 12 %). Visible aussi dans le détail d’une sortie de l’Historique.</p>
     <p>« Synchroniser maintenant » (roue ⚙, rubrique synchronisation) lit Health Connect (30 jours) : synchronisez d’abord la montre vers COROS, qui doit écrire dans Health Connect. Une sortie déjà enregistrée par le téléphone est fusionnée avec celle de la montre : on garde les données en plus (FC, dénivelé, calories ; la trace GPS de la montre si elle en a une, sinon celle du téléphone enrichie de la FC et de l’altitude) et le doublon disparaît. Un doublon est reconnu quand les départs sont à moins de 15 min et les durées proches. Import de fichiers FIT, GPX, TCX possible depuis la roue ⚙. Garmin : uniquement via Health Connect ou export de fichier.</p></details>
@@ -2363,15 +2369,17 @@ window.onSharedFiles=async list=>{
   });
   show("acts");await importMany(files);
 };
-function endEdit(){editing=null;$("a-add").textContent="Ajouter l’activité";$("a-cancel").classList.add("hidden")}
-$("a-cancel").onclick=()=>{endEdit();pending={};setDur(0);$("a-km").value="";$("a-dp").value="";amsg("")};
+function endEdit(){editing=null;$("a-add").textContent="Ajouter l’activité"}
+function formShow(v){$("a-form").classList.toggle("hidden",!v);$("a-new").classList.toggle("hidden",v);if(v)$("a-form").scrollIntoView({behavior:"smooth",block:"start"})}
+$("a-new").onclick=()=>{endEdit();pending={};setDur(0);$("a-km").value="";$("a-dp").value="";amsg("");formShow(true)};
+$("a-cancel").onclick=()=>{endEdit();pending={};setDur(0);$("a-km").value="";$("a-dp").value="";amsg("");formShow(false)};
 function startEdit(s){
   editing=s;
   $("a-sport").value=SPORTS[s.sport]?s.sport:"RUN_ROUTE";$("a-date").value=s.date;setDur(s.sec||s.min*60);
   $("a-km").value=s.km||"";$("a-dp").value=s.dplus||"";$("a-rpe").value=s.rpe;$("a-rpev").textContent=s.rpe;
-  $("a-add").textContent="Enregistrer les modifications";$("a-cancel").classList.remove("hidden");
+  $("a-add").textContent="Enregistrer les modifications";
   amsg("Modification en cours : corrigez les champs puis enregistrez.");
-  window.scrollTo({top:0,behavior:"smooth"});
+  formShow(true);
 }
 const amsg=t=>$("a-msg").textContent=t;
 (function(){
@@ -2403,7 +2411,7 @@ $("a-add").onclick=()=>{
   if(editing){const i=sessions.indexOf(editing);if(i>=0)sessions.splice(i,1)}
   sessions.push(rec);
   sessions.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
-  persist();persistT();pending={};setDur(0);$("a-km").value="";$("a-dp").value="";endEdit();
+  persist();persistT();pending={};setDur(0);$("a-km").value="";$("a-dp").value="";endEdit();formShow(false);
   amsg(wasEdit?"Activité modifiée.":date>today()?"Activité prévue ajoutée.":"Activité ajoutée.");
   renderActs();
 };
@@ -2422,15 +2430,25 @@ $("a-file").onchange=async e=>{
   const fm=profile?hrZones().max:190;
   const rpe=r.hr?Math.min(9,Math.max(2,Math.round((r.hr/fm-0.45)/0.05))):5;
   $("a-sport").value=r.sport;$("a-date").value=r.date;setDur(r.sec||r.min*60);$("a-rpe").value=rpe;$("a-rpev").textContent=rpe;
-  endEdit();pending={hr:r.hr,ts:r.ts,pts:r.pts};$("a-km").value=r.km?r.km.toFixed(1):"";$("a-dp").value=r.dplus||"";
+  endEdit();formShow(true);pending={hr:r.hr,ts:r.ts,pts:r.pts};$("a-km").value=r.km?r.km.toFixed(1):"";$("a-dp").value=r.dplus||"";
   amsg("Lu : "+SPORTS[r.sport]+" · "+r.min+" min"+(r.km?" · "+r.km.toFixed(1).replace(".",",")+" km":"")+(r.dplus?" · "+r.dplus+" m D+":"")+(r.hr?" · "+r.hr+" bpm (intensité estimée d’après la FC)":"")+". Vérifiez, ajustez si besoin, puis appuyez sur Ajouter.");
 };
+let actFilter="";
+function renderFilt(){
+  const f=$("a-filt");f.innerHTML="";
+  const cnt={};sessions.forEach(x=>{cnt[x.sport||"RUN_ROUTE"]=(cnt[x.sport||"RUN_ROUTE"]||0)+1});
+  const keys=Object.keys(cnt);if(actFilter&&!cnt[actFilter])actFilter="";
+  if(keys.length<2)return;
+  const mk=(k,t)=>{const b=document.createElement("button");b.textContent=t;b.className=actFilter===k?"":"alt";b.style.cssText="width:auto;margin:0;padding:6px 12px;font-size:15px";b.setAttribute("aria-pressed",String(actFilter===k));b.onclick=()=>{actFilter=k;renderActs()};f.appendChild(b)};
+  mk("","Tous ("+sessions.length+")");
+  Object.keys(SPORTS).filter(k=>cnt[k]).forEach(k=>mk(k,SPORTS[k]+" ("+cnt[k]+")"));
+}
 function renderActs(){
-  const box=$("a-list");box.innerHTML="";
+  const box=$("a-list");box.innerHTML="";renderFilt();
   if(!sessions.length){const p=document.createElement("p");p.className="mute";p.textContent="Aucune activité pour le moment.";box.appendChild(p);return}
   const MONTHS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
   const groups={};
-  sessions.slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0).forEach(s=>{const k=s.date.slice(0,7);(groups[k]=groups[k]||[]).push(s)});
+  sessions.filter(x=>!actFilter||(x.sport||"RUN_ROUTE")===actFilter).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0).forEach(s=>{const k=s.date.slice(0,7);(groups[k]=groups[k]||[]).push(s)});
   const sb=(b,t)=>{b.textContent=t;b.className="alt";b.style.cssText="width:auto;margin:0 0 0 6px;padding:6px 10px;font-size:15px"};
   Object.keys(groups).sort().reverse().forEach((k,gi)=>{
     const list=groups[k],det=document.createElement("details"),sm=document.createElement("summary"),ul=document.createElement("ul");
