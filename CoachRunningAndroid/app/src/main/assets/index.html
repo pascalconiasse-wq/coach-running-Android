@@ -459,7 +459,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <details class="card"><summary><b>Choisir une course et mode sans objectif</b></summary>
     <p><b>Tableau des courses</b> : dans le profil, et aussi dans « Autres objectifs » du plan, « Choisir dans le tableau des courses » liste les courses <b>à moins de 150 km de votre position, sur les 18 prochains mois</b>, une ligne par distance (date, course, distance, D+). Les courses passées disparaissent. La liste se met à jour toute seule sur internet (tous les 2 jours, ou avec le bouton ↻) ; sans réseau, la liste intégrée à l’appli est utilisée. Tapez sur une ligne pour remplir l’objectif ; la recherche filtre par nom, lieu ou distance. Vérifiez toujours la date et le dénivelé chez l’organisateur.</p>
     <p><b>Sans objectif</b> : cochez « Sans objectif » dans le profil (⚙ puis Mon profil). Plus de plan ni de coaching : l’appli enregistre seulement vos sorties (GPS, cardio, altitude, suivi en direct, sauvegarde). Décochez pour retrouver le coaching.</p>
-    <p><b>Types d’activité</b> : course route, trail, marche, VTT, gravel, vélo route, équitation (home trainer et natation par saisie manuelle ou import de la montre). Avant de démarrer, le choix « Activité » est préréglé sur le terrain de votre objectif, modifiable ; en vélo, VTT et gravel la vitesse est affichée en km/h.</p>
+    <p><b>Types d’activité</b> : course route, trail, marche, VTT, gravel, vélo route, équitation, home trainer et « Autre » : tous sont proposés au choix « Activité » avant de démarrer (la natation se saisit à la main ou s’importe de la montre). Le choix est préréglé sur le terrain de votre objectif, modifiable ; en vélo, VTT, gravel et home trainer la vitesse est affichée en km/h. Au home trainer, il n’y a pas de GPS : durée et fréquence cardiaque sont enregistrées.</p>
     <p><b>Aide contextuelle</b> : touchez les boutons ? à côté des réglages pour une explication courte.</p></details>
   <details class="card"><summary><b>Suivre un parcours GPX</b></summary>
     <p>Avant de démarrer une séance, « 📂 Choisir un fichier GPX » charge un parcours (Komoot, Strava, site de course, montre…). Il reste mémorisé jusqu’à « Retirer le parcours ».</p>
@@ -1046,7 +1046,7 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if(liveOn){if(b.data
    "f-gdate":"Date de la course : le plan se construit à rebours à partir d’elle (montée en charge puis affûtage).",
    "f-hrcap":"FC à ne pas dépasser en endurance : si elle vous paraît trop basse (beaucoup de côtes, le cardio monte vite), fixez votre valeur. Elle décale aussi les alertes des autres séances. Vide = calcul automatique.",
    "f-fcmax":"Fréquence cardiaque maximale : sert aux zones et aux alertes. Estimée si vous ne la connaissez pas.",
-   "l-sport":"Type d’activité de cette sortie, préréglé sur votre objectif. Le VTT, le gravel et le vélo affichent la vitesse en km/h ; l’équitation est proposée aussi (charge légère).",
+   "l-sport":"Type d’activité de cette sortie, préréglé sur votre objectif. Le VTT, le gravel et le vélo affichent la vitesse en km/h ; l’équitation, le home trainer et « Autre » sont proposés aussi.",
    "l-rgpx":"Charge un parcours GPX : il apparaît en bleu sur la carte (et sur la page de suivi des proches), votre tracé fait est en rouge.",
    "l-offm":"Si vous vous éloignez du parcours GPX de plus de cette distance (3 positions de suite), le téléphone vibre et un message s’affiche. Le tracé fait est en rouge, le parcours prévu en bleu.",
    "l-stel":"Numéros qui reçoivent l’alerte SOS avec votre position. Vide : les numéros du suivi.",
@@ -1081,7 +1081,7 @@ let lmap=null,lline=null,lmark=null,follow=true,liveCapHr=0,maxPaceS=0,recapKm=0
 const pad=n=>String(n).padStart(2,"0");
 const clock=s=>(s>=3600?Math.floor(s/3600)+":"+pad(Math.floor(s/60)%60):pad(Math.floor(s/60)))+":"+pad(Math.floor(s%60));
 const mpv=()=>{const v=$("l-maxpace").value;if(BIKE()){const k=parseFloat(String(v).replace(",","."));return k>0?3600/k:0}return parsePace(v)};
-const BIKE=()=>liveSport==="CYCLING"||liveSport==="MTB"||liveSport==="GRAVEL";
+const BIKE=()=>liveSport==="CYCLING"||liveSport==="MTB"||liveSport==="GRAVEL"||liveSport==="TRAINER";
 const PV=sk=>BIKE()?(isFinite(sk)&&sk>0&&sk<1800?(Math.round(3600/sk*10)/10).toFixed(1).replace(".",","):"--"):paceTxt(sk);
 const PU=()=>BIKE()?"km/h":"/km";
 function setUnits(){const u=document.querySelectorAll("#lov .lg i");if(u[2])u[2].textContent=PU();if(u[3])u[3].textContent=PU();const a=document.querySelectorAll("#lov .lg .lk");if(a[2])a[2].textContent=BIKE()?"Vitesse":"Allure";{const lb=document.querySelector('label[for="l-maxpace"]'),ip=$("l-maxpace"),hb=!!BIKE();if(lb){const t=hb?"Vitesse max (la plus rapide autorisée, km/h, vide = aucune)":"Allure max (la plus rapide autorisée, min/km, vide = aucune)";const n=lb.firstChild;if(n&&n.nodeType===3)n.nodeValue=t;ip.placeholder=hb?"ex. 35":"ex. 5:30";ip.inputMode=hb?"decimal":"numeric"}}}
@@ -1357,7 +1357,7 @@ function startSession(){
   /* écran de préparation : réglages puis « Démarrer » */
   liveLoad();livePre(true);show("live");
 }
-(function(){const s=$("l-sport");["RUN_ROUTE","RUN_TRAIL","WALK","MTB","GRAVEL","CYCLING","HORSE"].forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=SPORTS[k];s.appendChild(o)});s.onchange=()=>{liveSport=s.value;setUnits()}})();
+(function(){const s=$("l-sport");["RUN_ROUTE","RUN_TRAIL","WALK","MTB","GRAVEL","CYCLING","TRAINER","HORSE","OTHER"].forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=SPORTS[k];s.appendChild(o)});s.onchange=()=>{liveSport=s.value;setUnits()}})();
 function livePre(on){
   $("lwrap").classList.toggle("hidden",on);$("end").classList.toggle("hidden",on);$("lstart").classList.toggle("hidden",!on);
   $("gmsg").classList.toggle("hidden",on);$("prehd").classList.toggle("hidden",!on);

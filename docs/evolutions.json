@@ -1,5 +1,13 @@
 [
  {
+  "v": "1.112 · préversion",
+  "d": "15 nov. 2026",
+  "items": [
+   "Choix « Activité » avant la séance : ajout du home trainer et de « Autre »."
+  ],
+  "rel": "test"
+ },
+ {
   "v": "1.111 · préversion",
   "d": "15 nov. 2026",
   "items": [
