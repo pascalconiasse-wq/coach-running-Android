@@ -1,5 +1,13 @@
 [
  {
+  "v": "1.111 · préversion",
+  "d": "15 nov. 2026",
+  "items": [
+   "Plan : « Déplacer une séance » placé dans un menu qui s’ouvre à la demande."
+  ],
+  "rel": "test"
+ },
+ {
   "v": "1.109 · préversion",
   "d": "15 nov. 2026",
   "items": [
