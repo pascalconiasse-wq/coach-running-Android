@@ -1,5 +1,14 @@
 [
  {
+  "v": "1.117 · préversion",
+  "d": "15 nov. 2026",
+  "items": [
+   "Historique : récap annuelle avec choix de l’année (activités, durée, kilomètres, D+), qui suit le filtre par type d’activité.",
+   "Récaps mensuels : ajout des kilomètres."
+  ],
+  "rel": "test"
+ },
+ {
   "v": "1.116 · préversion",
   "d": "15 nov. 2026",
   "items": [

@@ -468,6 +468,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <button class="alt" id="h-go">Synchroniser maintenant</button>
     <p class="mute" id="h-msg" role="status"></p>
   </div>
+  <div class="card"><h2>Récap annuelle</h2><div id="a-year"></div></div>
   <div class="card"><h2>Toutes les activités</h2><div id="a-list"></div></div>
 </section>
 
@@ -511,6 +512,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Terminer</b> demande toujours confirmation (bouton, retour Android, onglets). La séance est enregistrée avec sa carte, copiée dans Téléchargements/Coach Running (GPX + image de la carte), et une sauvegarde complète est écrite tout de suite. Si l’appli est fermée en cours de route, elle reprend la séance.</p></details>
   <details class="card"><summary><b>Historique, montre COROS et compteur Bryton</b></summary>
     <p><b>Zones cardiaques</b> : dans l’onglet Courbes, la courbe « Fréquence cardiaque » (moyenne des séances) et celle du détail d’une activité sont fond coloré par vos zones (Z1 à Z5, les mêmes que dans Plan), avec leur légende en bpm. Sous la carte d’une sortie, une légende donne les couleurs des pentes.</p>
+    <p><b>Récap annuelle</b> : en haut de l’Historique, choisissez une année pour voir le nombre d’activités, la durée, les kilomètres et le dénivelé positif. Elle suit le filtre par type d’activité. Les récaps mensuels affichent aussi les kilomètres.</p>
     <p><b>Ajouter et trier</b> : le bouton « Ajouter une activité » en haut de l’Historique ouvre le formulaire (il se referme après l’enregistrement ou « Annuler »). Sous le bouton, des filtres par type d’activité (course, trail, VTT, vélo…) n’affichent que le sport choisi ; « Tous » les réaffiche.</p>
     <p><b>Compteur Bryton</b> : Bryton Active n’écrit pas dans Health Connect. Deux solutions : (1) Bryton Active → Strava (synchro automatique) puis Strava → Health Connect (durée, distance, calories) ; (2) dans Bryton Active ouvrir la sortie, exporter le fichier .fit ou .gpx et l’importer ici avec « Choisir un ou plusieurs fichiers » (trace GPS, FC et D+ complets).</p>
     <p><b>Pente en couleur</b> : sur la carte, le parcours GPX chargé et le tracé déjà parcouru sont colorés par tronçon de ≈100 m selon la pente (bleu : descente, vert : plat, jaune/orange/rouge : montée, violet : &gt; 12 %). Visible aussi dans le détail d’une sortie de l’Historique.</p>
@@ -2510,8 +2512,25 @@ function renderFilt(){
   mk("","Tous ("+sessions.length+")");
   Object.keys(SPORTS).filter(k=>cnt[k]).forEach(k=>mk(k,SPORTS[k]+" ("+cnt[k]+")"));
 }
+let actYear="";
+function renderYear(){
+  const box=$("a-year");box.innerHTML="";
+  const base=sessions.filter(x=>(!actFilter||(x.sport||"RUN_ROUTE")===actFilter)&&x.date<=today());
+  const ys=[...new Set(base.map(x=>x.date.slice(0,4)))].sort().reverse();
+  if(!ys.length){box.innerHTML='<p class="mute">Aucune activité pour le moment.</p>';return}
+  if(!ys.includes(actYear))actYear=ys[0];
+  const sel=document.createElement("select");sel.setAttribute("aria-label","Année");
+  ys.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;sel.appendChild(o)});sel.value=actYear;
+  sel.onchange=()=>{actYear=sel.value;renderYear()};
+  const L=base.filter(x=>x.date.slice(0,4)===actYear);
+  const sec=L.reduce((a,x)=>a+(x.sec||x.min*60),0),km=L.reduce((a,x)=>a+(x.km||0),0),dp=L.reduce((a,x)=>a+(x.dplus||0),0);
+  const d=document.createElement("div");d.className="dsum";
+  [["Activités",String(L.length)],["Durée",Math.floor(Math.round(sec/60)/60)+" h "+pad2(Math.round(sec/60)%60)],["Kilomètres",String(Math.round(km*10)/10).replace(".",",")+" km"],["Dénivelé +",Math.round(dp)+" m"]].forEach(([k,v])=>{const e=document.createElement("div");e.innerHTML="<b></b><span></span>";e.firstChild.textContent=v;e.lastChild.textContent=k;d.appendChild(e)});
+  const lab=document.createElement("label");lab.className="f";lab.textContent="Année";lab.htmlFor="";box.append(lab,sel,d);
+  const sp=document.createElement("p");sp.className="mute";sp.textContent=actFilter?SPORTS[actFilter]+" uniquement (filtre ci-dessus).":"Tous types d’activité confondus ; choisissez un type avec les filtres pour le détail par sport.";box.appendChild(sp);
+}
 function renderActs(){
-  const box=$("a-list");box.innerHTML="";renderFilt();
+  const box=$("a-list");box.innerHTML="";renderFilt();renderYear();
   if(!sessions.length){const p=document.createElement("p");p.className="mute";p.textContent="Aucune activité pour le moment.";box.appendChild(p);return}
   const MONTHS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
   const groups={};
@@ -2519,8 +2538,8 @@ function renderActs(){
   const sb=(b,t)=>{b.textContent=t;b.className="alt";b.style.cssText="width:auto;margin:0 0 0 6px;padding:6px 10px;font-size:15px"};
   Object.keys(groups).sort().reverse().forEach((k,gi)=>{
     const list=groups[k],det=document.createElement("details"),sm=document.createElement("summary"),ul=document.createElement("ul");
-    const mins=list.reduce((a,s)=>a+s.min,0),dp=list.reduce((a,s)=>a+(s.dplus||0),0);
-    sm.textContent=MONTHS[+k.slice(5)-1]+" "+k.slice(0,4)+" · "+list.length+" activité"+(list.length>1?"s":"")+" · "+Math.floor(mins/60)+" h "+pad2(mins%60)+(dp?" · "+dp+" m D+":"");
+    const mins=list.reduce((a,s)=>a+s.min,0),dp=list.reduce((a,s)=>a+(s.dplus||0),0),kmm=list.reduce((a,s)=>a+(s.km||0),0);
+    sm.textContent=MONTHS[+k.slice(5)-1]+" "+k.slice(0,4)+" · "+list.length+" activité"+(list.length>1?"s":"")+" · "+Math.floor(mins/60)+" h "+pad2(mins%60)+(kmm>0?" · "+String(Math.round(kmm*10)/10).replace(".",",")+" km":"")+(dp?" · "+dp+" m D+":"");
     list.forEach(s=>{
       const li=document.createElement("li"),a=document.createElement("span"),c=document.createElement("span"),b1=document.createElement("button"),b2=document.createElement("button");
       li.style.alignItems="center";
