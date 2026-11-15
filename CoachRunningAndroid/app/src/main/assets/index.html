@@ -337,7 +337,8 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <label class="f" for="l-rgpx">Parcours à suivre (fichier GPX, facultatif)</label>
     <p class="mute" id="l-rinfo">Aucun parcours chargé. Le tracé sera coloré selon la pente (vert plat, jaune/orange/rouge montée, bleu descente).</p>
     <button type="button" class="alt" id="l-rgpx">📂 Choisir un fichier GPX</button>
-    <button type="button" class="alt hidden" id="l-rclr">Retirer le parcours</button>
+    <button type="button" class="alt hidden" id="l-rtog">Suivre ce parcours</button>
+    <button type="button" class="alt hidden" id="l-rclr">Supprimer le parcours</button>
     <input type="file" id="l-rfile" class="hidden" accept=".gpx,.xml,text/xml,application/gpx+xml,application/octet-stream">
     <label class="f" for="l-offm">Alerte si je m’écarte du parcours de plus de (mètres, 0 = aucune)</label>
     <input type="number" id="l-offm" inputmode="numeric" min="0" max="2000" placeholder="50">
@@ -460,7 +461,8 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p>Avant de démarrer une séance, « 📂 Choisir un fichier GPX » charge un parcours (Komoot, Strava, site de course, montre…). Il reste mémorisé jusqu’à « Retirer le parcours ».</p>
     <p>Sur la carte de la séance, le <b>parcours prévu est en bleu</b> (départ vert, arrivée noire) et <b>votre tracé fait est en rouge</b> : si le rouge quitte le bleu, vous vous écartez. Le point jaune est votre position. Sous les chiffres, l’appli affiche les km et le D+ restants.</p>
     <p>Alerte : si vous vous éloignez du parcours de plus de la distance réglée (50 m par défaut, 0 = aucune alerte) pendant 3 positions de suite, le téléphone vibre et « HORS PARCOURS » s’affiche ; un message confirme le retour sur le tracé. Ce n’est pas un guidage vocal : l’appli montre le tracé et votre position.</p>
-    <p><b>Page de suivi des proches</b> : si le partage est activé, le parcours prévu (en bleu, avec son nom, ses km et son D+) s’affiche aussi sur la carte de la page famille, avec votre tracé réel en rouge. Il est envoyé au démarrage de la séance et s’efface du suivi quand vous retirez le parcours.</p><p><b>Couleurs</b> : le parcours est coloré selon la pente de chaque tronçon (légende sous le nom du fichier). Votre tracé effectué se colore de la même façon pendant la sortie ; en cas d’écart, vous voyez immédiatement que vous quittez la ligne épaisse.</p>
+    <p><b>Page de suivi des proches</b> : si le partage est activé, le parcours prévu (en bleu, avec son nom, ses km et son D+) s’affiche aussi sur la carte de la page famille, avec votre tracé réel en rouge. Il est envoyé au démarrage de la séance et s’efface du suivi quand vous retirez le parcours.</p><p><b>Sortie libre ou sur parcours</b> : le parcours chargé n’est suivi que si le bouton « Suivre ce parcours » est sur OUI. Il repasse automatiquement sur NON à la fin de chaque sortie : la sortie suivante est libre, sans tracé, et vous le réactivez en un toucher (le fichier reste mémorisé ; « Supprimer le parcours » l’efface).</p>
+    <p><b>Couleurs</b> : le parcours est coloré selon la pente de chaque tronçon (légende sous le nom du fichier). Votre tracé effectué se colore de la même façon pendant la sortie ; en cas d’écart, vous voyez immédiatement que vous quittez la ligne épaisse.</p>
   </details>
   <details class="card"><summary><b>Bouton SOS</b></summary>
     <p>Pendant une séance, le bouton rouge <b>SOS</b> (bas de l’écran) se déclenche par <b>3 touches rapides</b>. Un écran rouge clignotant lance un compte à rebours (30 s par défaut, réglable de 0 à 120 s) avec alarme et vibrations : touchez <b>ANNULER</b> en cas de fausse manip.</p>
@@ -1097,7 +1099,9 @@ let liveSport="RUN_ROUTE",targetMin=0,targetShown=false;
 
 /* ===== Parcours GPX à suivre ===== */
 let route=null,routeLayers=[],offCnt=0,offAlertT=0,wasOff=false;
-function loadRoute(){try{const r=JSON.parse(localStorage.getItem("coach_route")||"null");route=r&&r.pts&&r.pts.length>1?r:null}catch(e){route=null}if(route)prepRoute()}
+let routeStored=null;
+const routeOn=()=>{try{return localStorage.getItem("coach_routeon")!=="0"}catch(e){return true}};
+function loadRoute(){try{const r=JSON.parse(localStorage.getItem("coach_route")||"null");routeStored=r&&r.pts&&r.pts.length>1?r:null}catch(e){routeStored=null}route=routeStored&&routeOn()?routeStored:null;if(route)prepRoute()}
 function prepRoute(){
   const P=route.pts;route.cum=[0];route.gc=[0];let g=0;
   for(let i=1;i<P.length;i++){
@@ -1118,8 +1122,11 @@ function parseRouteGpx(txt){
   return {name:nm?nm.textContent.trim().slice(0,60):"",pts:pts.map(p=>[Math.round(p[0]*1e6)/1e6,Math.round(p[1]*1e6)/1e6,p[2]==null||!isFinite(p[2])?null:Math.round(p[2])])};
 }
 function routeInfo(){
-  const i=$("l-rinfo"),c=$("l-rclr");
-  if(route){i.innerHTML="✔ "+String(route.name||"Parcours").replace(/&/g,"&amp;").replace(/</g,"&lt;")+" · "+route.km.toFixed(1).replace(".",",")+" km · D+ "+Math.round(route.gain)+" m"+(route.gain>0?'<div class="mute" style="font-size:12px;margin-top:4px">Pente : '+slopeLegend()+'</div>':"");c.classList.remove("hidden")}
+  const i=$("l-rinfo"),c=$("l-rclr"),tg=$("l-rtog");
+  tg.classList.toggle("hidden",!routeStored);
+  if(routeStored){tg.textContent=route?"✅ Suivre ce parcours : OUI (toucher pour sortie libre)":"⬜ Suivre ce parcours : NON, sortie libre (toucher pour le suivre)";c.classList.remove("hidden")}
+  if(routeStored&&!route){i.textContent="Parcours chargé mais non suivi : "+(routeStored.name||"Parcours")+". Cette sortie sera libre."}
+  else if(route){i.innerHTML="✔ "+String(route.name||"Parcours").replace(/&/g,"&amp;").replace(/</g,"&lt;")+" · "+route.km.toFixed(1).replace(".",",")+" km · D+ "+Math.round(route.gain)+" m"+(route.gain>0?'<div class="mute" style="font-size:12px;margin-top:4px">Pente : '+slopeLegend()+'</div>':"");c.classList.remove("hidden")}
   else{i.textContent="Aucun parcours chargé.";c.classList.add("hidden")}
 }
 /* Pente par tronçon : couleur selon le % (≈100 m par tronçon) */
@@ -1186,10 +1193,11 @@ $("l-rfile").onchange=async e=>{
     const r=parseRouteGpx(await f.text());
     if(!r){$("l-rinfo").textContent="Fichier GPX illisible (aucune trace trouvée).";return}
     if(!r.name)r.name=f.name.replace(/\.gpx$/i,"");
-    localStorage.setItem("coach_route",JSON.stringify(r));loadRoute();routeInfo();drawRoute();
+    localStorage.setItem("coach_route",JSON.stringify(r));localStorage.setItem("coach_routeon","1");loadRoute();routeInfo();drawRoute();
   }catch(err){$("l-rinfo").textContent="Fichier GPX illisible."}
 };
-$("l-rclr").onclick=()=>{try{localStorage.removeItem("coach_route")}catch(e){}route=null;routeInfo();drawRoute();$("lroute").classList.add("hidden")};
+$("l-rclr").onclick=()=>{try{localStorage.removeItem("coach_route");localStorage.removeItem("coach_routeon")}catch(e){}route=routeStored=null;routeInfo();drawRoute();$("lroute").classList.add("hidden");pushRoute(true)};
+$("l-rtog").onclick=()=>{try{localStorage.setItem("coach_routeon",routeOn()?"0":"1")}catch(e){}loadRoute();routeInfo();drawRoute();if(!route)$("lroute").classList.add("hidden");pushRoute(true)};
 loadRoute();routeInfo();
 function liveMap(){
   try{
@@ -1554,6 +1562,7 @@ window.onAndroidBack=()=>{
 };
 function endLive(){
   if(typeof sosSt!=="undefined"&&sosSt==="count")sosCancel();
+  try{if(localStorage.getItem("coach_route"))localStorage.setItem("coach_routeon","0")}catch(e){}
   liveOn=false;clearInterval(pollId);clearInterval(clockId);pollId=clockId=null;
   if(gWatch!==null){try{navigator.geolocation.clearWatch(gWatch)}catch(e){}gWatch=null}
   clearInterval(jsTimer);if(!NAT())jsPush(true);
@@ -1562,6 +1571,7 @@ function endLive(){
   keepScreen(false);
   try{localStorage.removeItem(LKEY)}catch(e){}
   $("cfm").classList.add("hidden");setFull(false);
+  loadRoute();routeInfo();
 }
 function gpxText(rec){
   const esc=x=>String(x).replace(/&/g,"&amp;");
