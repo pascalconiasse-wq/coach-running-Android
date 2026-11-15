@@ -223,23 +223,32 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <div class="count" id="cd"></div>
     <p id="goal" class="mute"></p>
   </div>
+  <div class="card" id="xcard">
+    <h2>Autres objectifs</h2>
+    <p class="mute">Courses secondaires : elles allègent la semaine concernée, mais l’objectif principal reste prioritaire.</p>
+    <ul id="xlist"></ul>
+    <button type="button" class="alt" id="x-new">➕ Ajouter un objectif</button>
+    <div id="x-menu" class="hidden">
+      <button type="button" class="alt" id="x-race">📋 Choisir dans le tableau des courses</button>
+      <button type="button" class="alt" id="x-hand">✍️ Saisir à la main</button>
+      <button type="button" class="alt" id="x-mclose">Fermer</button>
+    </div>
+    <div id="x-form" class="hidden">
+      <label class="f" for="x-name">Nom</label><input type="text" id="x-name" placeholder="ex. 10 km de la ville">
+      <label class="f" for="x-date">Date</label><input type="date" id="x-date">
+      <label class="f" for="x-km">Distance (km)</label><input type="number" id="x-km" inputmode="decimal" min="1" max="250" step="0.1">
+      <label class="f" for="x-dp">Dénivelé positif (m D+, facultatif)</label><input type="number" id="x-dp" inputmode="numeric" min="0" max="20000" step="1">
+      <button id="x-add">Ajouter</button>
+      <button type="button" class="alt" id="x-cancel">Annuler</button>
+    </div>
+    <p class="mute warn" id="x-msg" role="status"></p>
+  </div>
   <div class="card" id="wk-next">
     <h2>Bilan de la semaine</h2>
     <p id="wkn-b"></p>
     <h3 class="dt" style="margin:10px 0 2px">Semaine prochaine</h3>
     <p id="wkn-t"></p>
     <p class="mute" id="wkn-s"></p>
-  </div>
-  <div class="card" id="xcard">
-    <h2>Autres objectifs</h2>
-    <p class="mute">Courses secondaires : elles allègent la semaine concernée, mais l’objectif principal reste prioritaire.</p>
-    <ul id="xlist"></ul>
-    <button type="button" class="alt" id="x-race">📋 Choisir dans le tableau des courses</button>
-    <label class="f" for="x-name">Nom</label><input type="text" id="x-name" placeholder="ex. 10 km de la ville">
-    <label class="f" for="x-date">Date</label><input type="date" id="x-date">
-    <label class="f" for="x-km">Distance (km)</label><input type="number" id="x-km" inputmode="decimal" min="1" max="250" step="0.1">
-    <button class="alt" id="x-add">Ajouter</button>
-    <p class="mute warn" id="x-msg" role="status"></p>
   </div>
   <div class="card hero-card" id="today">
     <h2 id="sess">Séance du jour</h2>
@@ -460,7 +469,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <details class="card"><summary><b>Onglet Plan</b></summary>
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), zones cardio, allures de référence calculées sur vos meilleurs efforts, et test VMA facultatif qui débloque des séances de VMA. Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation. Dès qu’une activité existe pour la journée (enregistrée par l’appli, importée ou synchronisée depuis la montre), la séance du jour passe à « faite ✓ » et le détail prévu disparaît ; dans la liste de la semaine, les jours faits sont cochés et barrés.</p>
     <p><b>FC à ne pas dépasser</b> : dans le profil (⚙ puis Mon profil), « FC à ne pas dépasser en endurance » remplace le calcul automatique si celui-ci est trop bas (parcours avec beaucoup de côtes). La valeur est proposée comme alerte « FC max » au départ de la séance (modifiable séance par séance), et les alertes des autres types de séance sont décalées d’autant.</p>
-    <p><b>Autres objectifs</b> : ajoutez des courses secondaires (nom, date, distance), à saisir ou à choisir dans le même tableau des courses de la région que l’objectif principal. Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
+    <p><b>Autres objectifs</b> : cette carte est placée juste sous l’objectif principal. Touchez « Ajouter un objectif » : un menu propose « Choisir dans le tableau des courses » ou « Saisir à la main » (nom, date, distance et D+ facultatif). Les courses se choisissent dans le même tableau des courses de la région que l’objectif principal. Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
   <details class="card"><summary><b>Séance en direct</b></summary>
     <p><b>Bilan du dimanche</b> : chaque dimanche à 19 h, une notification résume la semaine (séances faites, volume, D+), votre position par rapport à l’objectif (semaines restantes, plus longue sortie récente par rapport à celle visée) et indique si la charge de la semaine suivante est diminuée, augmentée ou inchangée. Le même texte est dans l’onglet Plan (« Semaine prochaine »). Ouvrez l’appli après votre dernière sortie pour qu’il soit à jour.</p>
     <p><b>Suivi en direct</b> : réglez une fois dans la roue ⚙ « Partage du suivi en direct » : votre prénom et les numéros qui recevront le lien (« Ajouter depuis mes contacts » les choisit dans votre répertoire). Avant chaque séance, cochez « Partager mon suivi » dans « Avant de partir » : au démarrage, le lien part tout seul par SMS (vous pouvez aussi le renvoyer à la main depuis la roue). Vos proches touchent le lien, sans rien installer : ils voient la carte avec votre trace, l’allure, le D+ et la FC, mise à jour toutes les 10 s, même écran éteint, et après la séance la trace complète. Le lien est secret et propre à chaque séance. Sous les données, un profil d’altitude se dessine en même temps que la course (point blanc = position actuelle). La première fois, Android demande l’autorisation d’envoyer des SMS ; si elle est refusée, ouvrez Réglages > Applications > Coach Running, autorisez les paramètres restreints, puis Autorisations > SMS.</p>
@@ -874,7 +883,7 @@ function renderExtras(){
   const ex=(profile.extra||[]).filter(e=>e.date>=today()).sort((a,b)=>a.date<b.date?-1:1);
   ex.forEach(e=>{
     const li=document.createElement("li"),a=document.createElement("span"),b=document.createElement("button");
-    a.textContent=fmtDate(e.date)+" · "+e.name+" · "+String(e.km).replace(".",",")+" km";
+    a.textContent=fmtDate(e.date)+" · "+e.name+" · "+String(e.km).replace(".",",")+" km"+(e.dp?" · "+e.dp+" m D+":"");
     b.className="alt";b.textContent="Retirer";b.setAttribute("aria-label","Retirer "+e.name);
     b.onclick=()=>{profile.extra=profile.extra.filter(x=>x!==e&&!(x.date===e.date&&x.name===e.name));saveProfile();renderPlan()};
     li.append(a,b);ul.appendChild(li);
@@ -886,9 +895,14 @@ $("x-add").onclick=()=>{
   if(!n||!d||!(k>0)){m.textContent="Renseignez nom, date et distance.";return}
   if(d<=today()){m.textContent="La date doit être à venir.";return}
   if(profile.goal&&d===profile.goal.date){m.textContent="C’est la date de votre objectif principal.";return}
-  profile.extra=(profile.extra||[]).concat([{name:n,date:d,km:k}]);saveProfile();
-  $("x-name").value=$("x-date").value=$("x-km").value="";m.textContent="";renderPlan();
+  const dp=Math.round(+$("x-dp").value||0),o={name:n,date:d,km:k};if(dp>0)o.dp=dp;
+  profile.extra=(profile.extra||[]).concat([o]);saveProfile();
+  xClose();m.textContent="";renderPlan();
 };
+function xClose(){$("x-name").value=$("x-date").value=$("x-km").value=$("x-dp").value="";$("x-form").classList.add("hidden");$("x-menu").classList.add("hidden");$("x-new").classList.remove("hidden")}
+$("x-new").onclick=()=>{$("x-new").classList.add("hidden");$("x-menu").classList.remove("hidden");$("x-msg").textContent=""};
+$("x-mclose").onclick=xClose;$("x-cancel").onclick=()=>{xClose();$("x-msg").textContent=""};
+$("x-hand").onclick=()=>{$("x-menu").classList.add("hidden");$("x-form").classList.remove("hidden");$("x-name").focus()};
 
 /* Test VMA facultatif : une fois enregistré, il cale le fractionné et le seuil et débloque des séances de VMA */
 let vmaWatch=null,vmaTimer=null,vmaT0=0,vmaDist=0,vmaLast=null,vmaPending=0;
@@ -2107,7 +2121,8 @@ const MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept."
   $("x-race").onclick=()=>open(pickX);
   function pickX(r,km){
     const ex=r[5]||{},dt=(ex.dt&&ex.dt[km])||(r[2].length>7?r[2]:"");
-    $("x-name").value=r[0]+" "+String(km).replace(".",",")+" km";$("x-date").value=dt;$("x-km").value=km;
+    $("x-menu").classList.add("hidden");$("x-form").classList.remove("hidden");$("x-new").classList.add("hidden");
+    $("x-name").value=r[0]+" "+String(km).replace(".",",")+" km";$("x-date").value=dt;$("x-km").value=km;$("x-dp").value=(ex.dp&&ex.dp[km]!=null)?ex.dp[km]:"";
     $("x-msg").textContent=dt?"Course sélectionnée : vérifiez la date chez l’organisateur, puis « Ajouter ».":"Date à saisir (non connue), puis « Ajouter ».";
     $("rtab").classList.add("hidden");
   }
