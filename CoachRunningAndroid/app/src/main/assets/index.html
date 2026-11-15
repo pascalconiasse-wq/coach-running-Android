@@ -461,7 +461,8 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p>Avant de démarrer une séance, « 📂 Choisir un fichier GPX » charge un parcours (Komoot, Strava, site de course, montre…). Il reste mémorisé jusqu’à « Retirer le parcours ».</p>
     <p>Sur la carte de la séance, le <b>parcours prévu est en bleu</b> (départ vert, arrivée noire) et <b>votre tracé fait est en rouge</b> : si le rouge quitte le bleu, vous vous écartez. Le point jaune est votre position. Sous les chiffres, l’appli affiche les km et le D+ restants.</p>
     <p>Alerte : si vous vous éloignez du parcours de plus de la distance réglée (50 m par défaut, 0 = aucune alerte) pendant 3 positions de suite, le téléphone vibre et « HORS PARCOURS » s’affiche ; un message confirme le retour sur le tracé. Ce n’est pas un guidage vocal : l’appli montre le tracé et votre position.</p>
-    <p><b>Page de suivi des proches</b> : si le partage est activé, le parcours prévu (en bleu, avec son nom, ses km et son D+) s’affiche aussi sur la carte de la page famille, avec votre tracé réel en rouge. Il est envoyé au démarrage de la séance et s’efface du suivi quand vous retirez le parcours.</p><p><b>Sortie libre ou sur parcours</b> : le parcours chargé n’est suivi que si le bouton « Suivre ce parcours » est sur OUI. Il repasse automatiquement sur NON à la fin de chaque sortie : la sortie suivante est libre, sans tracé, et vous le réactivez en un toucher (le fichier reste mémorisé ; « Supprimer le parcours » l’efface).</p>
+    <p><b>Page de suivi des proches</b> : si le partage est activé, le parcours prévu (en bleu, avec son nom, ses km et son D+) s’affiche aussi sur la carte de la page famille, avec votre tracé réel en rouge. Il est envoyé au démarrage de la séance et s’efface du suivi quand vous retirez le parcours.</p><p><b>Légende des pentes</b> : un petit cadre « Pente » en haut à droite de la carte (séance en direct et détail d’une sortie) donne la couleur de chaque tranche, de moins de −6 % à plus de 12 %.</p>
+    <p><b>Sortie libre ou sur parcours</b> : le parcours chargé n’est suivi que si le bouton « Suivre ce parcours » est sur OUI. Il repasse automatiquement sur NON à la fin de chaque sortie : la sortie suivante est libre, sans tracé, et vous le réactivez en un toucher (le fichier reste mémorisé ; « Supprimer le parcours » l’efface).</p>
     <p><b>Couleurs</b> : le parcours est coloré selon la pente de chaque tronçon (légende sous le nom du fichier). Votre tracé effectué se colore de la même façon pendant la sortie ; en cas d’écart, vous voyez immédiatement que vous quittez la ligne épaisse.</p>
   </details>
   <details class="card"><summary><b>Bouton SOS</b></summary>
@@ -1149,6 +1150,12 @@ function slopeLayers(P,w,op){
   return out;
 }
 function slopeLegend(){return SLOPE.map(b=>'<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+b[2]+';margin:0 3px 0 8px"></span>'+(b[0]<-90?"< −6":b[1]>90?"> 12":(b[0]+"…"+b[1]).replace(/-/g,"−"))).join("")+" %"}
+function slopeCtl(m){
+  try{const c=L.control({position:"topright"});
+  c.onAdd=function(){const d=L.DomUtil.create("div");d.style.cssText="background:rgba(255,255,255,.88);color:#14203A;padding:5px 7px;border-radius:8px;font:11px/1.35 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.3)";
+    d.innerHTML="<b>Pente</b>"+SLOPE.map(b=>'<div><span style="display:inline-block;width:14px;height:5px;border-radius:2px;background:'+b[2]+';margin-right:5px;vertical-align:middle"></span>'+(b[0]<-90?"< −6 %":b[1]>90?"> 12 %":(b[0]+" à "+b[1]+" %").replace(/-/g,"−"))+"</div>").join("");return d};
+  c.addTo(m)}catch(e){}
+}
 function drawRoute(){
   if(!lmap)return;
   routeLayers.forEach(l=>lmap.removeLayer(l));routeLayers=[];
@@ -1202,7 +1209,7 @@ loadRoute();routeInfo();
 function liveMap(){
   try{
     if(!lmap&&typeof L!=="undefined"&&L.map){
-      lmap=L.map("lmap",{zoomControl:false,attributionControl:false}).addControl(L.control.attribution({prefix:false,position:"bottomleft"}));lmap=lmap.setView([46.6,2.4],6);
+      lmap=L.map("lmap",{zoomControl:false,attributionControl:false}).addControl(L.control.attribution({prefix:false,position:"bottomleft"}));lmap=lmap.setView([46.6,2.4],6);slopeCtl(lmap);
       L.tileLayer(OSM,{maxZoom:19,attribution:OSMA}).addTo(lmap);
       lmap.on("dragstart",()=>{follow=false});
     }
@@ -2594,7 +2601,7 @@ function drawMap(pts){
   if(typeof L==="undefined"||!L.map){box.classList.add("hidden");msg.textContent="Carte indisponible : Leaflet n’a pas pu être chargé (connexion internet requise).";return}
   box.classList.remove("hidden");msg.textContent="";
   if(!carte){
-    carte=L.map("map");
+    carte=L.map("map");slopeCtl(carte);
     const plan=L.tileLayer(OSM,{maxZoom:19,attribution:OSMA});
     const photo=L.tileLayer(IGN+"ORTHOIMAGERY.ORTHOPHOTOS&FORMAT=image/jpeg",{maxZoom:19,attribution:"© IGN / Géoplateforme"});
     plan.addTo(carte);L.control.layers({"Plan IGN":plan,"Photos aériennes":photo}).addTo(carte);
