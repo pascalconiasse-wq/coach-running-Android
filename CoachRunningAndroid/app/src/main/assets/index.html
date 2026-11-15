@@ -470,6 +470,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p><b>Récap</b> tous les 1 km ou 5 km (ou aucun) : deux vibrations et un bandeau. <b>Alertes</b> : si vous dépassez l’allure max ou la FC max réglées, trois vibrations et l’indication passe en rouge. La FC demande une ceinture ou une montre qui diffuse la fréquence en Bluetooth (bouton « Connecter »).</p>
     <p><b>Terminer</b> demande toujours confirmation (bouton, retour Android, onglets). La séance est enregistrée avec sa carte, copiée dans Téléchargements/Coach Running (GPX + image de la carte), et une sauvegarde complète est écrite tout de suite. Si l’appli est fermée en cours de route, elle reprend la séance.</p></details>
   <details class="card"><summary><b>Historique, montre COROS et compteur Bryton</b></summary>
+    <p><b>Zones cardiaques</b> : dans l’onglet Courbes, la courbe « Fréquence cardiaque » (moyenne des séances) et celle du détail d’une activité sont fond coloré par vos zones (Z1 à Z5, les mêmes que dans Plan), avec leur légende en bpm. Sous la carte d’une sortie, une légende donne les couleurs des pentes.</p>
     <p><b>Ajouter et trier</b> : le bouton « Ajouter une activité » en haut de l’Historique ouvre le formulaire (il se referme après l’enregistrement ou « Annuler »). Sous le bouton, des filtres par type d’activité (course, trail, VTT, vélo…) n’affichent que le sport choisi ; « Tous » les réaffiche.</p>
     <p><b>Compteur Bryton</b> : Bryton Active n’écrit pas dans Health Connect. Deux solutions : (1) Bryton Active → Strava (synchro automatique) puis Strava → Health Connect (durée, distance, calories) ; (2) dans Bryton Active ouvrir la sortie, exporter le fichier .fit ou .gpx et l’importer ici avec « Choisir un ou plusieurs fichiers » (trace GPS, FC et D+ complets).</p>
     <p><b>Pente en couleur</b> : sur la carte, le parcours GPX chargé et le tracé déjà parcouru sont colorés par tronçon de ≈100 m selon la pente (bleu : descente, vert : plat, jaune/orange/rouge : montée, violet : &gt; 12 %). Visible aussi dans le détail d’une sortie de l’Historique.</p>
@@ -501,12 +502,12 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <select id="d-sel"></select>
     <p class="mute" id="d-info"></p>
     <div id="d-body" class="hidden">
-      <img id="d-snap" class="hidden" alt="Carte enregistrée pendant la séance"><div id="map"></div><p class="mute" id="d-mapmsg"></p>
+      <img id="d-snap" class="hidden" alt="Carte enregistrée pendant la séance"><div id="map"></div><p class="mute" id="d-mapmsg"></p><div class="mute" id="d-sleg" style="font-size:12px;margin:-4px 0 8px"></div>
       <div id="d-sum" class="dsum"></div>
       <button type="button" class="alt" id="d-gpx">📤 Partager la trace (GPX)</button><p class="mute" id="d-gmsg" role="status"></p>
       <h3 class="dt" id="d-pace-t">Allure</h3><canvas id="c-pace"></canvas>
       <h3 class="dt">Altitude (m)</h3><canvas id="c-alt"></canvas>
-      <h3 class="dt">Fréquence cardiaque (bpm)</h3><canvas id="c-hr"></canvas>
+      <h3 class="dt">Fréquence cardiaque (bpm)</h3><canvas id="c-hr"></canvas><div class="mute hidden" id="d-zleg" style="font-size:12px;line-height:1.8"></div>
       <h3 class="dt">Cadence</h3><canvas id="c-cad"></canvas>
     </div>
   </div>
@@ -749,6 +750,8 @@ function hrZones(){
   const f=p=>Math.round(rs?rs+p*(mx-rs):p*mx),B=[.5,.6,.7,.8,.9,1];
   return {max:mx,rest:rs,est:est,method:rs?"réserve cardiaque":"% de la FC max",z:ZINFO.map((zi,i)=>({n:i+1,name:zi[0],color:zi[1],lo:f(B[i]),hi:f(B[i+1])}))};
 }
+function hrBands(){try{if(!profile)return null;const Z=hrZones().z;return Z.map((z,i)=>({from:z.lo,to:i===Z.length-1?z.hi+40:z.hi,color:z.color+"33"}))}catch(e){return null}}
+function zoneLegend(){try{return hrZones().z.map(z=>'<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+z.color+';margin:0 3px 0 8px"></span>Z'+z.n+" "+z.name+" "+z.lo+"–"+z.hi).join("")}catch(e){return ""}}
 function zoneOf(b){const Z=hrZones().z;return b<Z[0].lo?null:(Z.find(z=>b<z.hi)||Z[4])}
 const capFor=t=>{
   if(!SESSZ[t])return 0;
@@ -1848,8 +1851,8 @@ function renderCharts(){
   }else{
     const hrs=sessions.filter(s=>s.hr>0&&s.date<=today()).slice(-15);
     if(hrs.length<2)return empty("Il faut au moins deux séances avec une fréquence cardiaque.");
-    drawLine(hrs.map(s=>({x:fmtDate(s.date).slice(0,5),v:s.hr})),"#E5484D",{fmt:v=>String(Math.round(v))});
-    setLegend([{name:"FC moyenne (bpm)",color:"#E5484D"}]);
+    drawLine(hrs.map(s=>({x:fmtDate(s.date).slice(0,5),v:s.hr})),"#E5484D",{fmt:v=>String(Math.round(v)),zones:hrBands()});
+    setLegend([{name:"FC moyenne (bpm)",color:"#E5484D"}].concat(hrZones().z.map(z=>({name:"Z"+z.n+" "+z.name+" "+z.lo+"–"+z.hi,color:z.color}))));
   }
 }
 if(window.addEventListener)window.addEventListener("resize",()=>{if(!$("stats").classList.contains("hidden"))renderCharts()});
@@ -2503,7 +2506,9 @@ function renderDetail(){
   const ms=speedSeries(pts,run);
   const speed=ms.map(v=>v==null?null:run?1000/v*1:v*3.6);
   line("c-alt",pts.map(p=>p[2]),"#8B5CF6",{fmt:v=>String(Math.round(v))});
-  line("c-hr",pts.map(p=>p[3]),"#E5484D",{fmt:v=>String(Math.round(v))});
+  line("c-hr",pts.map(p=>p[3]),"#E5484D",{fmt:v=>String(Math.round(v)),zones:hrBands()});
+  $("d-zleg").innerHTML=zoneLegend();$("d-zleg").classList.toggle("hidden",!(pts.some(p=>p[3])&&profile));
+  $("d-sleg").innerHTML="Pente du tracé : "+slopeLegend();
   $("d-pace-t").textContent=run?"Allure (min/km)":"Vitesse (km/h)";
   line("c-pace",speed,"#2F6BFF",run?{invert:true,fmt:fmtP}:{fmt:dec});
   line("c-cad",pts.map(p=>p[4]==null?null:(run&&p[4]<120?p[4]*2:p[4])),"#18B26B",{fmt:v=>String(Math.round(v))});
