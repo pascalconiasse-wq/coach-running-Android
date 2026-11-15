@@ -18,8 +18,11 @@ h1,h2,.num,.tab,.count,.pill,.timer{font-family:"Barlow Semi Condensed",system-u
 .hero h1{margin:0;font-size:30px;font-weight:800;line-height:1.05;color:#fff}
 .hero .sub{opacity:.92;font-size:15px;text-transform:capitalize}
 .logo{font-size:32px;width:54px;height:54px;border-radius:16px;background:rgba(255,255,255,.22);display:grid;place-items:center;flex:none}
-h2{font-size:20px;font-weight:700;margin:0 0 8px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+h2{font-size:22px;font-weight:700;margin:0 0 12px}
+.card p{line-height:1.6;margin:0 0 12px}
+.card label.f{margin-top:16px}
+.card button{margin-top:6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px 20px;margin-bottom:18px;box-shadow:var(--shadow)}
 .mute{color:var(--mute);font-size:14px}
 button{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;border:0;border-radius:12px;padding:14px 16px;background:var(--acc);background:linear-gradient(135deg,var(--acc),var(--acc2));color:var(--acc-ink);width:100%;margin-top:12px;cursor:pointer}
 button.alt{background:transparent;color:var(--acc);border:1.5px solid var(--acc)}
@@ -92,7 +95,7 @@ ul{list-style:none;padding:0;margin:0}li{display:flex;justify-content:space-betw
 li.today{background:linear-gradient(90deg,rgba(47,107,255,.14),transparent);border-radius:10px;padding-left:8px;padding-right:8px;border-top-color:transparent}
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);border-radius:20px 20px 0 0;box-shadow:0 -8px 24px rgba(20,32,58,.12);padding-bottom:env(safe-area-inset-bottom,0px)}
 #gear{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:auto;margin:0;padding:6px 11px;font-size:22px;line-height:1;background:rgba(255,255,255,.22);box-shadow:none;color:#fff}
-.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;color:var(--mute);border:0;border-radius:20px 20px 0 0;margin:0;padding:9px 0 10px;font-size:14px;width:auto}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;color:var(--mute);border:0;border-radius:20px 20px 0 0;margin:0;padding:9px 0 10px;font-size:13px;width:auto}
 .tab .ti{font-size:22px;line-height:1;filter:grayscale(1);opacity:.65}
 .tab[aria-selected=true]{background:none;color:var(--acc);box-shadow:inset 0 3px 0 var(--acc)}
 .tab[aria-selected=true] .ti{filter:none;opacity:1}
@@ -143,7 +146,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-<header class="hero"><div class="logo" aria-hidden="true">🏃</div><div><h1>Coach Running</h1><div class="sub" id="sub">Votre coach au quotidien</div></div><button id="gear" aria-label="Paramètres">⚙</button></header>
+<header class="hero"><div class="logo" aria-hidden="true">🏃</div><div><h1>Coach Running</h1><div class="sub" id="sub">Votre coach au quotidien</div></div></header>
 <div class="card hidden" id="upd" style="border-color:var(--acc)"><b>Mise à jour disponible : <span id="upd-v"></span></b><p class="mute" style="margin:4px 0 0">Vos données sont conservées. Téléchargez l’APK puis ouvrez-le pour installer.</p><button id="upd-go" style="margin-top:10px">Télécharger la mise à jour</button></div>
 
 <section id="setup" class="hidden">
@@ -371,7 +374,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <label class="chk"><input type="checkbox" id="l-keep"> Garder l’écran allumé (consomme plus de batterie)</label>
     <label class="chk"><input type="checkbox" id="l-share"> Partager mon suivi en direct</label>
     <div id="l-sharebox" class="hidden">
-      <p class="mute">Prénom et numéros : réglés une fois dans la roue ⚙ (en haut de l’écran principal).</p>
+      <p class="mute">Prénom et numéros : réglés une fois dans l’onglet Profil (en bas de l’écran).</p>
       <label class="f" for="l-name">Mon prénom affiché</label><input type="text" id="l-name" placeholder="ex. Pascal">
       <label class="f" for="l-tels">Envoyer le lien par SMS à (numéros séparés par des virgules)</label><input type="text" id="l-tels" inputmode="tel" placeholder="ex. 0612345678, 0698765432">
       <button class="alt" id="l-pick">Ajouter depuis mes contacts</button>
@@ -453,12 +456,12 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
 </section>
 
 <section id="help" class="hidden">
-  <div class="card"><h2>Paramètres et notice</h2><p class="mute">Réglages rarement utilisés, sauvegarde, aide. Touchez un titre de la notice pour l’ouvrir.</p></div>
+  <div class="card"><h2>Profil, réglages et notice</h2><p class="mute">Réglages rarement utilisés, sauvegarde, aide. Touchez un titre de la notice pour l’ouvrir.</p></div>
   <details class="card"><summary><b>Premiers pas</b></summary>
-    <p>Au premier lancement, renseignez âge, poids, niveau, jours disponibles et votre objectif principal (distance, date, dénivelé). Vous pourrez les modifier plus tard avec la roue ⚙ (en haut à droite) : « Mon profil de coureur ». L’appli construit le plan jusqu’à la course : fondation, développement, spécifique, affûtage. Elle recalcule seule quand vous courez ailleurs (montre, import).</p></details>
+    <p>Au premier lancement, renseignez âge, poids, niveau, jours disponibles et votre objectif principal (distance, date, dénivelé). Vous pourrez les modifier plus tard avec l’onglet Profil (en haut à droite) : « Mon profil de coureur ». L’appli construit le plan jusqu’à la course : fondation, développement, spécifique, affûtage. Elle recalcule seule quand vous courez ailleurs (montre, import).</p></details>
   <details class="card"><summary><b>Choisir une course et mode sans objectif</b></summary>
     <p><b>Tableau des courses</b> : dans le profil, et aussi dans « Autres objectifs » du plan, « Choisir dans le tableau des courses » liste les courses <b>à moins de 150 km de votre position, sur les 18 prochains mois</b>, une ligne par distance (date, course, distance, D+). Les courses passées disparaissent. La liste se met à jour toute seule sur internet (tous les 2 jours, ou avec le bouton ↻) ; sans réseau, la liste intégrée à l’appli est utilisée. Tapez sur une ligne pour remplir l’objectif ; la recherche filtre par nom, lieu ou distance. Vérifiez toujours la date et le dénivelé chez l’organisateur.</p>
-    <p><b>Sans objectif</b> : cochez « Sans objectif » dans le profil (⚙ puis Mon profil). Plus de plan ni de coaching : l’appli enregistre seulement vos sorties (GPS, cardio, altitude, suivi en direct, sauvegarde). Décochez pour retrouver le coaching.</p>
+    <p><b>Sans objectif</b> : cochez « Sans objectif » dans le profil (Profil puis Mon profil). Plus de plan ni de coaching : l’appli enregistre seulement vos sorties (GPS, cardio, altitude, suivi en direct, sauvegarde). Décochez pour retrouver le coaching.</p>
     <p><b>Types d’activité</b> : course route, trail, marche, VTT, gravel, vélo route, équitation, home trainer et « Autre » : tous sont proposés au choix « Activité » avant de démarrer (la natation se saisit à la main ou s’importe de la montre). Le choix est préréglé sur le terrain de votre objectif, modifiable ; en vélo, VTT, gravel et home trainer la vitesse est affichée en km/h. Au home trainer, il n’y a pas de GPS : durée et fréquence cardiaque sont enregistrées.</p>
     <p><b>Aide contextuelle</b> : touchez les boutons ? à côté des réglages pour une explication courte.</p></details>
   <details class="card"><summary><b>Suivre un parcours GPX</b></summary>
@@ -472,17 +475,18 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <details class="card"><summary><b>Bouton SOS</b></summary>
     <p>Pendant une séance, le bouton rouge <b>SOS</b> (bas de l’écran) se déclenche par <b>3 touches rapides</b>. Un écran rouge clignotant lance un compte à rebours (30 s par défaut, réglable de 0 à 120 s) avec alarme et vibrations : touchez <b>ANNULER</b> en cas de fausse manip.</p>
     <p>À la fin du compte à rebours : un SMS avec votre position (lien Maps) et le lien de suivi part aux <b>numéros SOS</b> ; la page de suivi affiche une alerte rouge clignotante avec un repère SOS sur la carte, un bouton Itinéraire, l’appel du 112 et une alarme sonore ; la position est mise à jour toutes les 30 s sur la page et renvoyée par SMS toutes les 3 minutes. « C’était une erreur » annule tout et envoie un SMS « fausse alerte ».</p>
-    <p>Réglages : roue ⚙ (en haut de l’écran principal), rubrique « 🆘 SOS » (numéros, contacts, compte à rebours, appel automatique, SMS de test). Sans numéro SOS, ce sont les numéros du suivi qui sont utilisés. Le SOS active le suivi en direct même s’il était désactivé. Appel automatique : après le délai réglé (3 min par défaut) sans annulation, l’appli appelle le 1er numéro SOS en haut-parleur ; si personne ne décroche au bout de 5 min, elle appelle le suivant. Autorisez les appels dans les réglages SOS. Nécessite l’écran allumé pour le triple appui, les autorisations SMS et appel, et du réseau.</p></details>
+    <p>Réglages : onglet Profil (en haut de l’écran principal), rubrique « 🆘 SOS » (numéros, contacts, compte à rebours, appel automatique, SMS de test). Sans numéro SOS, ce sont les numéros du suivi qui sont utilisés. Le SOS active le suivi en direct même s’il était désactivé. Appel automatique : après le délai réglé (3 min par défaut) sans annulation, l’appli appelle le 1er numéro SOS en haut-parleur ; si personne ne décroche au bout de 5 min, elle appelle le suivant. Autorisez les appels dans les réglages SOS. Nécessite l’écran allumé pour le triple appui, les autorisations SMS et appel, et du réseau.</p></details>
   <details class="card"><summary><b>Onglet Plan</b></summary>
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), allures de référence calculées sur vos meilleurs efforts, et test VMA facultatif qui débloque des séances de VMA. Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation. Dès qu’une activité existe pour la journée (enregistrée par l’appli, importée ou synchronisée depuis la montre), la séance du jour passe à « faite ✓ » et le détail prévu disparaît ; dans la liste de la semaine, les jours faits sont cochés et barrés.</p>
+    <p><b>Nouvelle présentation</b> : la roue ⚙ du haut est remplacée par l’onglet <b>Profil</b> (👤, tout à droite de la barre du bas). Il regroupe le profil, les zones cardio, le partage du suivi, le SOS, la synchronisation, la sauvegarde et cette notice. Les cartes sont plus espacées et plus lisibles.</p>
     <p><b>Déplacer une séance</b> : dans Plan, le bouton « Déplacer une séance » ouvre le menu (semaine, séance, nouveau jour). Il se referme après le déplacement ou avec « Fermer ».</p>
-    <p><b>Zones cardio et FC</b> : elles ne sont plus dans l’onglet Plan. Allez dans la roue ⚙ : la carte « Mes zones cardio et ma FC » (juste sous Mon profil de coureur) affiche vos 5 zones et le bouton pour renseigner la FC max, la FC de repos et la FC à ne pas dépasser en endurance.</p>
-    <p><b>FC à ne pas dépasser</b> : dans le profil (⚙ puis Mon profil), « FC à ne pas dépasser en endurance » remplace le calcul automatique si celui-ci est trop bas (parcours avec beaucoup de côtes). La valeur est proposée comme alerte « FC max » au départ de la séance (modifiable séance par séance), et les alertes des autres types de séance sont décalées d’autant.</p>
+    <p><b>Zones cardio et FC</b> : elles ne sont plus dans l’onglet Plan. Allez dans l’onglet Profil : la carte « Mes zones cardio et ma FC » (juste sous Mon profil de coureur) affiche vos 5 zones et le bouton pour renseigner la FC max, la FC de repos et la FC à ne pas dépasser en endurance.</p>
+    <p><b>FC à ne pas dépasser</b> : dans le profil (Profil puis Mon profil), « FC à ne pas dépasser en endurance » remplace le calcul automatique si celui-ci est trop bas (parcours avec beaucoup de côtes). La valeur est proposée comme alerte « FC max » au départ de la séance (modifiable séance par séance), et les alertes des autres types de séance sont décalées d’autant.</p>
     <p><b>Autres objectifs</b> : cette carte est placée juste sous l’objectif principal. Touchez « Ajouter un objectif » : un menu propose « Choisir dans le tableau des courses » ou « Saisir à la main » (nom, date, distance et D+ facultatif). Les courses se choisissent dans le même tableau des courses de la région que l’objectif principal. Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
   <details class="card"><summary><b>Séance en direct</b></summary>
     <p><b>Bilan du dimanche</b> : chaque dimanche à 19 h, une notification résume la semaine (séances faites, volume, D+), votre position par rapport à l’objectif (semaines restantes, plus longue sortie récente par rapport à celle visée) et indique si la charge de la semaine suivante est diminuée, augmentée ou inchangée. Le même texte est dans l’onglet Plan (« Semaine prochaine »). Ouvrez l’appli après votre dernière sortie pour qu’il soit à jour.</p>
-    <p><b>Suivi en direct</b> : réglez une fois dans la roue ⚙ « Partage du suivi en direct » : votre prénom et les numéros qui recevront le lien (« Ajouter depuis mes contacts » les choisit dans votre répertoire). Avant chaque séance, cochez « Partager mon suivi » dans « Avant de partir » : au démarrage, le lien part tout seul par SMS (vous pouvez aussi le renvoyer à la main depuis la roue). Vos proches touchent le lien, sans rien installer : ils voient la carte avec votre trace, l’allure, le D+ et la FC, mise à jour toutes les 10 s, même écran éteint, et après la séance la trace complète. Le lien est secret et propre à chaque séance. Sous les données, un profil d’altitude se dessine en même temps que la course (point blanc = position actuelle). La première fois, Android demande l’autorisation d’envoyer des SMS ; si elle est refusée, ouvrez Réglages > Applications > Coach Running, autorisez les paramètres restreints, puis Autorisations > SMS.</p>
-    <p><b>Sauvegarde automatique</b> : à chaque fois que vous quittez l’appli, vos données sont copiées dans Téléchargements/Coach Running (fichier « Coach-Running_sauvegarde.json », écrasé à chaque fois). Pour restaurer : roue ⚙, « Restaurer la dernière sauvegarde » (ou « J’ai déjà une sauvegarde » au premier lancement). Si Android refuse la lecture directe, le sélecteur s’ouvre dans le bon dossier ; sinon « Importer un fichier ».</p>
+    <p><b>Suivi en direct</b> : réglez une fois dans l’onglet Profil « Partage du suivi en direct » : votre prénom et les numéros qui recevront le lien (« Ajouter depuis mes contacts » les choisit dans votre répertoire). Avant chaque séance, cochez « Partager mon suivi » dans « Avant de partir » : au démarrage, le lien part tout seul par SMS (vous pouvez aussi le renvoyer à la main depuis la roue). Vos proches touchent le lien, sans rien installer : ils voient la carte avec votre trace, l’allure, le D+ et la FC, mise à jour toutes les 10 s, même écran éteint, et après la séance la trace complète. Le lien est secret et propre à chaque séance. Sous les données, un profil d’altitude se dessine en même temps que la course (point blanc = position actuelle). La première fois, Android demande l’autorisation d’envoyer des SMS ; si elle est refusée, ouvrez Réglages > Applications > Coach Running, autorisez les paramètres restreints, puis Autorisations > SMS.</p>
+    <p><b>Sauvegarde automatique</b> : à chaque fois que vous quittez l’appli, vos données sont copiées dans Téléchargements/Coach Running (fichier « Coach-Running_sauvegarde.json », écrasé à chaque fois). Pour restaurer : onglet Profil, « Restaurer la dernière sauvegarde » (ou « J’ai déjà une sauvegarde » au premier lancement). Si Android refuse la lecture directe, le sélecteur s’ouvre dans le bon dossier ; sinon « Importer un fichier ».</p>
     <p><b>Durée prévue</b> : renseignez-la dans les réglages (pré-remplie avec la séance du jour) ; à l’échéance, 4 vibrations et un bandeau, mais l’enregistrement continue.</p>
     <p>« Démarrer la séance » lance le suivi GPS dans un service Android : il continue écran éteint, une notification reste affichée. La carte plein écran (plan IGN) montre votre trace ; dans le coin : chrono, distance, D+, allure, allure moyenne, FC ; en bas, le profil d’altitude se met à jour en direct.</p>
     <p><b>Récap</b> tous les 1 km ou 5 km (ou aucun) : deux vibrations et un bandeau. <b>Alertes</b> : si vous dépassez l’allure max ou la FC max réglées, trois vibrations et l’indication passe en rouge. La FC demande une ceinture ou une montre qui diffuse la fréquence en Bluetooth (bouton « Connecter »).</p>
@@ -492,16 +496,16 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
     <p><b>Ajouter et trier</b> : le bouton « Ajouter une activité » en haut de l’Historique ouvre le formulaire (il se referme après l’enregistrement ou « Annuler »). Sous le bouton, des filtres par type d’activité (course, trail, VTT, vélo…) n’affichent que le sport choisi ; « Tous » les réaffiche.</p>
     <p><b>Compteur Bryton</b> : Bryton Active n’écrit pas dans Health Connect. Deux solutions : (1) Bryton Active → Strava (synchro automatique) puis Strava → Health Connect (durée, distance, calories) ; (2) dans Bryton Active ouvrir la sortie, exporter le fichier .fit ou .gpx et l’importer ici avec « Choisir un ou plusieurs fichiers » (trace GPS, FC et D+ complets).</p>
     <p><b>Pente en couleur</b> : sur la carte, le parcours GPX chargé et le tracé déjà parcouru sont colorés par tronçon de ≈100 m selon la pente (bleu : descente, vert : plat, jaune/orange/rouge : montée, violet : &gt; 12 %). Visible aussi dans le détail d’une sortie de l’Historique.</p>
-    <p>« Synchroniser maintenant » (roue ⚙, rubrique synchronisation) lit Health Connect (30 jours) : synchronisez d’abord la montre vers COROS, qui doit écrire dans Health Connect. Une sortie déjà enregistrée par le téléphone est fusionnée avec celle de la montre : on garde les données en plus (FC, dénivelé, calories ; la trace GPS de la montre si elle en a une, sinon celle du téléphone enrichie de la FC et de l’altitude) et le doublon disparaît. Un doublon est reconnu quand les départs sont à moins de 15 min et les durées proches. Import de fichiers FIT, GPX, TCX possible depuis la roue ⚙. Garmin : uniquement via Health Connect ou export de fichier.</p></details>
+    <p>« Synchroniser maintenant » (onglet Profil, rubrique synchronisation) lit Health Connect (30 jours) : synchronisez d’abord la montre vers COROS, qui doit écrire dans Health Connect. Une sortie déjà enregistrée par le téléphone est fusionnée avec celle de la montre : on garde les données en plus (FC, dénivelé, calories ; la trace GPS de la montre si elle en a une, sinon celle du téléphone enrichie de la FC et de l’altitude) et le doublon disparaît. Un doublon est reconnu quand les départs sont à moins de 15 min et les durées proches. Import de fichiers FIT, GPX, TCX possible depuis l’onglet Profil. Garmin : uniquement via Health Connect ou export de fichier.</p></details>
   <details class="card"><summary><b>Courbes et détail</b></summary>
     <p><b>Partager une trace</b> : dans le détail d’une sortie, « 📤 Partager la trace (GPX) » ouvre la fenêtre de partage Android (messagerie, mail, Drive…) pour envoyer le fichier GPX à quelqu’un. Il faut que la sortie ait une trace GPS.</p>
     <p>Pour chaque activité : plan IGN ou photos aériennes au choix (ou image enregistrée pendant la séance), courbes d’allure, FC et altitude. Le dénivelé est corrigé avec l’altimétrie IGN quand elle répond.</p></details>
   <details class="card" open><summary><b>Sauvegarde et mises à jour</b></summary>
     <p id="upd-st" class="mute">Version : vérification…</p><button class="alt" id="upd-chk">Vérifier les mises à jour</button>
-    <p>Roue ⚙, « Exporter l’historique » : sauvegarde complète (profil, séances, traces, cartes, prénom et numéros du partage) dans Téléchargements/Coach Running ; le fichier « Coach-Running_sauvegarde.json » remplace le précédent. Restaurez-la après une désinstallation. Au lancement, l’appli compare sa version à la dernière Release GitHub et affiche « Mise à jour disponible » : touchez pour télécharger l’APK puis installez-le. Pour un proche qui installe l’appli : même page des Releases (github.com/pascalconiasse-wq/coach-running-Android/releases), autoriser l’installation d’applis inconnues ; il sera averti des mises à jour à l’ouverture de l’appli.</p></details>
+    <p>Onglet Profil, « Exporter l’historique » : sauvegarde complète (profil, séances, traces, cartes, prénom et numéros du partage) dans Téléchargements/Coach Running ; le fichier « Coach-Running_sauvegarde.json » remplace le précédent. Restaurez-la après une désinstallation. Au lancement, l’appli compare sa version à la dernière Release GitHub et affiche « Mise à jour disponible » : touchez pour télécharger l’APK puis installez-le. Pour un proche qui installe l’appli : même page des Releases (github.com/pascalconiasse-wq/coach-running-Android/releases), autoriser l’installation d’applis inconnues ; il sera averti des mises à jour à l’ouverture de l’appli.</p></details>
   <details class="card"><summary><b>Problèmes fréquents</b></summary>
     <p>Km ou D+ manquants : autorisez la position « tout le temps » et ne limitez pas la batterie de l’appli. Pas de GPS : sortez, attendez « GPS OK ». Pas de FC : activez la diffusion cardio de la montre. Séance absente après synchro : vérifiez les autorisations Health Connect. SMS qui ne part pas : autorisez les paramètres restreints puis la permission SMS (voir « Séance en direct »).</p>
-    <p><b>Autorisations SMS et appels</b> : roue ⚙, rubrique « 🆘 SOS » : une ligne indique ce qui est autorisé ; « Autoriser les SMS » et « Autoriser les appels téléphoniques » ouvrent la fenêtre Android. Android bloque les SMS pour une appli installée à la main : si la fenêtre n’apparaît pas ou est grisée, « Ouvrir les réglages Android de l’appli », puis ⋮ > « Autoriser les paramètres restreints », et revenez dans l’appli.</p>
+    <p><b>Autorisations SMS et appels</b> : onglet Profil, rubrique « 🆘 SOS » : une ligne indique ce qui est autorisé ; « Autoriser les SMS » et « Autoriser les appels téléphoniques » ouvrent la fenêtre Android. Android bloque les SMS pour une appli installée à la main : si la fenêtre n’apparaît pas ou est grisée, « Ouvrir les réglages Android de l’appli », puis ⋮ > « Autoriser les paramètres restreints », et revenez dans l’appli.</p>
     <p><b>Mises à jour</b> : toutes les versions sont signées avec la même clé : installez la nouvelle APK <b>par-dessus</b> l’ancienne, sans désinstaller ; les autorisations et les données sont conservées. (Les versions avant la 1.91 avaient des clés différentes : une dernière désinstallation, après avoir exporté l’historique, est nécessaire pour passer à la 1.91.)</p>
     <p><b>Distance ou D+ corrigés à la main</b> : une fois modifiés dans « Historique », ils sont verrouillés et une nouvelle synchronisation de la montre ne les écrase plus. Durées : au-delà d’une heure, elles s’affichent en h:mm:ss.</p></details>
 </section>
@@ -550,6 +554,7 @@ details.card summary{cursor:pointer;padding:4px 0}details.card p{margin:8px 0 0}
   <button class="tab" role="tab" data-t="prog" aria-selected="false"><span class="ti">🗓️</span>Programme</button>
   <button class="tab" role="tab" data-t="acts" aria-selected="false"><span class="ti">🚴</span>Historique</button>
   <button class="tab" role="tab" data-t="stats" aria-selected="false"><span class="ti">📈</span>Courbes</button>
+  <button class="tab" role="tab" data-t="help" aria-selected="false"><span class="ti">👤</span>Profil</button>
 </nav>
 
 <script>
@@ -1469,7 +1474,7 @@ function sosArm(){
   setTimeout(()=>{if(sosLastTap===now){sosTaps=0;sosLastTap=0;b.classList.remove("arm");b.textContent="SOS"}},900);
 }
 function sosStart(){
-  if(!sosNums()){showRecap("SOS : aucun numéro. Ajoutez-en dans la roue ⚙, rubrique « SOS ».");sosBuzz([0,400,150,400]);return}
+  if(!sosNums()){showRecap("SOS : aucun numéro. Ajoutez-en dans l’onglet Profil, rubrique « SOS ».");sosBuzz([0,400,150,400]);return}
   sosSt="count";sosCnt=sosDelay();sosShow(true);
   $("sostxt").textContent="Envoi de l’alerte SOS dans";$("sosnow").classList.remove("hidden");$("soshide").classList.add("hidden");$("soscancel").innerHTML="ANNULER<br><small>tout va bien</small>";
   clearInterval(sosTimer);
@@ -2524,7 +2529,7 @@ const IGN="https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0
 function renderDetailSel(){
   const sel=$("d-sel"),list=sessions.filter(s=>traces[s.id]).reverse();
   sel.innerHTML="";
-  if(!list.length){$("d-info").textContent="Aucune activité avec trace. Importez un fichier FIT, GPX ou TCX depuis la roue ⚙.";$("d-body").classList.add("hidden");return}
+  if(!list.length){$("d-info").textContent="Aucune activité avec trace. Importez un fichier FIT, GPX ou TCX depuis l’onglet Profil.";$("d-body").classList.add("hidden");return}
   list.forEach(s=>{const o=document.createElement("option");o.value=s.id;o.textContent=fmtDate(s.date).slice(0,5)+" · "+(SPORTS[s.sport]||"Course")+" · "+durText(s)+(s.km?" · "+dec(s.km)+" km":"");sel.appendChild(o)});
   if(!list.some(s=>s.id===detailId))detailId=list[0].id;
   sel.value=detailId;renderDetail();
@@ -2698,7 +2703,7 @@ function renderProg(){
 }
 if(window.AndroidHealth){$("health").classList.remove("hidden");setTimeout(healthSync,900)}
 
-/* Paramètres : la roue ⚙ regroupe partage, import/synchro, sauvegarde et notice */
+/* Paramètres : l’onglet Profil regroupe partage, import/synchro, sauvegarde et notice */
 (function(){
   const help=$("help"),title=help.firstElementChild;
   const mk=(h)=>{const c=document.createElement("div");c.className="card";c.innerHTML="<h2>"+h+"</h2>";return c};
@@ -2719,7 +2724,6 @@ if(window.AndroidHealth){$("health").classList.remove("hidden");setTimeout(healt
   /* sauvegarde */
   const bk=$("exp").closest(".card");cards.push(bk);
   let ref=title;cards.forEach(c=>{ref.after(c);ref=c});
-  $("gear").onclick=()=>{if(liveOn)return;show("help")};
 })();
 if(profile)show("plan");else openSetup();
 resumeLive();

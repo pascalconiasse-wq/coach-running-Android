@@ -1,5 +1,14 @@
 [
  {
+  "v": "1.113 · préversion",
+  "d": "15 nov. 2026",
+  "items": [
+   "Nouvel onglet « Profil » en bas à la place de la roue ⚙ (profil, zones cardio, partage, SOS, synchro, sauvegarde, notice).",
+   "Présentation plus aérée : cartes et textes plus espacés."
+  ],
+  "rel": "test"
+ },
+ {
   "v": "1.112 · préversion",
   "d": "15 nov. 2026",
   "items": [
