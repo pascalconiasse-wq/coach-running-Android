@@ -1,5 +1,13 @@
 [
  {
+  "v": "1.122 · préversion",
+  "d": "16 nov. 2026",
+  "items": [
+   "Séances plus détaillées : échauffement, corps de séance et retour au calme pour les footings et sorties longues ; durée du retour au calme pour le fractionné et le seuil ; allure max (pas plus vite que…) et FC à ne pas dépasser."
+  ],
+  "rel": "test"
+ },
+ {
   "v": "1.121 · préversion",
   "d": "15 nov. 2026",
   "items": [

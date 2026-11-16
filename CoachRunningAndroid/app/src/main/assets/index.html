@@ -515,6 +515,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
   <details class="card"><summary><b>Historique, montre COROS et compteur Bryton</b></summary>
     <p><b>Zones cardiaques</b> : dans l’onglet Courbes, la courbe « Fréquence cardiaque » (moyenne des séances) et celle du détail d’une activité sont fond coloré par vos zones (Z1 à Z5, les mêmes que dans Plan), avec leur légende en bpm. Sous la carte d’une sortie, une légende donne les couleurs des pentes.</p>
     <p><b>Évolutions des versions</b> : dans la roue ⚙, rubrique « Sauvegarde et mises à jour », le cadre « Évolutions des versions » ouvre la liste de ce que chaque version a apporté (équivalent du PDF des évolutions, intégré à l’appli).</p>
+    <p><b>Détail des séances</b> : chaque footing et chaque sortie longue indique maintenant l’échauffement (5 ou 10 min très faciles), le corps de séance, le retour au calme (5 min), l’allure cible et l’allure max (« pas plus vite que… ») sur route, et la FC à ne pas dépasser. Fractionné et seuil précisent 15 min d’échauffement et 10 min de retour au calme.</p>
     <p><b>RPE automatique</b> : si la FC a été enregistrée pendant la séance (ceinture ou montre), l’intensité perçue demandée à la fin est déjà réglée d’après votre FC moyenne rapportée à votre FC max ; vous pouvez la corriger. Sans FC, elle reste à 6. Les séances importées sont estimées de la même façon. Au premier lancement de cette version, le RPE des séances passées qui ont une FC a été recalculé une fois d’après leur FC moyenne (la charge et les allègements de séances s’en trouvent ajustés).</p>
     <p><b>Récap annuelle</b> : en haut de l’Historique, choisissez une année pour voir le nombre d’activités, la durée, les kilomètres et le dénivelé positif. Elle suit le filtre par type d’activité. Les récaps mensuels affichent aussi les kilomètres.</p>
     <p><b>Ajouter et trier</b> : le bouton « Ajouter une activité » en haut de l’Historique ouvre le formulaire (il se referme après l’enregistrement ou « Annuler »). Sous le bouton, des filtres par type d’activité (course, trail, VTT, vélo…) n’affichent que le sport choisi ; « Tous » les réaffiche.</p>
@@ -659,17 +660,17 @@ const vk=f=>dec(profile.vma*f),vp=f=>fmtP(3600/(profile.vma*f));
 function sessInfo(t,c){
   if(t==="REST")return {t:t};
   const K=c.kind,tr=K==="trail"||(K==="mixte"&&(t===LG||(t===I&&c.mp===1)));c={...c,kind:tr?"trail":"route"};
-  if(t===LG)return {t:t,m:c.longMin,d:c.kind==="trail"?"Sortie longue en terrain varié"+(c.dpl?", environ "+c.dpl+" m D+":"")+", marche rapide dans les fortes pentes, testez votre ravitaillement":"Sortie longue à allure facile, pensez à vous hydrater"+(c.spec?", dont "+roundTo(c.longMin*0.3,5)+" min à allure course":"")};
-  if(t===E)return {t:t,m:c.easyMin,d:c.kind==="trail"?"Footing facile sur chemin, terrain varié":"Allure conversationnelle"};
-  if(t===T&&profile&&profile.vma&&c.kind!=="trail"&&!c.spec)return {t:t,m:25+c.tMin,d:"15 min d’échauffement, "+c.tMin+" min à 85–88 % de la VMA ("+vk(.85)+"–"+vk(.88)+" km/h, soit "+vp(.88)+"–"+vp(.85)+" /km), retour au calme"};
+  if(t===LG)return {t:t,m:c.longMin,d:"Échauffement 10 min très faciles (marche rapide puis trot lent), puis "+Math.max(5,c.longMin-15)+" min "+(c.kind==="trail"?"en terrain varié"+(c.dpl?" (environ "+c.dpl+" m D+)":"")+", marche rapide dans les fortes pentes, testez votre ravitaillement":"à allure facile"+(c.spec?", dont "+roundTo(c.longMin*0.3,5)+" min à allure course":"")+", hydratez-vous")+", retour au calme 5 min en trottant très lent puis marche. Si la FC dépasse la limite, ralentissez ou marchez"};
+  if(t===E)return {t:t,m:c.easyMin,d:"Échauffement 5 min très facile (marche rapide puis trot lent), puis "+Math.max(5,c.easyMin-10)+" min "+(c.kind==="trail"?"de footing facile sur chemin, terrain varié":"à allure conversationnelle (vous devez pouvoir parler)")+", retour au calme 5 min en marchant"};
+  if(t===T&&profile&&profile.vma&&c.kind!=="trail"&&!c.spec)return {t:t,m:25+c.tMin,d:"15 min d’échauffement, "+c.tMin+" min à 85–88 % de la VMA ("+vk(.85)+"–"+vk(.88)+" km/h, soit "+vp(.88)+"–"+vp(.85)+" /km), retour au calme 10 min (trot lent puis marche)"};
   if(t===I&&profile&&profile.vma&&c.kind!=="trail"){
-    if(profile.level==="debutant")return {t:t,m:40,d:"15 min d’échauffement, 6 × 1 min à 95 % de la VMA ("+vk(.95)+" km/h, soit "+vp(.95)+" /km), 1 min 30 de trot entre les fractions, retour au calme"};
+    if(profile.level==="debutant")return {t:t,m:40,d:"15 min d’échauffement, 6 × 1 min à 95 % de la VMA ("+vk(.95)+" km/h, soit "+vp(.95)+" /km), 1 min 30 de trot entre les fractions, retour au calme 10 min (trot lent puis marche)"};
     return c.wl%2===0
-      ?{t:t,m:45,d:"15 min d’échauffement, 2 séries de 8 × 30 s à 100–105 % de la VMA ("+vk(1)+"–"+vk(1.05)+" km/h, soit "+vp(1.05)+"–"+vp(1)+" /km) avec 30 s de trot, 3 min de récupération entre les séries, retour au calme"}
-      :{t:t,m:25+c.reps*5,d:"15 min d’échauffement, "+Math.min(c.reps,6)+" × 3 min à 95 % de la VMA ("+vk(.95)+" km/h, soit "+vp(.95)+" /km), 2 min de trot, retour au calme"};
+      ?{t:t,m:45,d:"15 min d’échauffement, 2 séries de 8 × 30 s à 100–105 % de la VMA ("+vk(1)+"–"+vk(1.05)+" km/h, soit "+vp(1.05)+"–"+vp(1)+" /km) avec 30 s de trot, 3 min de récupération entre les séries, retour au calme 10 min (trot lent puis marche)"}
+      :{t:t,m:25+c.reps*5,d:"15 min d’échauffement, "+Math.min(c.reps,6)+" × 3 min à 95 % de la VMA ("+vk(.95)+" km/h, soit "+vp(.95)+" /km), 2 min de trot, retour au calme 10 min (trot lent puis marche)"};
   }
-  if(t===T)return {t:t,m:25+c.tMin,d:"15 min d’échauffement, "+c.tMin+(c.kind==="trail"?" min en montée soutenue à effort constant":c.spec?" min à allure course":" min à allure seuil")+", retour au calme"};
-  if(t===I)return {t:t,m:25+c.reps*5,d:c.kind==="trail"?"15 min d’échauffement, "+c.reps+" côtes de 1 min 30 en montée soutenue, descente en trottinant, retour au calme":"15 min d’échauffement, "+c.reps+" × 3 min rapide / 2 min trot, retour au calme"};
+  if(t===T)return {t:t,m:25+c.tMin,d:"15 min d’échauffement, "+c.tMin+(c.kind==="trail"?" min en montée soutenue à effort constant":c.spec?" min à allure course":" min à allure seuil")+", retour au calme 10 min (trot lent puis marche)"};
+  if(t===I)return {t:t,m:25+c.reps*5,d:c.kind==="trail"?"15 min d’échauffement, "+c.reps+" côtes de 1 min 30 en montée soutenue, descente en trottinant, retour au calme 10 min (trot lent puis marche)":"15 min d’échauffement, "+c.reps+" × 3 min rapide / 2 min trot, retour au calme 10 min (trot lent puis marche)"};
   if(t==="STRENGTH")return {t:t,m:30,d:"Gainage, squats, fentes, montées de marche, travail des descentes (quadriceps)"};
   return {t:t,m:0,d:"Échauffement 10 à 15 min, partez prudemment sur les 2 premiers km"};
 }
@@ -841,7 +842,7 @@ function paces(){
 function target(s,kind){
   if(s==="REST"||s==="RACE"||s==="STRENGTH")return "";
   const out=[],pc=paces(),H=hrZones(),n=SESSZ[s],Z=H.z[n-1];
-  if(pc&&kind!=="trail")out.push("Allure ≈ "+fmtP(pc[s])+" /km"+(s===I?" sur les fractions":""));
+  if(pc&&kind!=="trail")out.push("Allure ≈ "+fmtP(pc[s])+" /km"+(s===I?" sur les fractions":"")+((s===E||s===LG)?" (allure max : pas plus vite que "+fmtP(pc.p10*1.2)+" /km)":""));
   out.push("Zone "+n+" · FC "+Z.lo+"–"+Z.hi+" bpm, ne dépassez pas "+Z.hi);
   if(s===I)out.push("récupérez sous "+H.z[1].hi+" bpm");
   if(kind==="trail")out.push("en terrain pentu, guidez-vous à la FC et à l’effort plutôt qu’à l’allure");
