@@ -3,7 +3,8 @@
   "v": "1.124 · préversion",
   "d": "17 nov. 2026",
   "items": [
-   "Zone Endurance relevée : jusqu’à 77 % de la FC max (au lieu de 70 %), donc FC maximale des footings et sorties longues plus haute (ex. FC max 180 : 139 bpm au lieu de 126). Zones Tempo 77–85 %, Seuil 85–90 %."
+   "Zone Endurance relevée : jusqu’à 77 % de la FC max (au lieu de 70 %), donc FC maximale des footings et sorties longues plus haute (ex. FC max 180 : 139 bpm au lieu de 126). Zones Tempo 77–85 %, Seuil 85–90 %.",
+   "Charge : nouveau réglage dans le profil « Poids du vélo et de la natation dans la charge ». Le mode Triathlon compte le vélo à 0,85 (VTT 0,9) et la natation à 0,8, au lieu de 0,7 et 0,6, pour mieux refléter la fatigue de l’entraînement triathlon."
   ]
  },
  {
