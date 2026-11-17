@@ -505,7 +505,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Numéros de version</b> : une préversion de test (non proposée par la mise à jour) porte le numéro de la prochaine version officielle. À la publication, la version officielle prend simplement le numéro suivant la dernière publiée, les préversions sont supprimées, et la liste des évolutions n’affiche qu’une seule ligne qui regroupe tout.</p>
     <p><b>Courbes défilantes</b> : chaque semaine (ou point) garde son étiquette et, sur les barres, la valeur est écrite au-dessus. Quand tout ne tient pas à l’écran, balayez la courbe vers la gauche ou la droite ; elle s’ouvre sur les dernières semaines. Les barres couvrent désormais 26 semaines. Tournez le téléphone en mode paysage pour voir plus large.</p>
     <p><b>Charge et triathlon</b> (profil) : la charge d’une activité = durée × RPE × un coefficient selon le sport. Le réglage « Triathlon » compte plus le vélo (0,85, VTT 0,9) et la natation (0,8) que le réglage standard (0,7 et 0,6) : utile si vous vous entraînez aussi à vélo et en piscine, car ces séances pèsent alors davantage dans la forme, les courbes et l’allègement des séances.</p>
-    <p><b>Terrain « Mixte »</b> (profil) : utile surtout sans objectif ; avec un objectif, le terrain suit le dénivelé de la course. En mixte, la sortie longue est en terrain varié, le fractionné alterne une semaine en côtes et une semaine sur route, les footings restent sur route, et un renforcement s’ajoute à partir de 4 séances par semaine.</p>
+    <p><b>Terrain « Mixte »</b> (profil, rubrique Terrain de « Mes caractéristiques ») : s’applique aussi avec un objectif, et choisir une course dans le tableau ne le remplace plus. Sans « Mixte », le terrain suit le dénivelé de la course. En mixte, la sortie longue est en terrain varié, le fractionné alterne une semaine en côtes et une semaine sur route, les footings restent sur route, et un renforcement s’ajoute à partir de 4 séances par semaine.</p>
     <p><b>Présentation</b> : fond clair uni, cartes blanches espacées et lisibles, sans bandeau coloré ; seul le cadre de chaque carte est coloré (bleu, vert, orange, rose en alternance) pour bien séparer les rubriques.</p>
     <p><b>Déplacer une séance</b> : dans Plan, le bouton « Déplacer une séance » ouvre le menu (semaine, séance, nouveau jour). Il se referme après le déplacement ou avec « Fermer ».</p>
     <p><b>Onglet Profil</b> : (zone Endurance = jusqu’à 77 % de la FC max, adaptée aux footings faciles et aux parcours vallonnés) il contient seulement vos caractéristiques physiques (âge, poids, niveau, objectif), vos zones cardio, la FC max / repos / à ne pas dépasser, et la VMA avec son test. Le reste (partage du suivi, SOS, synchronisation, sauvegarde, notice) est dans la roue ⚙ en haut à droite de l’écran.</p>
@@ -705,7 +705,7 @@ function weekCtx(mon){
     const raceMin=g.sec?g.sec/60:effKm(g)*{debutant:11,inter:9,confirme:7.5}[lvl];
     dpl=Math.min(g.dplus,Math.round(g.dplus/raceMin*roundTo(longMax*frac,5)/50)*50);
   }
-  const kind=g&&wl>=1?(g.dplus>0?"trail":"route"):profile.terrain;
+  const kind=profile.terrain==="mixte"?"mixte":g&&wl>=1?(g.dplus>0?"trail":"route"):profile.terrain;
   const spec=kind==="route"&&!!g&&wl>=1&&g.km>=21&&phase==="Spécifique";
   const taper=phase==="Affûtage"||phase==="Course";
   /* objectifs secondaires : jamais pendant l'affûtage ni la course du principal, qui reste prioritaire */
@@ -2203,7 +2203,7 @@ const MOIS=["janv.","févr.","mars","avril","mai","juin","juil.","août","sept."
   $("rq").oninput=draw;
   function pick(r,km){
     const std=[5,10,21.0975,42.195].find(x=>Math.abs(x-km)<.3);
-    $("f-ter").value=r[4]?"trail":"route";
+    if($("f-ter").value!=="mixte")$("f-ter").value=r[4]?"trail":"route";
     if(std&&!r[4]){$("f-gd").value=String(std)}else{$("f-gd").value="custom";$("f-gkm").value=km;$("f-gdp").value=""}
     toggleCustom();
     const ex=r[5]||{},dt=(ex.dt&&ex.dt[km])||(r[2].length>7?r[2]:"");
