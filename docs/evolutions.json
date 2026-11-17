@@ -5,7 +5,10 @@
   "items": [
    "Numérotation des versions : les préversions de test ne consomment plus de numéro. La version publiée est toujours la suivante de la dernière publiée (1.131 après 1.130), quel que soit le nombre de préversions intermédiaires ; elles sont supprimées à la publication et la liste des évolutions ne montre qu’une seule ligne, qui reprend tout.",
    "Terrain « Mixte » : le choix du profil est maintenant appliqué même quand un objectif est défini (le plan suivait seulement le dénivelé de la course), et choisir une course dans le tableau ne le remplace plus.",
-   "Nouveau type d’activité « Course mixte (route et chemin) » dans le choix avant de démarrer, dans la saisie manuelle, l’historique et les filtres. Il compte comme une course (même charge, allures et FC) ; il est présélectionné quand le terrain du profil est « Mixte »."
+   "Nouveau type d’activité « Course mixte (route et chemin) » dans le choix avant de démarrer, dans la saisie manuelle, l’historique et les filtres. Il compte comme une course (même charge, allures et FC) ; il est présélectionné quand le terrain du profil est « Mixte ».",
+   "Historique : nouveau bouton de tri « CAP » qui regroupe course route, trail et course mixte (liste, récap mensuel et annuel).",
+   "FC en direct : pendant une activité, la FC s’affiche en vert et passe en rouge seulement au-dessus de la FC max réglée pour la séance.",
+   "Plan : la semaine d’une épreuve programmée (objectif secondaire, ex. Polignac), la sortie longue est supprimée de la semaine ; la course en tient lieu."
   ]
  },
  {

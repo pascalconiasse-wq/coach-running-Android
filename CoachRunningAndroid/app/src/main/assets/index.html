@@ -88,7 +88,7 @@ body.free #plan>.card:not(#today),body.free .tab[data-t="prog"]{display:none}
 .row>.card:first-child{background:linear-gradient(160deg,rgba(229,72,77,.16),var(--card) 65%)}
 .row>.card:last-child{background:linear-gradient(160deg,rgba(47,107,255,.16),var(--card) 65%)}
 .num{font-size:42px;font-weight:800;line-height:1.1}
-#hr{color:var(--hr)}
+#hr{color:#2ECC71}
 input[type=range]{width:100%;accent-color:var(--acc)}
 canvas{width:100%;height:230px;display:block}
 ul{list-style:none;padding:0;margin:0}li{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
@@ -504,6 +504,8 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Doublons</b> : deux séances du même sport qui se chevauchent dans le temps (par exemple une natation lue deux fois avec des durées différentes) sont considérées comme la même. À l’import et à la synchronisation, la séance existante est complétée au lieu d’en créer une seconde. Au premier lancement de cette version, les doublons déjà présents ont été fusionnés une seule fois (la plus longue est conservée, avec la FC, la distance et la trace de l’autre si elle les avait). Les séances saisies à la main, sans heure de départ, ne peuvent pas être détectées ainsi.</p>
     <p><b>Numéros de version</b> : une préversion de test (non proposée par la mise à jour) porte le numéro de la prochaine version officielle. À la publication, la version officielle prend simplement le numéro suivant la dernière publiée, les préversions sont supprimées, et la liste des évolutions n’affiche qu’une seule ligne qui regroupe tout.</p>
     <p><b>Courbes défilantes</b> : chaque semaine (ou point) garde son étiquette et, sur les barres, la valeur est écrite au-dessus. Quand tout ne tient pas à l’écran, balayez la courbe vers la gauche ou la droite ; elle s’ouvre sur les dernières semaines. Les barres couvrent désormais 26 semaines. Tournez le téléphone en mode paysage pour voir plus large.</p>
+    <p><b>Filtre CAP</b> : dans l’Historique, le bouton « CAP » regroupe d’un coup la course route, le trail et la course mixte (liste, récap mensuel et annuel). <b>FC en direct</b> : pendant une activité, la FC s’affiche en vert et passe en rouge seulement si vous dépassez la FC max réglée pour la séance.</p>
+    <p><b>Semaine d’une épreuve</b> : la semaine où une course programmée (objectif secondaire, par exemple Polignac) a lieu, la sortie longue est supprimée de la semaine ; la course en tient lieu. La semaine suivante reste allégée.</p>
     <p><b>Charge et triathlon</b> (profil) : la charge d’une activité = durée × RPE × un coefficient selon le sport. Le réglage « Triathlon » compte plus le vélo (0,85, VTT 0,9) et la natation (0,8) que le réglage standard (0,7 et 0,6) : utile si vous vous entraînez aussi à vélo et en piscine, car ces séances pèsent alors davantage dans la forme, les courbes et l’allègement des séances.</p>
     <p><b>Terrain « Mixte »</b> (profil, rubrique Terrain de « Mes caractéristiques ») : s’applique aussi avec un objectif, et choisir une course dans le tableau ne le remplace plus. Sans « Mixte », le terrain suit le dénivelé de la course. En mixte, la sortie longue est en terrain varié, le fractionné alterne une semaine en côtes et une semaine sur route, les footings restent sur route, et un renforcement s’ajoute à partir de 4 séances par semaine.</p>
     <p><b>Présentation</b> : fond clair uni, cartes blanches espacées et lisibles, sans bandeau coloré ; seul le cadre de chaque carte est coloré (bleu, vert, orange, rose en alternance) pour bien séparer les rubriques.</p>
@@ -774,6 +776,8 @@ function weekPlan(off,raw){
     const es=Object.keys(days).filter(d=>days[d].t===E);
     if(es.length>=2)days[es[es.length-1]]=sessInfo("STRENGTH",c);
   }
+  /* semaine d'une épreuve programmée (objectif secondaire) : pas de sortie longue, la course en tient lieu */
+  if(c.xr&&c.xr.w===0&&c.phase!=="Course")Object.keys(days).forEach(d=>{if(days[d].t===LG)days[d]={t:"REST",d:"Pas de sortie longue cette semaine : "+c.xr.name+" en tient lieu."}});
   const td=moves[iso(mon)],ld=Object.keys(days).find(d=>days[d].t===LG);
   if(ld&&td&&td!==+ld){const tmp=days[td];days[td]=days[ld];days[ld]=tmp}
   if(c.phase!=="Course"&&Array.isArray(swaps[iso(mon)]))swaps[iso(mon)].forEach(pr=>{
@@ -2542,14 +2546,18 @@ $("a-file").onchange=async e=>{
   amsg("Lu : "+SPORTS[r.sport]+" · "+r.min+" min"+(r.km?" · "+r.km.toFixed(1).replace(".",",")+" km":"")+(r.dplus?" · "+r.dplus+" m D+":"")+(r.hr?" · "+r.hr+" bpm (intensité estimée d’après la FC)":"")+". Vérifiez, ajustez si besoin, puis appuyez sur Ajouter.");
 };
 let actFilter="";
+const CAPS=["RUN_ROUTE","RUN_TRAIL","RUN_MIXED"];
+const fMatch=x=>!actFilter||(actFilter==="CAP"?CAPS.includes(x.sport||"RUN_ROUTE"):(x.sport||"RUN_ROUTE")===actFilter);
 function renderFilt(){
   const f=$("a-filt");f.innerHTML="";
   const cnt={};sessions.forEach(x=>{cnt[x.sport||"RUN_ROUTE"]=(cnt[x.sport||"RUN_ROUTE"]||0)+1});
-  const keys=Object.keys(cnt);if(actFilter&&!cnt[actFilter])actFilter="";
+  const keys=Object.keys(cnt),nCap=CAPS.reduce((a,k)=>a+(cnt[k]||0),0);cnt.CAP=nCap;if(actFilter&&!cnt[actFilter])actFilter="";
   if(keys.length<2)return;
   const mk=(k,t)=>{const b=document.createElement("button");b.textContent=t;b.className=actFilter===k?"":"alt";b.style.cssText="width:auto;margin:0;padding:6px 12px;font-size:15px";b.setAttribute("aria-pressed",String(actFilter===k));b.onclick=()=>{actFilter=k;renderActs()};f.appendChild(b)};
   mk("","Tous ("+sessions.length+")");
-  Object.keys(SPORTS).filter(k=>cnt[k]).forEach(k=>mk(k,SPORTS[k]+" ("+cnt[k]+")"));
+  const ks=Object.keys(SPORTS).filter(k=>cnt[k]);
+  if(nCap>0)mk("CAP","CAP : route, trail, mixte ("+nCap+")");
+  ks.forEach(k=>mk(k,SPORTS[k]+" ("+cnt[k]+")"));
 }
 let actYear="";
 let yearMode="civ";try{yearMode=localStorage.getItem("coach_yearmode")==="sai"?"sai":"civ"}catch(e){}
@@ -2557,7 +2565,7 @@ const yearKey=d=>yearMode==="sai"?String(+d.slice(5,7)>=9?+d.slice(0,4):+d.slice
 const yearLab=k=>yearMode==="sai"?"Saison "+k+"–"+(+k+1):k;
 function renderYear(){
   const box=$("a-year");box.innerHTML="";
-  const base=sessions.filter(x=>(!actFilter||(x.sport||"RUN_ROUTE")===actFilter)&&x.date<=today());
+  const base=sessions.filter(x=>fMatch(x)&&x.date<=today());
   const ys=[...new Set(base.map(x=>yearKey(x.date)))].sort().reverse();
   if(!ys.length){box.innerHTML='<p class="mute">Aucune activité pour le moment.</p>';return}
   if(!ys.includes(actYear))actYear=ys[0];
@@ -2573,14 +2581,14 @@ function renderYear(){
   [["civ","Année civile (janv. à déc.)"],["sai","Saison de club (sept. à août)"]].forEach(([v,t])=>{const o=document.createElement("option");o.value=v;o.textContent=t;md.appendChild(o)});md.value=yearMode;
   md.onchange=()=>{yearMode=md.value;try{localStorage.setItem("coach_yearmode",yearMode)}catch(e){}actYear="";renderYear()};
   box.append(lab,md,sel,d);
-  const sp=document.createElement("p");sp.className="mute";sp.textContent=actFilter?SPORTS[actFilter]+" uniquement (filtre ci-dessus).":"Tous types d’activité confondus ; choisissez un type avec les filtres pour le détail par sport.";box.appendChild(sp);
+  const sp=document.createElement("p");sp.className="mute";sp.textContent=actFilter?(actFilter==="CAP"?"CAP (route, trail et mixte)":SPORTS[actFilter])+" uniquement (filtre ci-dessus).":"Tous types d’activité confondus ; choisissez un type avec les filtres pour le détail par sport.";box.appendChild(sp);
 }
 function renderActs(){
   const box=$("a-list");box.innerHTML="";renderFilt();renderYear();
   if(!sessions.length){const p=document.createElement("p");p.className="mute";p.textContent="Aucune activité pour le moment.";box.appendChild(p);return}
   const MONTHS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
   const groups={};
-  sessions.filter(x=>!actFilter||(x.sport||"RUN_ROUTE")===actFilter).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0).forEach(s=>{const k=s.date.slice(0,7);(groups[k]=groups[k]||[]).push(s)});
+  sessions.filter(fMatch).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0).forEach(s=>{const k=s.date.slice(0,7);(groups[k]=groups[k]||[]).push(s)});
   const sb=(b,t)=>{b.textContent=t;b.className="alt";b.style.cssText="width:auto;margin:0 0 0 6px;padding:6px 10px;font-size:15px"};
   Object.keys(groups).sort().reverse().forEach((k,gi)=>{
     const list=groups[k],det=document.createElement("details"),sm=document.createElement("summary"),ul=document.createElement("ul");
