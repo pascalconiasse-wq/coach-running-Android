@@ -501,6 +501,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
   <details class="card"><summary><b>Onglet Plan</b></summary>
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), allures de référence calculées sur vos meilleurs efforts, (le test VMA facultatif, qui débloque des séances de VMA, est dans l’onglet Profil). Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation. Dès qu’une activité existe pour la journée (enregistrée par l’appli, importée ou synchronisée depuis la montre), la séance du jour passe à « faite ✓ » et le détail prévu disparaît ; dans la liste de la semaine, les jours faits sont cochés et barrés.</p>
     <p><b>Récap annuel</b> (onglet Historique) : le choix « Période » permet de compter par année civile (janvier à décembre) ou par saison de club (septembre à août, ex. « Saison 2025–2026 »). Le choix est mémorisé.</p>
+    <p><b>Doublons</b> : deux séances du même sport qui se chevauchent dans le temps (par exemple une natation lue deux fois avec des durées différentes) sont considérées comme la même. À l’import et à la synchronisation, la séance existante est complétée au lieu d’en créer une seconde. Au premier lancement de cette version, les doublons déjà présents ont été fusionnés une seule fois (la plus longue est conservée, avec la FC, la distance et la trace de l’autre si elle les avait). Les séances saisies à la main, sans heure de départ, ne peuvent pas être détectées ainsi.</p>
     <p><b>Charge et triathlon</b> (profil) : la charge d’une activité = durée × RPE × un coefficient selon le sport. Le réglage « Triathlon » compte plus le vélo (0,85, VTT 0,9) et la natation (0,8) que le réglage standard (0,7 et 0,6) : utile si vous vous entraînez aussi à vélo et en piscine, car ces séances pèsent alors davantage dans la forme, les courbes et l’allègement des séances.</p>
     <p><b>Terrain « Mixte »</b> (profil) : utile surtout sans objectif ; avec un objectif, le terrain suit le dénivelé de la course. En mixte, la sortie longue est en terrain varié, le fractionné alterne une semaine en côtes et une semaine sur route, les footings restent sur route, et un renforcement s’ajoute à partir de 4 séances par semaine.</p>
     <p><b>Présentation</b> : fond clair uni, cartes blanches espacées et lisibles, sans bandeau coloré ; seul le cadre de chaque carte est coloré (bleu, vert, orange, rose en alternance) pour bien séparer les rubriques.</p>
@@ -2401,13 +2402,27 @@ function mergeDup(ex,rec,pts){
   }
   return ch;
 }
+const ovl=(a,b)=>{const e=x=>x.ts+(x.sec||x.min*60)*1000;return a.ts&&b.ts&&a.ts<e(b)&&b.ts<e(a)};
 function isDup(a,ignore){
   return sessions.find(s=>{
     if(s===ignore)return false;
+    /* même sport, deux séances qui se chevauchent dans le temps : c'est la même (durées différentes selon la source) */
+    if(sameFam(s.sport,a.sport)&&ovl(s,a))return true;
     if(a.ts&&s.ts)return Math.abs(a.ts-s.ts)<900000&&Math.abs(s.min-a.min)<=Math.max(4,a.min*0.15);
     return s.date===a.date&&sameFam(s.sport,a.sport)&&Math.abs(s.min-a.min)<=Math.max(2,a.min*0.05);
   });
 }
+/* Nettoyage unique : séances de même sport qui se chevauchent dans le temps (doublons de durées différentes) → on garde la plus longue */
+try{if(localStorage.getItem("coach_dedup1")!=="1"){
+  let n=0;const dead=new Set();
+  const L=sessions.filter(x=>x.ts).sort((a,b)=>a.ts-b.ts);
+  for(let i=0;i<L.length;i++){if(dead.has(L[i]))continue;for(let j=i+1;j<L.length;j++){const a=L[i],b=L[j];if(dead.has(b))continue;if(b.ts>=a.ts+(a.sec||a.min*60)*1000)break;
+    if(sameFam(a.sport,b.sport)&&ovl(a,b)){const k=(a.sec||a.min*60)>=(b.sec||b.min*60)?a:b,d=k===a?b:a;
+      if(!(k.hr>0)&&d.hr>0)k.hr=d.hr;if(!(k.km>0)&&d.km>0)k.km=d.km;if(!(k.dplus>0)&&d.dplus>0)k.dplus=d.dplus;
+      if(!traces[k.id]&&traces[d.id])traces[k.id]=traces[d.id];delete traces[d.id];dead.add(d);n++}}}
+  if(n){sessions=sessions.filter(x=>!dead.has(x));persist();persistT()}
+  localStorage.setItem("coach_dedup1","1");if(n)localStorage.setItem("coach_dedupn",String(n));
+}}catch(e){}
 async function readAct(f){
   const name=f.name.toLowerCase();
   try{
