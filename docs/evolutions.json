@@ -1,5 +1,12 @@
 [
  {
+  "v": "1.131 · préversion",
+  "d": "17 nov. 2026",
+  "items": [
+   "Numérotation des versions : les préversions de test ne consomment plus de numéro. La version publiée est toujours la suivante de la dernière publiée (1.131 après 1.130), quel que soit le nombre de préversions intermédiaires ; elles sont supprimées à la publication et la liste des évolutions ne montre qu’une seule ligne, qui reprend tout."
+  ]
+ },
+ {
   "v": "1.130",
   "d": "17 nov. 2026",
   "items": [
