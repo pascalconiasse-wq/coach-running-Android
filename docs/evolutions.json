@@ -1,6 +1,6 @@
 [
  {
-  "v": "1.124",
+  "v": "1.130",
   "d": "17 nov. 2026",
   "items": [
    "Zone Endurance relevée : jusqu’à 77 % de la FC max (au lieu de 70 %), donc FC maximale des footings et sorties longues plus haute (ex. FC max 180 : 139 bpm au lieu de 126). Zones Tempo 77–85 %, Seuil 85–90 %.",
@@ -9,7 +9,7 @@
    "Doublons : deux séances du même sport qui se chevauchent dans le temps (natation lue deux fois avec des durées différentes) sont maintenant reconnues comme la même, à l’import comme à la synchro. Les doublons déjà présents sont fusionnés une seule fois au premier lancement (la plus longue est gardée, avec la FC, la distance et la trace de l’autre).",
    "Courbes : chaque semaine garde son étiquette et la valeur est écrite au-dessus de chaque barre ; si tout ne tient pas à l’écran, on balaie le graphique pour se déplacer (il s’ouvre sur les dernières semaines). Les barres couvrent 26 semaines et profitent du mode paysage."
   ],
-  "rel": "v1.124"
+  "rel": "v1.130"
  },
  {
   "v": "1.123",
