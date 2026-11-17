@@ -501,7 +501,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Terrain « Mixte »</b> (profil) : utile surtout sans objectif ; avec un objectif, le terrain suit le dénivelé de la course. En mixte, la sortie longue est en terrain varié, le fractionné alterne une semaine en côtes et une semaine sur route, les footings restent sur route, et un renforcement s’ajoute à partir de 4 séances par semaine.</p>
     <p><b>Présentation</b> : fond clair uni, cartes blanches espacées et lisibles, sans bandeau coloré ; seul le cadre de chaque carte est coloré (bleu, vert, orange, rose en alternance) pour bien séparer les rubriques.</p>
     <p><b>Déplacer une séance</b> : dans Plan, le bouton « Déplacer une séance » ouvre le menu (semaine, séance, nouveau jour). Il se referme après le déplacement ou avec « Fermer ».</p>
-    <p><b>Onglet Profil</b> : il contient seulement vos caractéristiques physiques (âge, poids, niveau, objectif), vos zones cardio, la FC max / repos / à ne pas dépasser, et la VMA avec son test. Le reste (partage du suivi, SOS, synchronisation, sauvegarde, notice) est dans la roue ⚙ en haut à droite de l’écran.</p>
+    <p><b>Onglet Profil</b> : (zone Endurance = jusqu’à 77 % de la FC max, adaptée aux footings faciles et aux parcours vallonnés) il contient seulement vos caractéristiques physiques (âge, poids, niveau, objectif), vos zones cardio, la FC max / repos / à ne pas dépasser, et la VMA avec son test. Le reste (partage du suivi, SOS, synchronisation, sauvegarde, notice) est dans la roue ⚙ en haut à droite de l’écran.</p>
     <p><b>FC à ne pas dépasser</b> : dans le profil (onglet Profil), « FC à ne pas dépasser en endurance » remplace le calcul automatique si celui-ci est trop bas (parcours avec beaucoup de côtes). La valeur est proposée comme alerte « FC max » au départ de la séance (modifiable séance par séance), et les alertes des autres types de séance sont décalées d’autant.</p>
     <p><b>Autres objectifs</b> : cette carte est placée juste sous l’objectif principal. Touchez « Ajouter un objectif » : un menu propose « Choisir dans le tableau des courses » ou « Saisir à la main » (nom, date, distance et D+ facultatif). Les courses se choisissent dans le même tableau des courses de la région que l’objectif principal. Elles allègent la semaine concernée et la précédente, mais l’objectif principal reste prioritaire (aucun effet pendant son affûtage).</p></details>
   <details class="card"><summary><b>Séance en direct</b></summary>
@@ -797,7 +797,7 @@ const ZINFO=[["Récupération","#8A97B8"],["Endurance","#18B26B"],["Tempo","#FFB
 const SESSZ={EASY_RUN:2,LONG_RUN:2,THRESHOLD:4,INTERVALS:5,REST:2};
 function hrZones(){
   const est=!profile.fcmax,mx=profile.fcmax||Math.round(208-0.7*profile.age),rs=profile.fcrest||0;
-  const f=p=>Math.round(rs?rs+p*(mx-rs):p*mx),B=[.5,.6,.7,.8,.9,1];
+  const f=p=>Math.round(rs?rs+p*(mx-rs):p*mx),B=[.5,.6,.77,.85,.9,1];
   return {max:mx,rest:rs,est:est,method:rs?"réserve cardiaque":"% de la FC max",z:ZINFO.map((zi,i)=>({n:i+1,name:zi[0],color:zi[1],lo:f(B[i]),hi:f(B[i+1])}))};
 }
 function hrBands(){try{if(!profile)return null;const Z=hrZones().z;return Z.map((z,i)=>({from:z.lo,to:i===Z.length-1?z.hi+40:z.hi,color:z.color+"33"}))}catch(e){return null}}
@@ -808,7 +808,7 @@ const capFor=t=>{
   const z=hrZones().z,base=z[SESSZ[t]-1].hi,hc=profile&&+profile.hrCap;
   return hc>=90?Math.max(90,Math.round(base+hc-z[1].hi)):base;
 };
-function autoCapTxt(){try{const z=hrZones().z;return "Valeur automatique actuelle : "+z[1].hi+" bpm (haut de la zone Endurance). Montez-la si vos sorties comptent beaucoup de côtes ; elle devient aussi l’alerte « FC max » proposée au départ."}catch(e){return ""}}
+function autoCapTxt(){try{const z=hrZones().z;return "Valeur automatique actuelle : "+z[1].hi+" bpm (haut de la zone Endurance, 77 % de la FC max). Montez-la si vos sorties comptent beaucoup de côtes ; elle devient aussi l’alerte « FC max » proposée au départ."}catch(e){return ""}}
 /* Meilleure sortie récente (course sur route, effort soutenu) convertie en temps équivalent sur 10 km */
 let _arKey="",_arVal=null;
 function autoRef(){
