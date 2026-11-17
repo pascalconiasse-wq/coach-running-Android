@@ -500,6 +500,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p>Réglages : roue ⚙ (en haut de l’écran principal), rubrique « 🆘 SOS » (numéros, contacts, compte à rebours, appel automatique, SMS de test). Sans numéro SOS, ce sont les numéros du suivi qui sont utilisés. Le SOS active le suivi en direct même s’il était désactivé. Appel automatique : après le délai réglé (3 min par défaut) sans annulation, l’appli appelle le 1er numéro SOS en haut-parleur ; si personne ne décroche au bout de 5 min, elle appelle le suivant. Autorisez les appels dans les réglages SOS. Nécessite l’écran allumé pour le triple appui, les autorisations SMS et appel, et du réseau.</p></details>
   <details class="card"><summary><b>Onglet Plan</b></summary>
     <p>Séance du jour, charge des 7 derniers jours (une séance trop chargée est allégée), allures de référence calculées sur vos meilleurs efforts, (le test VMA facultatif, qui débloque des séances de VMA, est dans l’onglet Profil). Vous pouvez déplacer ou échanger n’importe quelle séance de la semaine, avec annulation. Dès qu’une activité existe pour la journée (enregistrée par l’appli, importée ou synchronisée depuis la montre), la séance du jour passe à « faite ✓ » et le détail prévu disparaît ; dans la liste de la semaine, les jours faits sont cochés et barrés.</p>
+    <p><b>Récap annuel</b> (onglet Historique) : le choix « Période » permet de compter par année civile (janvier à décembre) ou par saison de club (septembre à août, ex. « Saison 2025–2026 »). Le choix est mémorisé.</p>
     <p><b>Charge et triathlon</b> (profil) : la charge d’une activité = durée × RPE × un coefficient selon le sport. Le réglage « Triathlon » compte plus le vélo (0,85, VTT 0,9) et la natation (0,8) que le réglage standard (0,7 et 0,6) : utile si vous vous entraînez aussi à vélo et en piscine, car ces séances pèsent alors davantage dans la forme, les courbes et l’allègement des séances.</p>
     <p><b>Terrain « Mixte »</b> (profil) : utile surtout sans objectif ; avec un objectif, le terrain suit le dénivelé de la course. En mixte, la sortie longue est en terrain varié, le fractionné alterne une semaine en côtes et une semaine sur route, les footings restent sur route, et un renforcement s’ajoute à partir de 4 séances par semaine.</p>
     <p><b>Présentation</b> : fond clair uni, cartes blanches espacées et lisibles, sans bandeau coloré ; seul le cadre de chaque carte est coloré (bleu, vert, orange, rose en alternance) pour bien séparer les rubriques.</p>
@@ -2529,20 +2530,27 @@ function renderFilt(){
   Object.keys(SPORTS).filter(k=>cnt[k]).forEach(k=>mk(k,SPORTS[k]+" ("+cnt[k]+")"));
 }
 let actYear="";
+let yearMode="civ";try{yearMode=localStorage.getItem("coach_yearmode")==="sai"?"sai":"civ"}catch(e){}
+const yearKey=d=>yearMode==="sai"?String(+d.slice(5,7)>=9?+d.slice(0,4):+d.slice(0,4)-1):d.slice(0,4);
+const yearLab=k=>yearMode==="sai"?"Saison "+k+"–"+(+k+1):k;
 function renderYear(){
   const box=$("a-year");box.innerHTML="";
   const base=sessions.filter(x=>(!actFilter||(x.sport||"RUN_ROUTE")===actFilter)&&x.date<=today());
-  const ys=[...new Set(base.map(x=>x.date.slice(0,4)))].sort().reverse();
+  const ys=[...new Set(base.map(x=>yearKey(x.date)))].sort().reverse();
   if(!ys.length){box.innerHTML='<p class="mute">Aucune activité pour le moment.</p>';return}
   if(!ys.includes(actYear))actYear=ys[0];
   const sel=document.createElement("select");sel.setAttribute("aria-label","Année");
-  ys.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;sel.appendChild(o)});sel.value=actYear;
+  ys.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=yearLab(y);sel.appendChild(o)});sel.value=actYear;
   sel.onchange=()=>{actYear=sel.value;renderYear()};
-  const L=base.filter(x=>x.date.slice(0,4)===actYear);
+  const L=base.filter(x=>yearKey(x.date)===actYear);
   const sec=L.reduce((a,x)=>a+(x.sec||x.min*60),0),km=L.reduce((a,x)=>a+(x.km||0),0),dp=L.reduce((a,x)=>a+(x.dplus||0),0);
   const d=document.createElement("div");d.className="dsum";
   [["Activités",String(L.length)],["Durée",Math.floor(Math.round(sec/60)/60)+" h "+pad2(Math.round(sec/60)%60)],["Kilomètres",String(Math.round(km*10)/10).replace(".",",")+" km"],["Dénivelé +",Math.round(dp)+" m"]].forEach(([k,v])=>{const e=document.createElement("div");e.innerHTML="<b></b><span></span>";e.firstChild.textContent=v;e.lastChild.textContent=k;d.appendChild(e)});
-  const lab=document.createElement("label");lab.className="f";lab.textContent="Année";lab.htmlFor="";box.append(lab,sel,d);
+  const lab=document.createElement("label");lab.className="f";lab.textContent="Période";lab.htmlFor="";
+  const md=document.createElement("select");md.setAttribute("aria-label","Type d’année");
+  [["civ","Année civile (janv. à déc.)"],["sai","Saison de club (sept. à août)"]].forEach(([v,t])=>{const o=document.createElement("option");o.value=v;o.textContent=t;md.appendChild(o)});md.value=yearMode;
+  md.onchange=()=>{yearMode=md.value;try{localStorage.setItem("coach_yearmode",yearMode)}catch(e){}actYear="";renderYear()};
+  box.append(lab,md,sel,d);
   const sp=document.createElement("p");sp.className="mute";sp.textContent=actFilter?SPORTS[actFilter]+" uniquement (filtre ci-dessus).":"Tous types d’activité confondus ; choisissez un type avec les filtres pour le détail par sport.";box.appendChild(sp);
 }
 function renderActs(){
