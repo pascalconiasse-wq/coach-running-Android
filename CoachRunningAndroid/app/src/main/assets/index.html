@@ -484,7 +484,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
   <details class="card"><summary><b>Choisir une course et mode sans objectif</b></summary>
     <p><b>Tableau des courses</b> : dans le profil, et aussi dans « Autres objectifs » du plan, « Choisir dans le tableau des courses » liste les courses <b>à moins de 150 km de votre position, sur les 18 prochains mois</b>, une ligne par distance (date, course, distance, D+). Les courses passées disparaissent. La liste se met à jour toute seule sur internet (tous les 2 jours, ou avec le bouton ↻) ; sans réseau, la liste intégrée à l’appli est utilisée. Tapez sur une ligne pour remplir l’objectif ; la recherche filtre par nom, lieu ou distance. Vérifiez toujours la date et le dénivelé chez l’organisateur.</p>
     <p><b>Sans objectif</b> : cochez « Sans objectif » dans le profil (onglet Profil). Plus de plan ni de coaching : l’appli enregistre seulement vos sorties (GPS, cardio, altitude, suivi en direct, sauvegarde). Décochez pour retrouver le coaching.</p>
-    <p><b>Types d’activité</b> : course route, trail, marche, VTT, gravel, vélo route, équitation, home trainer et « Autre » : tous sont proposés au choix « Activité » avant de démarrer (la natation se saisit à la main ou s’importe de la montre). Le choix est préréglé sur le terrain de votre objectif, modifiable ; en vélo, VTT, gravel et home trainer la vitesse est affichée en km/h. Au home trainer, il n’y a pas de GPS : durée et fréquence cardiaque sont enregistrées.</p>
+    <p><b>Types d’activité</b> : course route, trail, course mixte (route et chemin), marche, VTT, gravel, vélo route, équitation, home trainer et « Autre » : tous sont proposés au choix « Activité » avant de démarrer (la natation se saisit à la main ou s’importe de la montre). Le choix est préréglé sur le terrain de votre objectif, modifiable ; en vélo, VTT, gravel et home trainer la vitesse est affichée en km/h. Au home trainer, il n’y a pas de GPS : durée et fréquence cardiaque sont enregistrées.</p>
     <p><b>Aide contextuelle</b> : touchez les boutons ? à côté des réglages pour une explication courte.</p></details>
   <details class="card"><summary><b>Suivre un parcours GPX</b></summary>
     <p>Avant de démarrer une séance, « 📂 Choisir un fichier GPX » charge un parcours (Komoot, Strava, site de course, montre…). Il reste mémorisé jusqu’à « Retirer le parcours ».</p>
@@ -629,14 +629,14 @@ const WEEK={1:[7],2:[2,7],3:[2,4,7],4:[1,3,5,7],5:[1,2,4,5,7],6:[1,2,3,5,6,7],7:
 const E="EASY_RUN",LG="LONG_RUN",I="INTERVALS",T="THRESHOLD";
 const SEQ={1:[LG],2:[E,LG],3:[I,E,LG],4:[E,I,E,LG],5:[E,I,E,T,LG],6:[E,I,E,T,E,LG],7:[E,I,E,T,E,E,LG]};
 const todayIdx=()=>{const d=new Date().getDay();return d===0?7:d};
-const SPORTS={RUN_ROUTE:"Course route",RUN_TRAIL:"Trail",WALK:"Marche",CYCLING:"Vélo route",MTB:"VTT",GRAVEL:"Gravel",TRAINER:"Home trainer",HORSE:"Équitation",SWIMMING:"Natation",OTHER:"Autre"};
-const COEF={RUN_ROUTE:1,RUN_TRAIL:1,WALK:.4,CYCLING:.7,MTB:.75,GRAVEL:.7,TRAINER:.7,HORSE:.35,SWIMMING:.6,OTHER:.5};
+const SPORTS={RUN_ROUTE:"Course route",RUN_TRAIL:"Trail",RUN_MIXED:"Course mixte (route et chemin)",WALK:"Marche",CYCLING:"Vélo route",MTB:"VTT",GRAVEL:"Gravel",TRAINER:"Home trainer",HORSE:"Équitation",SWIMMING:"Natation",OTHER:"Autre"};
+const COEF={RUN_ROUTE:1,RUN_TRAIL:1,RUN_MIXED:1,WALK:.4,CYCLING:.7,MTB:.75,GRAVEL:.7,TRAINER:.7,HORSE:.35,SWIMMING:.6,OTHER:.5};
 const TCOL={EASY_RUN:"#18B26B",LONG_RUN:"#2F6BFF",INTERVALS:"#FF8A1F",THRESHOLD:"#E5484D",REST:"#8A97B8",RACE:"#8B5CF6",STRENGTH:"#14B8D4"};
 const PCOL={"Fondation":"#2F6BFF","Développement":"#18B26B","Spécifique":"#FF8A1F","Affûtage":"#8B5CF6","Course":"#E5484D","Entretien":"#8A97B8"};
-const SCOL={RUN_ROUTE:"#2F6BFF",RUN_TRAIL:"#18B26B",WALK:"#84CC16",CYCLING:"#FF8A1F",MTB:"#E5484D",GRAVEL:"#C98B2B",TRAINER:"#EC4899",HORSE:"#A0522D",SWIMMING:"#14B8D4",OTHER:"#8B5CF6"};
+const SCOL={RUN_ROUTE:"#2F6BFF",RUN_TRAIL:"#18B26B",RUN_MIXED:"#0FA3A3",WALK:"#84CC16",CYCLING:"#FF8A1F",MTB:"#E5484D",GRAVEL:"#C98B2B",TRAINER:"#EC4899",HORSE:"#A0522D",SWIMMING:"#14B8D4",OTHER:"#8B5CF6"};
 const mkdot=c=>{const d=document.createElement("span");d.className="dot";d.style.background=c;return d};
 const dot=t=>mkdot(TCOL[t]||"#8A97B8"),sdot=s=>mkdot(SCOL[s]||SCOL.RUN_ROUTE);
-const isRun=s=>!s.sport||s.sport==="RUN_ROUTE"||s.sport==="RUN_TRAIL";
+const isRun=s=>!s.sport||s.sport==="RUN_ROUTE"||s.sport==="RUN_TRAIL"||s.sport==="RUN_MIXED";
 const isPace=s=>isRun(s)||s.sport==="WALK";
 const COEF_TRI={CYCLING:.85,MTB:.9,GRAVEL:.85,TRAINER:.85,SWIMMING:.8};
 const coefOf=sp=>{try{if(profile&&profile.tri==="tri"&&COEF_TRI[sp])return COEF_TRI[sp]}catch(e){}return COEF[sp]||1};
@@ -1389,7 +1389,7 @@ function startSession(){
     liveLoad();livePre(true);show("live");return;
   }
   const W=weekPlan(0),t=recommend(W.days[todayIdx()].t).session;
-  liveSport=profile.free?(prefs.sport||"RUN_ROUTE"):(W.ctx.kind==="trail"?"RUN_TRAIL":"RUN_ROUTE");$("l-sport").value=liveSport;setUnits();
+  liveSport=profile.free?(prefs.sport||"RUN_ROUTE"):(W.ctx.kind==="trail"?"RUN_TRAIL":W.ctx.kind==="mixte"?"RUN_MIXED":"RUN_ROUTE");$("l-sport").value=liveSport;setUnits();
   $("l-recap").value=String(prefs.recap||0);$("l-keep").checked=!!prefs.keep;$("l-maxpace").value="";
   $("l-cap").value=capFor(t)||"";
   const planned=W.days[todayIdx()].t,inf=t===planned?W.days[todayIdx()]:sessInfo(t,W.ctx),pm=inf&&inf.m;$("l-dur").value=t!=="REST"&&pm>0?pm:"";
@@ -1398,7 +1398,7 @@ function startSession(){
   /* écran de préparation : réglages puis « Démarrer » */
   liveLoad();livePre(true);show("live");
 }
-(function(){const s=$("l-sport");["RUN_ROUTE","RUN_TRAIL","WALK","MTB","GRAVEL","CYCLING","TRAINER","HORSE","OTHER"].forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=SPORTS[k];s.appendChild(o)});s.onchange=()=>{liveSport=s.value;setUnits()}})();
+(function(){const s=$("l-sport");["RUN_ROUTE","RUN_TRAIL","RUN_MIXED","WALK","MTB","GRAVEL","CYCLING","TRAINER","HORSE","OTHER"].forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=SPORTS[k];s.appendChild(o)});s.onchange=()=>{liveSport=s.value;setUnits()}})();
 function livePre(on){
   $("lwrap").classList.toggle("hidden",on);$("end").classList.toggle("hidden",on);$("lstart").classList.toggle("hidden",!on);
   $("gmsg").classList.toggle("hidden",on);$("prehd").classList.toggle("hidden",!on);
@@ -1797,7 +1797,7 @@ const CHARTS=[
  ["allure","Allure","Allure des sorties course","Plus la courbe monte, plus vous êtes rapide. En trail, l’allure est corrigée du dénivelé (100 m de D+ comptent pour 1 km)."],
  ["fc","FC","Fréquence cardiaque moyenne","Si la FC baisse à allure égale, votre forme progresse."]
 ];
-const SORDER=["RUN_ROUTE","RUN_TRAIL","WALK","CYCLING","MTB","GRAVEL","TRAINER","HORSE","SWIMMING","OTHER"];
+const SORDER=["RUN_ROUTE","RUN_TRAIL","RUN_MIXED","WALK","CYCLING","MTB","GRAVEL","TRAINER","HORSE","SWIMMING","OTHER"];
 const sk=s=>s.sport||"RUN_ROUTE";
 const dec=v=>String(Math.round(v*10)/10).replace(".",",");
 const niceMax=m=>{const p=Math.pow(10,Math.floor(Math.log10(m))),n=m/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p};
@@ -2381,7 +2381,7 @@ function setDur(sec){$("a-h").value=sec?Math.floor(sec/3600):"";$("a-m").value=s
 function fmtHMS(s){s=Math.round(s);return Math.floor(s/3600)+":"+pad2(Math.floor(s%3600/60))+":"+pad2(s%60)}
 function durMin(m){return m>=60?fmtHMS(m*60):m+" min"}
 function durText(s){const t=s.sec||s.min*60;return t>=3600?fmtHMS(t):(s.sec?fmtHMS(s.sec):s.min+" min")}
-const sameFam=(x,y)=>{const r=v=>!v||v==="RUN_ROUTE"||v==="RUN_TRAIL",b=v=>v==="CYCLING"||v==="MTB"||v==="GRAVEL"||v==="TRAINER";return x===y||(r(x)&&r(y))||(b(x)&&b(y))};
+const sameFam=(x,y)=>{const r=v=>!v||v==="RUN_ROUTE"||v==="RUN_TRAIL"||v==="RUN_MIXED",b=v=>v==="CYCLING"||v==="MTB"||v==="GRAVEL"||v==="TRAINER";return x===y||(r(x)&&r(y))||(b(x)&&b(y))};
 /* Doublon : la sortie existe déjà (ex. enregistrée avec le GPS du téléphone) et la montre apporte plus de données.
    On complète la sortie existante (même id, même RPE) puis le doublon n'est pas créé. Renvoie true si quelque chose a changé. */
 function mergeDup(ex,rec,pts){
@@ -2441,7 +2441,7 @@ async function readAct(f){
 function recFromImport(r){
   const fm=profile?hrZones().max:190;
   const rpe=r.hr?Math.min(9,Math.max(2,Math.round((r.hr/fm-0.45)/0.05))):5;
-  const run=r.sport==="RUN_ROUTE"||r.sport==="RUN_TRAIL";
+  const run=r.sport==="RUN_ROUTE"||r.sport==="RUN_TRAIL"||r.sport==="RUN_MIXED";
   const sec=r.sec||r.min*60,min=Math.max(1,Math.round(sec/60));
   const rec={date:r.date,sport:r.sport,min:min,sec:sec,rpe:rpe,hr:r.hr||0,kcal:kcalFor(min,rpe,run&&r.km>0?r.km/(min/60):0,r.sport)};
   if(r.km>0)rec.km=Math.round(r.km*10)/10;
@@ -2492,7 +2492,7 @@ function startEdit(s){
 const amsg=t=>$("a-msg").textContent=t;
 (function(){
   const s=$("a-sport");
-  ["RUN_ROUTE","RUN_TRAIL","WALK","CYCLING","MTB","GRAVEL","TRAINER","HORSE","SWIMMING","OTHER"].forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=SPORTS[k];s.appendChild(o)});
+  ["RUN_ROUTE","RUN_TRAIL","RUN_MIXED","WALK","CYCLING","MTB","GRAVEL","TRAINER","HORSE","SWIMMING","OTHER"].forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=SPORTS[k];s.appendChild(o)});
   $("a-date").value=today();
 })();
 $("a-rpe").oninput=e=>$("a-rpev").textContent=e.target.value;
@@ -2501,7 +2501,7 @@ $("a-add").onclick=()=>{
   if(!isDate(date)){amsg("Indiquez une date.");return}
   if(!(sec>=30&&sec<=90000)){amsg("Indiquez une durée (heures, minutes, secondes).");return}
   if(isDup({date:date,sport:sport,min:min,ts:editing?editing.ts:pending.ts},editing)){amsg("Cette activité est déjà enregistrée.");return}
-  const run=sport==="RUN_ROUTE"||sport==="RUN_TRAIL";
+  const run=sport==="RUN_ROUTE"||sport==="RUN_TRAIL"||sport==="RUN_MIXED";
   const km=+$("a-km").value||0,dp=Math.round(+$("a-dp").value||0);
   const rec={date:date,sport:sport,min:min,sec:sec,rpe:rpe,hr:editing?(editing.hr||0):(pending.hr||0),kcal:kcalFor(min,rpe,run&&km>0?km/(min/60):0,sport)};
   if(km>0)rec.km=Math.round(km*10)/10;
