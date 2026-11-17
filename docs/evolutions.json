@@ -6,7 +6,8 @@
    "Zone Endurance relevée : jusqu’à 77 % de la FC max (au lieu de 70 %), donc FC maximale des footings et sorties longues plus haute (ex. FC max 180 : 139 bpm au lieu de 126). Zones Tempo 77–85 %, Seuil 85–90 %.",
    "Charge : nouveau réglage dans le profil « Poids du vélo et de la natation dans la charge ». Le mode Triathlon compte le vélo à 0,85 (VTT 0,9) et la natation à 0,8, au lieu de 0,7 et 0,6, pour mieux refléter la fatigue de l’entraînement triathlon.",
    "Historique, récap annuel : choix de la période, année civile (janvier à décembre) ou saison de club (septembre à août). Le choix est mémorisé.",
-   "Doublons : deux séances du même sport qui se chevauchent dans le temps (natation lue deux fois avec des durées différentes) sont maintenant reconnues comme la même, à l’import comme à la synchro. Les doublons déjà présents sont fusionnés une seule fois au premier lancement (la plus longue est gardée, avec la FC, la distance et la trace de l’autre)."
+   "Doublons : deux séances du même sport qui se chevauchent dans le temps (natation lue deux fois avec des durées différentes) sont maintenant reconnues comme la même, à l’import comme à la synchro. Les doublons déjà présents sont fusionnés une seule fois au premier lancement (la plus longue est gardée, avec la FC, la distance et la trace de l’autre).",
+   "Courbes : chaque semaine garde son étiquette et la valeur est écrite au-dessus de chaque barre ; si tout ne tient pas à l’écran, on balaie le graphique pour se déplacer (il s’ouvre sur les dernières semaines). Les barres couvrent 26 semaines et profitent du mode paysage."
   ]
  },
  {
