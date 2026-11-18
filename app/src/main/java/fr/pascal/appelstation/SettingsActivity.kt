@@ -27,30 +27,35 @@ class SettingsActivity : Activity() {
             setPadding(pad, pad, pad, pad)
         }
 
-        fun label(t: String) = col.addView(TextView(this).apply {
-            text = t; setPadding(0, pad, 0, 0); textSize = 14f
+        fun label(t: String, vararg aide: String) = col.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(0, pad, 0, 0)
+            addView(TextView(this@SettingsActivity).apply { text = t; textSize = 14f },
+                LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+            if (aide.isNotEmpty()) addView(Notice.bouton(this@SettingsActivity, *aide))
         })
         fun champ(valeur: String, type: Int = InputType.TYPE_CLASS_TEXT) = EditText(this).apply {
             setText(valeur); inputType = type; col.addView(this, MATCH_PARENT, WRAP_CONTENT)
         }
 
-        label("Début du nom des contacts")
+        label("Début du nom des contacts", "contacts")
         edPrefixe = champ(prefs.prefixe)
-        label("Texte du SMS")
+        label("Texte du SMS", "deroule")
         edSms = champ(prefs.texteSms)
-        label("Attente avant connexion (secondes)")
+        label("Attente avant connexion (secondes)", "deroule")
         edDelai = champ(prefs.delaiSecondes.toString(), InputType.TYPE_CLASS_NUMBER)
-        label("Adresse de connexion ({ip} = IP de la fiche)")
+        label("Adresse de connexion ({ip} = IP de la fiche)", "reglages")
         edUrl = champ(prefs.modeleUrl, InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI)
 
-        label("Appli VPN")
+        label("Appli VPN", "vpn")
         spVpn = Spinner(this).apply {
             adapter = ArrayAdapter(this@SettingsActivity, android.R.layout.simple_spinner_dropdown_item,
                 listOf("OpenVPN Connect", "OpenVPN for Android"))
             setSelection(prefs.appliVpn)
         }
         col.addView(spVpn, MATCH_PARENT, WRAP_CONTENT)
-        label("Nom du profil VPN (vide = ouvrir l'appli seulement)")
+        label("Nom du profil VPN (vide = premier profil)", "vpn")
         edProfil = champ(prefs.profilVpn)
         cbAuto = CheckBox(this).apply {
             text = "Activer le VPN au lancement s'il est coupé"

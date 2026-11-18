@@ -1,5 +1,8 @@
 name: Compiler l'APK
 
+# Chaque envoi fabrique une version de TEST (non proposée en mise à jour).
+# Un envoi dont le message contient [publier] fabrique la version officielle.
+
 on:
   push:
   workflow_dispatch:
@@ -16,6 +19,21 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      - name: Type de version
+        env:
+          MSG: ${{ github.event.head_commit.message }}
+        run: |
+          N=$(( $(grep '^PUBLIE=' app/version.properties | cut -d= -f2) + 1 ))
+          echo "NUMERO=$N" >> $GITHUB_ENV
+          if echo "$MSG" | grep -q '\[publier\]'; then
+            echo "TAG=appel-station-v$N" >> $GITHUB_ENV
+            echo "NOM=Appel Station 1.$N" >> $GITHUB_ENV
+            echo "SUFFIXE_VERSION=" >> $GITHUB_ENV
+          else
+            echo "TAG=appel-test-${{ github.run_number }}" >> $GITHUB_ENV
+            echo "NOM=Appel Station 1.$N TEST ${{ github.run_number }}" >> $GITHUB_ENV
+            echo "SUFFIXE_VERSION= test ${{ github.run_number }}" >> $GITHUB_ENV
+          fi
       - name: Compiler
         env:
           APPEL_STATION_KEY_PASSWORD: ${{ secrets.APPEL_STATION_KEY_PASSWORD }}
@@ -28,11 +46,11 @@ jobs:
         with:
           name: AppelStation-apk
           path: AppelStation.apk
-      - name: Publier (pré-version, ne touche pas aux mises à jour de Coach Running)
+      - name: Mettre en ligne (pré-version, ne touche pas aux mises à jour de Coach Running)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: appel-station-v${{ github.run_number }}
-          name: Appel Station ${{ github.run_number }}
+          tag_name: ${{ env.TAG }}
+          name: ${{ env.NOM }}
           files: AppelStation.apk
           prerelease: true
           make_latest: "false"

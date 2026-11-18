@@ -16,6 +16,9 @@ object MiseAJour {
     fun versionInstallee(activity: Activity): Int =
         activity.packageManager.getPackageInfo(activity.packageName, 0).longVersionCode.toInt()
 
+    fun versionNom(activity: Activity): String =
+        "v" + (activity.packageManager.getPackageInfo(activity.packageName, 0).versionName ?: "")
+
     /** [resultat] reçoit la nouvelle version, ou null si à jour / pas de réseau. */
     fun verifier(activity: Activity, resultat: (Version?) -> Unit) {
         Thread {

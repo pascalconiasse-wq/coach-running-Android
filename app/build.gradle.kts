@@ -11,9 +11,11 @@ android {
         applicationId = "fr.pascal.appelstation"
         minSdk = 26
         targetSdk = 35
-        val numero = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
+        // Numéro = dernière version publiée + 1 (les tests ne comptent pas)
+        val props = java.util.Properties().apply { file("version.properties").inputStream().use { load(it) } }
+        val numero = props.getProperty("PUBLIE").trim().toInt() + 1
         versionCode = numero
-        versionName = "1.$numero"
+        versionName = "1.$numero" + (System.getenv("SUFFIXE_VERSION") ?: "")
     }
 
     signingConfigs {

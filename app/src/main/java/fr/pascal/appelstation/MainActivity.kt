@@ -60,6 +60,7 @@ class MainActivity : Activity() {
             setOnClickListener { quitter() }
         }
         bandeau.addView(txtVpn, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+        bandeau.addView(Notice.bouton(this, "principal", "deroule"))
         bandeau.addView(btnVpn)
         bandeau.addView(btnFermer, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply {
             marginStart = pad / 2
@@ -104,8 +105,10 @@ class MainActivity : Activity() {
         })
 
         liste.emptyView = txtVide
-        title = "Appel Station  v1.${MiseAJour.versionInstallee(this)}"
+        title = "Appel Station  ${MiseAJour.versionNom(this)}"
         verifierMaj(silencieux = true)
+        // Le VPN n'attend pas la recherche de mise à jour plus de 3 s
+        txtVpn.postDelayed({ lancerVpnSiBesoin() }, 3000)
         demanderPermissions()
         recherche.requestFocus()
     }
@@ -131,7 +134,14 @@ class MainActivity : Activity() {
         rafraichir.run()
         if (toutes.isEmpty() && aLaPermission(Manifest.permission.READ_CONTACTS)) chargerStations()
         connexionEnAttente?.let { connexionEnAttente = null; connecter(it); return }
-        if (majVerifiee && prefs.vpnAuDemarrage && !vpnDejaLance && !Vpn.estActif(this)) {
+        if (majVerifiee) lancerVpnSiBesoin()
+    }
+
+    /** Allume le VPN une fois par ouverture de l'appli, si demandé dans les réglages. */
+    private fun lancerVpnSiBesoin() {
+        majVerifiee = true
+        if (!auPremierPlan || isFinishing) return
+        if (prefs.vpnAuDemarrage && !vpnDejaLance && !Vpn.estActif(this)) {
             vpnDejaLance = true
             Vpn.activer(this, prefs)
         }
@@ -158,8 +168,9 @@ class MainActivity : Activity() {
         menu.add(0, 1, 0, "Actualiser")
         menu.add(0, 2, 1, "Réglages")
         menu.add(0, 3, 2, "Diagnostic VPN")
-        menu.add(0, 4, 3, "Rechercher une mise à jour")
-        menu.add(0, 5, 4, "Version v1.${MiseAJour.versionInstallee(this)}").isEnabled = false
+        menu.add(0, 6, 3, "Notice")
+        menu.add(0, 4, 4, "Rechercher une mise à jour")
+        menu.add(0, 5, 5, "Version ${MiseAJour.versionNom(this)}").isEnabled = false
         return true
     }
 
@@ -168,6 +179,7 @@ class MainActivity : Activity() {
             1 -> { majVpn(); chargerStations() }
             2 -> startActivity(Intent(this, SettingsActivity::class.java))
             4 -> verifierMaj(silencieux = false)
+            6 -> Notice.complete(this)
             3 -> Vpn.diagnostic(this, prefs) { txt ->
                 AlertDialog.Builder(this).setTitle("Diagnostic VPN").setMessage(txt)
                     .setPositiveButton("OK", null).show()
@@ -179,17 +191,11 @@ class MainActivity : Activity() {
     // ---------- Mise à jour ----------
     private fun verifierMaj(silencieux: Boolean) {
         MiseAJour.verifier(this) { v ->
-            if (!majVerifiee) {
-                majVerifiee = true
-                if (prefs.vpnAuDemarrage && !vpnDejaLance && !Vpn.estActif(this) && auPremierPlan) {
-                    vpnDejaLance = true
-                    Vpn.activer(this, prefs)
-                }
-            }
+            lancerVpnSiBesoin()
             if (v == null) {
                 btnMaj.visibility = android.view.View.GONE
                 if (!silencieux) Toast.makeText(this,
-                    "Appel Station est à jour (v1.${MiseAJour.versionInstallee(this)})", Toast.LENGTH_LONG).show()
+                    "Appel Station est à jour (${MiseAJour.versionNom(this)})", Toast.LENGTH_LONG).show()
             } else {
                 btnMaj.text = "Nouvelle version v1.${v.numero} disponible — Mettre à jour"
                 btnMaj.visibility = android.view.View.VISIBLE

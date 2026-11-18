@@ -1,0 +1,59 @@
+# [but] À quoi sert Appel Station
+Appel Station réveille une station de mesure et s'y connecte en un geste : elle allume le VPN, envoie le SMS « Tut » à la station choisie, attend que la station soit prête, puis ouvre sa page dans le navigateur.
+
+# [principal] Écran principal
+- Voyant VPN : vert = VPN actif, rouge = VPN coupé. Il se met à jour toutes les 2 secondes.
+- ACTIVER VPN : allume le VPN à la main (normalement inutile, il s'allume seul à l'ouverture).
+- FERMER : coupe le VPN puis ferme l'appli. La touche Retour fait la même chose.
+- Champ « Nom de la station » : tapez le nom ou le début du nom (avec ou sans « Station »). La liste s'affine à chaque lettre.
+- Touchez une station : tout s'enchaîne seul (VPN, SMS « Tut », attente, connexion).
+- Sous chaque station : son numéro et son adresse IP.
+- Bandeau vert en haut : une nouvelle version est disponible (voir « Mises à jour »).
+
+# [deroule] Déroulé d'un appel
+1. Le VPN s'allume s'il est coupé.
+2. Le SMS « Tut » part vers le numéro de la fiche.
+3. Un compte à rebours démarre (40 s par défaut). « Maintenant » connecte sans attendre, « Annuler » arrête.
+4. La page http://IP de la station s'ouvre dans le navigateur.
+Si l'écran d'OpenVPN est resté devant, revenez dans Appel Station : la connexion part dès le retour.
+
+# [contacts] Préparer les fiches contacts
+- Le nom de la fiche commence par « Station » (ex. Station Goudet1).
+- Le numéro de téléphone est celui de la carte SIM de la station.
+- L'adresse IP est saisie à la place de l'adresse e-mail (ex. 172.27.88.58).
+Si l'IP n'est pas trouvée, l'appli affiche les champs lus dans la fiche pour aider à corriger.
+
+# [reglages] Réglages (menu ⋮ > Réglages)
+- Début du nom des contacts : « Station » par défaut.
+- Texte du SMS : « Tut » par défaut.
+- Attente avant connexion : 40 s par défaut. Augmentez si la page ne répond pas, réduisez si la station est rapide.
+- Adresse de connexion : http://{ip} par défaut ; {ip} est remplacé par l'IP de la fiche (ex. https://{ip}:8080).
+- Appli VPN : OpenVPN for Android est utilisé d'office s'il est installé (seul pilotable sans s'afficher).
+- Nom du profil VPN : facultatif ; vide = premier profil d'OpenVPN for Android.
+- Activer le VPN au lancement / Couper le VPN en quittant : cases à cocher.
+
+# [vpn] VPN : mise en place (une seule fois)
+1. Installer « OpenVPN for Android » (Arne Schwabe) depuis le Play Store.
+2. Y importer le fichier .ovpn (bouton + > Importer) et enregistrer le mot de passe.
+3. Au premier lancement d'Appel Station : toucher Continuer, puis OK / Autoriser dans OpenVPN.
+Ensuite le VPN s'allume et se coupe sans afficher OpenVPN.
+Menu ⋮ > Diagnostic VPN : indique si OpenVPN est joignable, si Appel Station est autorisée et les profils trouvés.
+
+# [maj] Mises à jour
+- À l'ouverture, l'appli vérifie s'il existe une nouvelle version, avant d'allumer le VPN (GitHub n'est pas joignable à travers le VPN).
+- Si oui, un bandeau vert apparaît : touchez-le, le VPN est coupé puis l'APK se télécharge. Installez-le par-dessus.
+- Menu ⋮ > Rechercher une mise à jour : vérification à la demande.
+- Le numéro de version est affiché dans le titre et dans le menu ⋮.
+
+# [depannage] En cas de problème
+- Le VPN ne s'allume pas : menu ⋮ > Diagnostic VPN, puis vérifier « Appel Station autorisée : true ».
+- Aucune station : vérifier que les noms commencent par « Station » et que l'accès aux contacts est autorisé.
+- La page ne s'ouvre pas : augmenter l'attente dans les Réglages.
+
+# [historique] Historique des versions
+## Version 1.19
+- Le VPN s'allume de nouveau à l'ouverture même si la recherche de mise à jour tarde (3 s au plus).
+- Notice intégrée (menu ⋮ > Notice), aide contextuelle (boutons ?) et notice PDF.
+- Les versions de test ne sont plus proposées comme mises à jour.
+## Version 1.18
+- Première version : choix de la station par recherche, VPN automatique via OpenVPN for Android, SMS « Tut », attente réglable, connexion à l'IP de la fiche, bouton Fermer qui coupe le VPN, voyant VPN en direct, icône téléphone + échelle de crue, recherche de mises à jour.
