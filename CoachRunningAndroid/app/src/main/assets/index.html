@@ -222,7 +222,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
 
 <div id="sosov" class="hidden" role="alertdialog" aria-label="Alerte SOS">
   <div class="sosin">
-    <div class="sosbig">🆘 SOS</div>
+    <div class="sosbig" id="sosbig">🆘 SOS</div>
     <div id="sostxt">Envoi dans</div>
     <div id="soscd">30</div>
     <button type="button" id="sosnow" class="sosnow">Envoyer maintenant</button>
@@ -508,6 +508,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Filtre CAP</b> : dans l’Historique, le bouton « CAP » regroupe d’un coup la course route, le trail et la course mixte (liste, récap mensuel et annuel). <b>FC en direct</b> : pendant une activité, la FC s’affiche en vert et passe en rouge seulement si vous dépassez la FC max réglée pour la séance.</p>
     <p><b>Semaine d’une épreuve</b> : la semaine où une course programmée (objectif secondaire, par exemple Polignac) a lieu, la sortie longue est supprimée de la semaine ; la course en tient lieu. La semaine suivante reste allégée.</p>
     <p><b>Couleur de la trace</b> : sur la carte (pendant la sortie, et dans le détail d’une activité après coup), le bouton « Pente / FC » (en bas à gauche de la carte pendant la sortie, au-dessus du bouton SOS ; en haut à droite dans le détail) change les couleurs du tracé : par pente du terrain, ou par zone de fréquence cardiaque (gris si pas de FC). Vous pouvez permuter à tout moment, le choix est mémorisé. <b>Bluetooth</b> : au démarrage d’une sortie, si le Bluetooth est éteint, Android propose de l’activer (pour la ceinture ou la montre cardio).</p>
+    <p><b>Alerte cardiaque automatique</b> : si la FC reste sous 40 bpm pendant 15 secondes au cours d’une sortie, l’appli lance seule une alerte comme le SOS (même compte à rebours que le SOS, avec « Envoyer maintenant » et « ANNULER ») : à la fin du compte à rebours, un SMS « URGENCE problème cardiaque » avec votre position et le lien de suivi part vers les destinataires SOS, avec les appels automatiques réglés. La FC s’affiche en rouge dès qu’elle passe sous 40, comme quand elle dépasse la FC max. Il faut des destinataires SOS réglés (⚙, rubrique SOS) et une ceinture ou montre cardio connectée.</p>
     <p><b>Charge et triathlon</b> (profil) : la charge d’une activité = durée × RPE × un coefficient selon le sport. Le réglage « Triathlon » compte plus le vélo (0,85, VTT 0,9) et la natation (0,8) que le réglage standard (0,7 et 0,6) : utile si vous vous entraînez aussi à vélo et en piscine, car ces séances pèsent alors davantage dans la forme, les courbes et l’allègement des séances.</p>
     <p><b>Terrain « Mixte »</b> (profil, rubrique Terrain de « Mes caractéristiques ») : s’applique aussi avec un objectif, et choisir une course dans le tableau ne le remplace plus. Sans « Mixte », le terrain suit le dénivelé de la course. En mixte, la sortie longue est en terrain varié, le fractionné alterne une semaine en côtes et une semaine sur route, les footings restent sur route, et un renforcement s’ajoute à partir de 4 séances par semaine.</p>
     <p><b>Présentation</b> : fond clair uni, cartes blanches espacées et lisibles, sans bandeau coloré ; seul le cadre de chaque carte est coloré (bleu, vert, orange, rose en alternance) pour bien séparer les rubriques.</p>
@@ -1303,18 +1304,19 @@ new MutationObserver(()=>{const t=$("gmsg").textContent;$("lgps").textContent=t.
 $("lrec").onclick=()=>{follow=true;if(lmap&&lmark)lmap.setView(lmark.getLatLng(),Math.max(lmap.getZoom(),16))};
 
 function resetLive(){
-  gRaw=[];gDist=0;gGain=0;gBase=null;gEle=[];hrSamples=[];lastHr=0;splits=[];lastPt=null;nIdx=0;nextRec=recapKm||0;
+  gRaw=[];gDist=0;gGain=0;gBase=null;gEle=[];hrSamples=[];lastHr=0;lowSince=0;lowFired=false;splits=[];lastPt=null;nIdx=0;nextRec=recapKm||0;
   ["gdist","gdp"].forEach(i=>$(i).textContent=i==="gdist"?"0,00":"0");
   $("gpace").textContent=$("gavg").textContent=$("hr").textContent="--";$("hrz").textContent="";
   $("lrecap").classList.add("hidden");setBad();
 }
 function setBad(){
   const sk=curPace;
-  const pb=maxPaceS>0&&sk>0&&sk<maxPaceS,hb=liveCapHr>0&&lastHr>liveCapHr;
+  const pb=maxPaceS>0&&sk>0&&sk<maxPaceS,hb=liveCapHr>0&&lastHr>liveCapHr,lb=lastHr>0&&lastHr<HR_LOW;
+  if(lb){const t=Date.now();if(!lowSince)lowSince=t;if(!lowFired&&t-lowSince>=LOW_MS&&liveOn&&sosSt==="idle"){lowFired=true;sosStart("cardiac")}}else{lowSince=0;lowFired=false}
   $("gpace").parentElement.classList.toggle("bad",pb);
-  $("hr").parentElement.classList.toggle("bad",hb);
+  $("hr").parentElement.classList.toggle("bad",hb||lb);
   const z=lastHr?zoneOf(lastHr):null;
-  const msg=[];if(hb)msg.push("⚠️ FC au-dessus de "+liveCapHr+" bpm");if(pb)msg.push("⚠️ Plus vite que "+paceTxt(maxPaceS)+" /km");
+  const msg=[];if(hb)msg.push("⚠️ FC au-dessus de "+liveCapHr+" bpm");if(lb)msg.push("⚠️ FC sous "+HR_LOW+" bpm");if(pb)msg.push("⚠️ Plus vite que "+paceTxt(maxPaceS)+" /km");
   $("hrz").textContent=msg.length?msg.join(" · "):(z?"Zone "+z.n+" · "+z.name:"");
   $("hrz").className="lhz"+(msg.length?" bad":"");
   /* hors Android, pas de service pour faire vibrer */
@@ -1503,6 +1505,7 @@ window.onContact=(nom,num)=>{
 $("l-sms").onclick=()=>{liveSave();liveSms(false)};
 
 /* ===== SOS ===== */
+let sosKind="sos",lowSince=0,lowFired=false;const HR_LOW=40,LOW_MS=15000;
 let sosSt="idle",sosTimer=null,sosUp=null,sosSmsT=null,sosLastTap=0,sosTaps=0,sosAud=null,sosCnt=0,sosSent=0;
 const sosNums=()=>(prefs.sosTels||prefs.tels||"").trim();
 const sosNum=(v,d)=>{const x=parseFloat(v);return v===undefined||v===""||isNaN(x)?d:x};
@@ -1518,6 +1521,7 @@ function sosBuzz(pat){const n=NAT();try{if(n&&n.buzz)n.buzz(pat.join(","));else 
 function sosPosLink(){return lastPt?"https://maps.google.com/?q="+lastPt.lat.toFixed(6)+","+lastPt.lon.toFixed(6):""}
 function sosText(first){
   const who=prefs.name||"Mon proche",pl=sosPosLink(),h=new Date().toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+  if(sosKind==="cardiac")return (first?"URGENCE problème cardiaque - "+who+" : FC "+lastHr+" bpm en dessous de "+HR_LOW+" pendant l'effort ! ":"URGENCE problème cardiaque (nouvelle position) - "+who+". ")+(pl?"Position a "+h+" : "+pl:"Position GPS indisponible.")+" Suivi en direct : "+liveLink()+(first?" Appelez-le, sinon le 15 ou le 112.":"");
   return (first?"ALERTE SOS - "+who+" a besoin d'aide ! ":"SOS (nouvelle position) - "+who+". ")+(pl?"Position a "+h+" : "+pl:"Position GPS indisponible.")+" Suivi en direct : "+liveLink()+(first?" Appelez-le, sinon le 112.":"");
 }
 function sosSms(txt){
@@ -1543,10 +1547,11 @@ function sosArm(){
   b.classList.add("arm");b.textContent=sosTaps===1?"Encore 2×":"Encore 1×";sosBuzz([0,60]);
   setTimeout(()=>{if(sosLastTap===now){sosTaps=0;sosLastTap=0;b.classList.remove("arm");b.textContent="SOS"}},900);
 }
-function sosStart(){
+function sosStart(kind){
+  sosKind=kind==="cardiac"?"cardiac":"sos";
   if(!sosNums()){showRecap("SOS : aucun numéro. Ajoutez-en dans la roue ⚙, rubrique « SOS ».");sosBuzz([0,400,150,400]);return}
   sosSt="count";sosCnt=sosDelay();sosShow(true);
-  $("sostxt").textContent="Envoi de l’alerte SOS dans";$("sosnow").classList.remove("hidden");$("soshide").classList.add("hidden");$("soscancel").innerHTML="ANNULER<br><small>tout va bien</small>";
+  $("sosbig").textContent=sosKind==="cardiac"?"🆘 URGENCE CARDIAQUE":"🆘 SOS";$("sostxt").textContent=sosKind==="cardiac"?"FC sous "+HR_LOW+" bpm : envoi de l’alerte « urgence problème cardiaque » dans":"Envoi de l’alerte SOS dans";$("sosnow").classList.remove("hidden");$("soshide").classList.add("hidden");$("soscancel").innerHTML="ANNULER<br><small>tout va bien</small>";
   clearInterval(sosTimer);
   const tick=()=>{
     $("soscd").textContent=sosCnt;sosBeep();sosBuzz([0,400,200,400]);
@@ -1568,7 +1573,7 @@ function sosSend(){
   $("sosb").textContent="SOS ✔";
 }
 function sosCancel(){
-  const was=sosSt;try{const n=NAT();n&&n.sosCallStop&&n.sosCallStop()}catch(e){}clearInterval(sosTimer);clearInterval(sosUp);clearInterval(sosSmsT);sosSt="idle";sosShow(false);$("sosb").textContent="SOS";
+  const was=sosSt;sosKind="sos";lowSince=0;try{const n=NAT();n&&n.sosCallStop&&n.sosCallStop()}catch(e){}clearInterval(sosTimer);clearInterval(sosUp);clearInterval(sosSmsT);sosSt="idle";sosShow(false);$("sosb").textContent="SOS";
   if(was==="sent"){
     sosPushLive(false);
     const r=sosSms((prefs.name||"Mon proche")+" : fausse alerte SOS, tout va bien. Merci !");

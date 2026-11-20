@@ -10,7 +10,8 @@
    "FC en direct : pendant une activité, la FC s’affiche en vert et passe en rouge seulement au-dessus de la FC max réglée pour la séance.",
    "Plan : la semaine d’une épreuve programmée (objectif secondaire, ex. Polignac), la sortie longue est supprimée de la semaine ; la course en tient lieu.",
    "Trace sur la carte : bouton « Pente / FC » (en bas à gauche de la carte pendant la sortie, au-dessus du bouton SOS ; en haut à droite dans le détail) pour colorer le tracé soit par pente (comme avant), soit par zone de fréquence cardiaque (gris si pas de FC). On peut permuter pendant la sortie et dans le détail d’une activité après coup ; le choix est mémorisé.",
-   "Démarrage d’une sortie : si le Bluetooth est éteint, Android propose de l’activer (ceinture ou montre cardio)."
+   "Démarrage d’une sortie : si le Bluetooth est éteint, Android propose de l’activer (ceinture ou montre cardio).",
+   "Alerte cardiaque automatique : si la FC reste sous 40 bpm pendant 15 secondes en séance, l’appli lance seule une alerte comme le SOS (compte à rebours annulable, puis SMS « URGENCE problème cardiaque » avec position et suivi en direct aux destinataires SOS, appels automatiques). La FC s’affiche en rouge sous 40 bpm, comme au-dessus de la FC max."
   ]
  },
  {
