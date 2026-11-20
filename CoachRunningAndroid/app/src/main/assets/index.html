@@ -506,6 +506,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Courbes défilantes</b> : chaque semaine (ou point) garde son étiquette et, sur les barres, la valeur est écrite au-dessus. Quand tout ne tient pas à l’écran, balayez la courbe vers la gauche ou la droite ; elle s’ouvre sur les dernières semaines. Les barres couvrent désormais 26 semaines. Tournez le téléphone en mode paysage pour voir plus large.</p>
     <p><b>Filtre CAP</b> : dans l’Historique, le bouton « CAP » regroupe d’un coup la course route, le trail et la course mixte (liste, récap mensuel et annuel). <b>FC en direct</b> : pendant une activité, la FC s’affiche en vert et passe en rouge seulement si vous dépassez la FC max réglée pour la séance.</p>
     <p><b>Semaine d’une épreuve</b> : la semaine où une course programmée (objectif secondaire, par exemple Polignac) a lieu, la sortie longue est supprimée de la semaine ; la course en tient lieu. La semaine suivante reste allégée.</p>
+    <p><b>Couleur de la trace</b> : sur la carte (pendant la sortie, et dans le détail d’une activité après coup), le bouton « Pente / FC » en haut à droite change les couleurs du tracé : par pente du terrain, ou par zone de fréquence cardiaque (gris si pas de FC). Vous pouvez permuter à tout moment, le choix est mémorisé. <b>Bluetooth</b> : au démarrage d’une sortie, si le Bluetooth est éteint, Android propose de l’activer (pour la ceinture ou la montre cardio).</p>
     <p><b>Charge et triathlon</b> (profil) : la charge d’une activité = durée × RPE × un coefficient selon le sport. Le réglage « Triathlon » compte plus le vélo (0,85, VTT 0,9) et la natation (0,8) que le réglage standard (0,7 et 0,6) : utile si vous vous entraînez aussi à vélo et en piscine, car ces séances pèsent alors davantage dans la forme, les courbes et l’allègement des séances.</p>
     <p><b>Terrain « Mixte »</b> (profil, rubrique Terrain de « Mes caractéristiques ») : s’applique aussi avec un objectif, et choisir une course dans le tableau ne le remplace plus. Sans « Mixte », le terrain suit le dénivelé de la course. En mixte, la sortie longue est en terrain varié, le fractionné alterne une semaine en côtes et une semaine sur route, les footings restent sur route, et un renforcement s’ajoute à partir de 4 séances par semaine.</p>
     <p><b>Présentation</b> : fond clair uni, cartes blanches espacées et lisibles, sans bandeau coloré ; seul le cadre de chaque carte est coloré (bleu, vert, orange, rose en alternance) pour bien séparer les rubriques.</p>
@@ -1184,8 +1185,11 @@ function routeInfo(){
 /* Pente par tronçon : couleur selon le % (≈100 m par tronçon) */
 const SLOPE=[[-99,-6,"#1E5BFF"],[-6,-2,"#3DB8E8"],[-2,2,"#18B26B"],[2,5,"#E6D200"],[5,8,"#FF9F1C"],[8,12,"#E5484D"],[12,99,"#7A1FA2"]];
 function slopeCol(p){for(const b of SLOPE)if(p>=b[0]&&p<b[1])return b[2];return SLOPE[SLOPE.length-1][2]}
-function slopeLayers(P,w,op){
-  /* P : [[lat,lon,alt],…] ; sans altitude → ligne unie */
+let traceMode="slope";try{traceMode=localStorage.getItem("coach_tracemode")==="hr"?"hr":"slope"}catch(e){}
+function hrCol(h){if(!(h>0))return "#9AA5B8";const z=hrZones().z;for(const q of z)if(h<=q.hi)return q.color;return z[z.length-1].color}
+function slopeLayers(P,w,op,mode){
+  /* P : [[lat,lon,alt,fc],…] ; sans altitude → ligne unie ; mode "hr" : couleur selon la zone de FC moyenne du tronçon */
+  mode=mode||"slope";
   const out=[];if(!P||P.length<2)return out;
   let i0=0,d=0,sm=P.map(p=>p[2]);
   for(let i=0;i<P.length;i++){const a=[];for(let k=Math.max(0,i-2);k<=Math.min(P.length-1,i+2);k++)if(P[k][2]!=null)a.push(P[k][2]);sm[i]=a.length?a.reduce((x,y)=>x+y,0)/a.length:null}
@@ -1194,18 +1198,42 @@ function slopeLayers(P,w,op){
     if(d>=100||i===P.length-1){
       const e0=sm[i0],e1=sm[i];
       const pc=(e0!=null&&e1!=null&&d>20)?(e1-e0)/d*100:null;
-      out.push(L.polyline(P.slice(i0,i+1).map(p=>[p[0],p[1]]),{color:pc==null?"#2F6BFF":slopeCol(pc),weight:w,opacity:op,lineCap:"butt"}));
+      let col;
+      if(mode==="hr"){const hs=P.slice(i0,i+1).map(p=>p[3]).filter(h=>h>0);col=hrCol(hs.length?hs.reduce((x,y)=>x+y,0)/hs.length:0)}
+      else col=pc==null?"#2F6BFF":slopeCol(pc);
+      out.push(L.polyline(P.slice(i0,i+1).map(p=>[p[0],p[1]]),{color:col,weight:w,opacity:op,lineCap:"butt"}));
       i0=i;d=0;
     }
   }
   return out;
 }
 function slopeLegend(){return SLOPE.map(b=>'<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+b[2]+';margin:0 3px 0 8px"></span>'+(b[0]<-90?"< −6":b[1]>90?"> 12":(b[0]+"…"+b[1]).replace(/-/g,"−"))).join("")+" %"}
-function slopeCtl(m){
+const ctlRefs=[];
+function ctlHtml(){
+  const sw=(c)=>'<span style="display:inline-block;width:14px;height:5px;border-radius:2px;background:'+c+';margin-right:5px;vertical-align:middle"></span>';
+  const bt=(m,t)=>'<button type="button" data-m="'+m+'" style="margin:0 3px 4px 0;padding:3px 8px;font:600 11px system-ui,sans-serif;border-radius:6px;border:1px solid #14203A;width:auto;min-height:0;'+(traceMode===m?"background:#14203A;color:#fff":"background:#fff;color:#14203A")+'">'+t+'</button>';
+  let h='<div>'+bt("slope","Pente")+bt("hr","FC")+'</div>';
+  if(traceMode==="hr")h+=hrZones().z.map(z=>"<div>"+sw(z.color)+"Z"+z.n+" "+z.lo+"–"+z.hi+"</div>").join("")+'<div style="color:#5B6B8C">gris : pas de FC</div>';
+  else h+=SLOPE.map(b=>"<div>"+sw(b[2])+(b[0]<-90?"< −6 %":b[1]>90?"> 12 %":(b[0]+" à "+b[1]+" %").replace(/-/g,"−"))+"</div>").join("");
+  return h;
+}
+function setTraceMode(m){
+  traceMode=m;try{localStorage.setItem("coach_tracemode",m)}catch(e){}
+  ctlRefs.forEach(r=>{r.d.innerHTML=ctlHtml();r.redraw&&r.redraw()});
+}
+function slopeCtl(m,redraw){
   try{const c=L.control({position:"topright"});
-  c.onAdd=function(){const d=L.DomUtil.create("div");d.style.cssText="background:rgba(255,255,255,.88);color:#14203A;padding:5px 7px;border-radius:8px;font:11px/1.35 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.3)";
-    d.innerHTML="<b>Pente</b>"+SLOPE.map(b=>'<div><span style="display:inline-block;width:14px;height:5px;border-radius:2px;background:'+b[2]+';margin-right:5px;vertical-align:middle"></span>'+(b[0]<-90?"< −6 %":b[1]>90?"> 12 %":(b[0]+" à "+b[1]+" %").replace(/-/g,"−"))+"</div>").join("");return d};
+  c.onAdd=function(){const d=L.DomUtil.create("div");d.style.cssText="background:rgba(255,255,255,.9);color:#14203A;padding:5px 7px;border-radius:8px;font:11px/1.35 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.3)";
+    d.innerHTML=ctlHtml();L.DomEvent.disableClickPropagation(d);
+    d.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("button[data-m]");if(b)setTraceMode(b.dataset.m)});
+    ctlRefs.push({d:d,redraw:redraw});return d};
   c.addTo(m)}catch(e){}
+}
+function liveRedraw(){
+  if(!lmap||gRaw.length<3)return;
+  doneLayers.forEach(l=>lmap.removeLayer(l));
+  doneLayers=slopeLayers(gRaw.map(q=>[q.lat,q.lon,q.ele,q.hr]),5,1,traceMode);
+  doneLayers.forEach(l=>l.addTo(lmap));if(lmark)lmark.bringToFront();
 }
 function drawRoute(){
   if(!lmap)return;
@@ -1260,7 +1288,7 @@ loadRoute();routeInfo();
 function liveMap(){
   try{
     if(!lmap&&typeof L!=="undefined"&&L.map){
-      lmap=L.map("lmap",{zoomControl:false,attributionControl:false}).addControl(L.control.attribution({prefix:false,position:"bottomleft"}));lmap=lmap.setView([46.6,2.4],6);slopeCtl(lmap);
+      lmap=L.map("lmap",{zoomControl:false,attributionControl:false}).addControl(L.control.attribution({prefix:false,position:"bottomleft"}));lmap=lmap.setView([46.6,2.4],6);slopeCtl(lmap,liveRedraw);
       L.tileLayer(OSM,{maxZoom:19,attribution:OSMA}).addTo(lmap);
       lmap.on("dragstart",()=>{follow=false});
     }
@@ -1326,7 +1354,7 @@ function addPt(t,la,lo,alt,hr){
     routeFix(la,lo);
     if(!lline){lline=L.polyline([ll],{color:"#E5484D",weight:4}).addTo(lmap);lmark=L.circleMarker(ll,{radius:8,color:"#fff",weight:3,fillColor:"#FFC400",fillOpacity:1}).addTo(lmap);lmap.setView(ll,16)}
     else{lline.addLatLng(ll);lmark.setLatLng(ll);if(follow)lmap.panTo(ll,{animate:false})}
-    if(t-doneT>10000&&gRaw.length>2){doneT=t;doneLayers.forEach(l=>lmap.removeLayer(l));doneLayers=slopeLayers(gRaw.map(q=>[q.lat,q.lon,q.ele]),5,1);doneLayers.forEach(l=>l.addTo(lmap));lmark.bringToFront()}
+    if(t-doneT>10000&&gRaw.length>2){doneT=t;liveRedraw()}
   }
 }
 function showRecap(t){
@@ -1416,6 +1444,7 @@ function beginSession(){
   show("live");setFull(true);liveMap();
   showRecap(recapKm?"Récap tous les "+recapKm+" km":"Pas de récap kilométrique réglé");
   const n=NAT();
+  if(n){try{if(n.ensureBluetooth)n.ensureBluetooth()}catch(e){}}
   if(n){try{n.start(recapKm*1000,maxPaceS,liveCapHr);if(n.setTarget)n.setTarget((+$("l-dur").value||0)*60)}catch(e){$("msg").textContent="Suivi impossible : "+e.message}}
   else if(navigator.geolocation){
     gWatch=navigator.geolocation.watchPosition(onPos,err=>{$("gmsg").textContent=err.code===1?"GPS refusé : Réglages Android > Applications > Coach Running > Autorisations > Position.":"GPS : signal faible…"},{enableHighAccuracy:true,maximumAge:1000,timeout:30000});
@@ -2614,7 +2643,13 @@ function renderActs(){
 }
 
 /* Détail d’une activité : carte IGN et courbes */
-let detailId=null,carte=null,couche=null;
+let detailId=null,carte=null,couche=null,detPts=null,detCo=null;
+function detailLayers(){
+  if(!carte||!detPts||!detCo)return;
+  if(couche)carte.removeLayer(couche);
+  const li=L.polyline(detCo,{color:"#E5484D",weight:4}),sl=slopeLayers(detPts.filter(p=>p[5]!=null&&p[6]!=null).map(p=>[p[5],p[6],p[2],p[3]]),5,1,traceMode),dot=(c,f)=>L.circleMarker(c,{radius:7,color:"#fff",weight:2,fillColor:f,fillOpacity:1});
+  couche=L.layerGroup([li].concat(sl,[dot(detCo[0],"#18B26B"),dot(detCo[detCo.length-1],"#14203A")])).addTo(carte);
+}
 /* Fond de carte par défaut : plan IGN (les serveurs OpenStreetMap et CARTO refusent ou limitent les requêtes d’une appli sans clé) */
 const OSM="https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&FORMAT=image/png",OSMA="© IGN / Géoplateforme";
 const IGN="https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&LAYER=";
@@ -2706,14 +2741,15 @@ function drawMap(pts){
   if(typeof L==="undefined"||!L.map){box.classList.add("hidden");msg.textContent="Carte indisponible : Leaflet n’a pas pu être chargé (connexion internet requise).";return}
   box.classList.remove("hidden");msg.textContent="";
   if(!carte){
-    carte=L.map("map");slopeCtl(carte);
+    carte=L.map("map");slopeCtl(carte,detailLayers);
     const plan=L.tileLayer(OSM,{maxZoom:19,attribution:OSMA});
     const photo=L.tileLayer(IGN+"ORTHOIMAGERY.ORTHOPHOTOS&FORMAT=image/jpeg",{maxZoom:19,attribution:"© IGN / Géoplateforme"});
     plan.addTo(carte);L.control.layers({"Plan IGN":plan,"Photos aériennes":photo}).addTo(carte);
   }
   if(couche)carte.removeLayer(couche);
-  const li=L.polyline(co,{color:"#E5484D",weight:4}),sl=slopeLayers(pts.filter(p=>p[5]!=null&&p[6]!=null).map(p=>[p[5],p[6],p[2]]),5,1),dot=(c,f)=>L.circleMarker(c,{radius:7,color:"#fff",weight:2,fillColor:f,fillOpacity:1});
-  couche=L.layerGroup([li].concat(sl,[dot(co[0],"#18B26B"),dot(co[co.length-1],"#14203A")])).addTo(carte);
+  detPts=pts;detCo=co;
+  const li=L.polyline(co,{color:"#E5484D",weight:4});
+  detailLayers();
   carte.invalidateSize();carte.fitBounds(li.getBounds(),{padding:[20,20]});
 }
 

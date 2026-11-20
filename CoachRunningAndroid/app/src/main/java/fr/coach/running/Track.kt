@@ -585,6 +585,21 @@ class TrackBridge(
     @JavascriptInterface
     fun clear() { TrackState.reset() }
 
+    /* Au démarrage d'une sortie : demande d'activer le Bluetooth s'il est éteint (fenêtre système Android) */
+    @JavascriptInterface
+    fun ensureBluetooth() {
+        val perms = if (Build.VERSION.SDK_INT >= 31) arrayOf(Manifest.permission.BLUETOOTH_CONNECT) else arrayOf<String>()
+        act.runOnUiThread {
+            val go = {
+                try {
+                    val ad = (act.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
+                    if (ad != null && !ad.isEnabled) act.startActivity(Intent(android.bluetooth.BluetoothAdapter.ACTION_REQUEST_ENABLE))
+                } catch (e: Exception) { }
+            }
+            if (perms.isEmpty()) go() else askPerms(perms) { go() }
+        }
+    }
+
     @JavascriptInterface
     fun connectHr() {
         val perms = ArrayList<String>()

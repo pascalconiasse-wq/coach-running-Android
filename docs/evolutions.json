@@ -8,7 +8,9 @@
    "Nouveau type d’activité « Course mixte (route et chemin) » dans le choix avant de démarrer, dans la saisie manuelle, l’historique et les filtres. Il compte comme une course (même charge, allures et FC) ; il est présélectionné quand le terrain du profil est « Mixte ».",
    "Historique : nouveau bouton de tri « CAP » qui regroupe course route, trail et course mixte (liste, récap mensuel et annuel).",
    "FC en direct : pendant une activité, la FC s’affiche en vert et passe en rouge seulement au-dessus de la FC max réglée pour la séance.",
-   "Plan : la semaine d’une épreuve programmée (objectif secondaire, ex. Polignac), la sortie longue est supprimée de la semaine ; la course en tient lieu."
+   "Plan : la semaine d’une épreuve programmée (objectif secondaire, ex. Polignac), la sortie longue est supprimée de la semaine ; la course en tient lieu.",
+   "Trace sur la carte : bouton « Pente / FC » en haut à droite pour colorer le tracé soit par pente (comme avant), soit par zone de fréquence cardiaque (gris si pas de FC). On peut permuter pendant la sortie et dans le détail d’une activité après coup ; le choix est mémorisé.",
+   "Démarrage d’une sortie : si le Bluetooth est éteint, Android propose de l’activer (ceinture ou montre cardio)."
   ]
  },
  {
