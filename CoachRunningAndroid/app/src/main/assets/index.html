@@ -119,6 +119,7 @@ h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4
 #lwrap:not(.full) #lend2{display:none}
 #lwrap.full #lrecap{bottom:92px}
 #lalt{position:absolute;left:8px;right:8px;bottom:8px;height:72px;width:calc(100% - 16px);z-index:1000;background:rgba(12,18,34,.84);border-radius:12px}
+#lmap .leaflet-bottom.leaflet-left{bottom:92px}
 #lwrap.full #lalt{width:calc(100% - 124px)}
 #lwrap{position:relative;height:calc(100vh - 360px);min-height:340px;border-radius:16px;overflow:hidden;margin-bottom:10px;border:1px solid var(--line)}
 #lmap{position:absolute;inset:0;background:#dfe6f3}
@@ -506,7 +507,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Courbes défilantes</b> : chaque semaine (ou point) garde son étiquette et, sur les barres, la valeur est écrite au-dessus. Quand tout ne tient pas à l’écran, balayez la courbe vers la gauche ou la droite ; elle s’ouvre sur les dernières semaines. Les barres couvrent désormais 26 semaines. Tournez le téléphone en mode paysage pour voir plus large.</p>
     <p><b>Filtre CAP</b> : dans l’Historique, le bouton « CAP » regroupe d’un coup la course route, le trail et la course mixte (liste, récap mensuel et annuel). <b>FC en direct</b> : pendant une activité, la FC s’affiche en vert et passe en rouge seulement si vous dépassez la FC max réglée pour la séance.</p>
     <p><b>Semaine d’une épreuve</b> : la semaine où une course programmée (objectif secondaire, par exemple Polignac) a lieu, la sortie longue est supprimée de la semaine ; la course en tient lieu. La semaine suivante reste allégée.</p>
-    <p><b>Couleur de la trace</b> : sur la carte (pendant la sortie, et dans le détail d’une activité après coup), le bouton « Pente / FC » en haut à droite change les couleurs du tracé : par pente du terrain, ou par zone de fréquence cardiaque (gris si pas de FC). Vous pouvez permuter à tout moment, le choix est mémorisé. <b>Bluetooth</b> : au démarrage d’une sortie, si le Bluetooth est éteint, Android propose de l’activer (pour la ceinture ou la montre cardio).</p>
+    <p><b>Couleur de la trace</b> : sur la carte (pendant la sortie, et dans le détail d’une activité après coup), le bouton « Pente / FC » (en bas à gauche de la carte pendant la sortie, au-dessus de la courbe d’altitude ; en haut à droite dans le détail) change les couleurs du tracé : par pente du terrain, ou par zone de fréquence cardiaque (gris si pas de FC). Vous pouvez permuter à tout moment, le choix est mémorisé. <b>Bluetooth</b> : au démarrage d’une sortie, si le Bluetooth est éteint, Android propose de l’activer (pour la ceinture ou la montre cardio).</p>
     <p><b>Charge et triathlon</b> (profil) : la charge d’une activité = durée × RPE × un coefficient selon le sport. Le réglage « Triathlon » compte plus le vélo (0,85, VTT 0,9) et la natation (0,8) que le réglage standard (0,7 et 0,6) : utile si vous vous entraînez aussi à vélo et en piscine, car ces séances pèsent alors davantage dans la forme, les courbes et l’allègement des séances.</p>
     <p><b>Terrain « Mixte »</b> (profil, rubrique Terrain de « Mes caractéristiques ») : s’applique aussi avec un objectif, et choisir une course dans le tableau ne le remplace plus. Sans « Mixte », le terrain suit le dénivelé de la course. En mixte, la sortie longue est en terrain varié, le fractionné alterne une semaine en côtes et une semaine sur route, les footings restent sur route, et un renforcement s’ajoute à partir de 4 séances par semaine.</p>
     <p><b>Présentation</b> : fond clair uni, cartes blanches espacées et lisibles, sans bandeau coloré ; seul le cadre de chaque carte est coloré (bleu, vert, orange, rose en alternance) pour bien séparer les rubriques.</p>
@@ -1221,8 +1222,8 @@ function setTraceMode(m){
   traceMode=m;try{localStorage.setItem("coach_tracemode",m)}catch(e){}
   ctlRefs.forEach(r=>{r.d.innerHTML=ctlHtml();r.redraw&&r.redraw()});
 }
-function slopeCtl(m,redraw){
-  try{const c=L.control({position:"topright"});
+function slopeCtl(m,redraw,pos){
+  try{const c=L.control({position:pos||"topright"});
   c.onAdd=function(){const d=L.DomUtil.create("div");d.style.cssText="background:rgba(255,255,255,.9);color:#14203A;padding:5px 7px;border-radius:8px;font:11px/1.35 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.3)";
     d.innerHTML=ctlHtml();L.DomEvent.disableClickPropagation(d);
     d.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("button[data-m]");if(b)setTraceMode(b.dataset.m)});
@@ -1288,7 +1289,7 @@ loadRoute();routeInfo();
 function liveMap(){
   try{
     if(!lmap&&typeof L!=="undefined"&&L.map){
-      lmap=L.map("lmap",{zoomControl:false,attributionControl:false}).addControl(L.control.attribution({prefix:false,position:"bottomleft"}));lmap=lmap.setView([46.6,2.4],6);slopeCtl(lmap,liveRedraw);
+      lmap=L.map("lmap",{zoomControl:false,attributionControl:false}).addControl(L.control.attribution({prefix:false,position:"bottomleft"}));lmap=lmap.setView([46.6,2.4],6);slopeCtl(lmap,liveRedraw,"bottomleft");
       L.tileLayer(OSM,{maxZoom:19,attribution:OSMA}).addTo(lmap);
       lmap.on("dragstart",()=>{follow=false});
     }
