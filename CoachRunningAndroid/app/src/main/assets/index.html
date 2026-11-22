@@ -465,6 +465,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <input type="number" id="a-pw" inputmode="numeric" min="0" max="2500" step="1">
     <label class="f" for="a-rpe">Intensité perçue (RPE) : <b id="a-rpev">5</b>/10</label>
     <input type="range" id="a-rpe" min="1" max="10" step="1" value="5">
+    <p class="mute" id="a-msg2" role="status" style="color:#E5484D;font-weight:600"></p>
     <button id="a-add">Ajouter l’activité</button>
     <button class="alt" id="a-cancel">Annuler</button>
   </div>
@@ -539,7 +540,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>RPE automatique</b> : si la FC a été enregistrée pendant la séance (ceinture ou montre), l’intensité perçue demandée à la fin est déjà réglée d’après votre FC moyenne rapportée à votre FC max ; vous pouvez la corriger. Sans FC, elle reste à 6. Les séances importées sont estimées de la même façon. Au premier lancement de cette version, le RPE des séances passées qui ont une FC a été recalculé une fois d’après leur FC moyenne (la charge et les allègements de séances s’en trouvent ajustés).</p>
     <p><b>Récap annuelle</b> : en haut de l’Historique, choisissez une année pour voir le nombre d’activités, la durée, les kilomètres et le dénivelé positif. Elle suit le filtre par type d’activité. Les récaps mensuels affichent aussi les kilomètres.</p>
     <p><b>Ajouter et trier</b> : le bouton « Ajouter une activité » en haut de l’Historique ouvre le formulaire (il se referme après l’enregistrement ou « Annuler »). Sous le bouton, des filtres par type d’activité (course, trail, VTT, vélo…) n’affichent que le sport choisi ; « Tous » les réaffiche.</p>
-    <p><b>Puissance moyenne</b> : dans le formulaire « Ajouter une activité » (ou « Modifier »), le champ facultatif « Puissance moyenne (W) » enregistre la puissance de la séance (vélo, home trainer). Elle s’affiche dans l’Historique avec la FC et la cadence. Même principe pour la « Vitesse moyenne (km/h) » : si vous ne renseignez pas la distance, elle est calculée à partir de la vitesse et de la durée.</p>
+    <p><b>Puissance moyenne</b> : dans le formulaire « Ajouter une activité » (ou « Modifier »), le champ facultatif « Puissance moyenne (W) » enregistre la puissance de la séance (vélo, home trainer). En modification, la durée peut être corrigée librement (le contrôle anti-doublon ne s’applique qu’aux nouvelles activités) et les messages d’erreur s’affichent juste au-dessus du bouton. Elle s’affiche dans l’Historique avec la FC et la cadence. Même principe pour la « Vitesse moyenne (km/h) » : si vous ne renseignez pas la distance, elle est calculée à partir de la vitesse et de la durée.</p>
     <p><b>Compteur Bryton</b> : Bryton Active n’écrit pas dans Health Connect. Deux solutions : (1) Bryton Active → Strava (synchro automatique) puis Strava → Health Connect (durée, distance, calories) ; (2) dans Bryton Active ouvrir la sortie, exporter le fichier .fit ou .gpx et l’importer ici avec « Choisir un ou plusieurs fichiers » (trace GPS, FC et D+ complets).</p>
     <p><b>Pente en couleur</b> : sur la carte, le parcours GPX chargé et le tracé déjà parcouru sont colorés par tronçon de ≈100 m selon la pente (bleu : descente, vert : plat, jaune/orange/rouge : montée, violet : &gt; 12 %). Visible aussi dans le détail d’une sortie de l’Historique.</p>
     <p>« Synchroniser maintenant » (roue ⚙, rubrique synchronisation) lit Health Connect (30 jours) : synchronisez d’abord la montre vers COROS, qui doit écrire dans Health Connect. Une sortie déjà enregistrée par le téléphone est fusionnée avec celle de la montre : on garde les données en plus (FC, dénivelé, calories ; la trace GPS de la montre si elle en a une, sinon celle du téléphone enrichie de la FC et de l’altitude) et le doublon disparaît. Un doublon est reconnu quand les départs sont à moins de 15 min et les durées proches. Import de fichiers FIT, GPX, TCX possible depuis la roue ⚙. Garmin : uniquement via Health Connect ou export de fichier.</p></details>
@@ -2562,7 +2563,7 @@ function startEdit(s){
   amsg("Modification en cours : corrigez les champs puis enregistrez.");
   formShow(true);
 }
-const amsg=t=>$("a-msg").textContent=t;
+const amsg=t=>{$("a-msg").textContent=t;$("a-msg2").textContent=t};
 (function(){
   const s=$("a-sport");
   ["RUN_ROUTE","RUN_TRAIL","RUN_MIXED","WALK","CYCLING","MTB","GRAVEL","TRAINER","HORSE","SWIMMING","OTHER"].forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=SPORTS[k];s.appendChild(o)});
@@ -2573,7 +2574,7 @@ $("a-add").onclick=()=>{
   const sport=$("a-sport").value,date=$("a-date").value,sec=readDur(),min=Math.max(1,Math.round(sec/60)),rpe=+$("a-rpe").value;
   if(!isDate(date)){amsg("Indiquez une date.");return}
   if(!(sec>=30&&sec<=90000)){amsg("Indiquez une durée (heures, minutes, secondes).");return}
-  if(isDup({date:date,sport:sport,min:min,ts:editing?editing.ts:pending.ts},editing)){amsg("Cette activité est déjà enregistrée.");return}
+  if(!editing&&isDup({date:date,sport:sport,min:min,ts:pending.ts},null)){amsg("Cette activité est déjà enregistrée.");return}
   const run=sport==="RUN_ROUTE"||sport==="RUN_TRAIL"||sport==="RUN_MIXED";
   let km=+$("a-km").value||0;const spd=+$("a-sp").value||0;if(!(km>0)&&spd>0)km=spd*sec/3600;const dp=Math.round(+$("a-dp").value||0);
   const rec={date:date,sport:sport,min:min,sec:sec,rpe:rpe,hr:editing?(editing.hr||0):(pending.hr||0),kcal:kcalFor(min,rpe,run&&km>0?km/(min/60):0,sport)};
