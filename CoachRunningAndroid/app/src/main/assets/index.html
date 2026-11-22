@@ -516,7 +516,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Semaine d’une épreuve</b> : la semaine où une course programmée (objectif secondaire, par exemple Polignac) a lieu, la sortie longue est supprimée de la semaine ; la course en tient lieu. La semaine suivante reste allégée.</p>
     <p><b>Couleur de la trace</b> : sur la carte (pendant la sortie, et dans le détail d’une activité après coup), le bouton « Pente / FC » (en bas à gauche de la carte pendant la sortie, au-dessus du bouton SOS ; en haut à droite dans le détail) change les couleurs du tracé : par pente du terrain, ou par zone de fréquence cardiaque (gris si pas de FC). Vous pouvez permuter à tout moment, le choix est mémorisé. <b>Bluetooth</b> : au démarrage d’une sortie, si le Bluetooth est éteint, Android propose de l’activer (pour la ceinture ou la montre cardio).</p>
     <p><b>Alerte cardiaque automatique</b> : si la FC reste sous 40 bpm pendant 15 secondes au cours d’une sortie, l’appli lance seule une alerte comme le SOS (même compte à rebours que le SOS, avec « Envoyer maintenant » et « ANNULER ») : à la fin du compte à rebours, un SMS « URGENCE problème cardiaque » avec votre position et le lien de suivi part vers les destinataires SOS, avec les appels automatiques réglés. La FC s’affiche en rouge dès qu’elle passe sous 40, comme quand elle dépasse la FC max. Il faut des destinataires SOS réglés (⚙, rubrique SOS) et une ceinture ou montre cardio connectée.</p>
-    <p><b>Home trainer connecté</b> : choisissez l’activité « Home trainer », puis touchez « Connecter le home trainer » (Bluetooth ; réveillez-le en pédalant et fermez Zwift ou les autres applis qui y sont reliées). La puissance, la cadence et la vitesse s’affichent en direct ; la distance est calculée d’après la vitesse du home trainer (pas de GPS à l’intérieur) ; la puissance et la cadence moyennes sont enregistrées avec la séance et visibles dans l’Historique. C’est de la lecture seule : l’appli ne pilote pas encore la résistance. Testé avec les home trainers qui diffusent FTMS ou la puissance en Bluetooth (dont le Xpedo APX Pro).</p>
+    <p><b>Home trainer connecté</b> : choisissez l’activité « Home trainer », puis touchez « Connecter le home trainer » (Bluetooth ; réveillez-le en pédalant et fermez Zwift ou les autres applis qui y sont reliées). La puissance, la cadence et la vitesse s’affichent en direct ; la distance est calculée d’après la vitesse du home trainer (pas de GPS à l’intérieur) ; la puissance et la cadence moyennes sont enregistrées avec la séance et visibles dans l’Historique. C’est de la lecture seule : l’appli ne pilote pas encore la résistance. Testé avec les home trainers qui diffusent FTMS ou la puissance en Bluetooth (dont le Xpedo APX Pro). Les séances faites ainsi ont maintenant un « Détail » dans Courbes : puissance, FC, cadence et vitesse au fil du temps (pas de carte). Les séances de home trainer déjà enregistrées avant cette version n’ont pas ces courbes.</p>
     <p><b>Charge et triathlon</b> (profil) : la charge d’une activité = durée × RPE × un coefficient selon le sport. Le réglage « Triathlon » compte plus le vélo (0,85, VTT 0,9) et la natation (0,8) que le réglage standard (0,7 et 0,6) : utile si vous vous entraînez aussi à vélo et en piscine, car ces séances pèsent alors davantage dans la forme, les courbes et l’allègement des séances.</p>
     <p><b>Terrain « Mixte »</b> (profil, rubrique Terrain de « Mes caractéristiques ») : s’applique aussi avec un objectif, et choisir une course dans le tableau ne le remplace plus. Sans « Mixte », le terrain suit le dénivelé de la course. En mixte, la sortie longue est en terrain varié, le fractionné alterne une semaine en côtes et une semaine sur route, les footings restent sur route, et un renforcement s’ajoute à partir de 4 séances par semaine.</p>
     <p><b>Présentation</b> : fond clair uni, cartes blanches espacées et lisibles, sans bandeau coloré ; seul le cadre de chaque carte est coloré (bleu, vert, orange, rose en alternance) pour bien séparer les rubriques.</p>
@@ -578,6 +578,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
       <h3 class="dt">Altitude (m)</h3><canvas id="c-alt"></canvas>
       <h3 class="dt">Fréquence cardiaque (bpm)</h3><canvas id="c-hr"></canvas><div class="mute hidden" id="d-zleg" style="font-size:12px;line-height:1.8"></div>
       <h3 class="dt">Cadence</h3><canvas id="c-cad"></canvas>
+      <h3 class="dt">Puissance (W)</h3><canvas id="c-pw"></canvas>
     </div>
   </div>
   <div class="card">
@@ -1313,7 +1314,7 @@ new MutationObserver(()=>{const t=$("gmsg").textContent;$("lgps").textContent=t.
 $("lrec").onclick=()=>{follow=true;if(lmap&&lmark)lmap.setView(lmark.getLatLng(),Math.max(lmap.getZoom(),16))};
 
 function resetLive(){
-  gRaw=[];gDist=0;gGain=0;gBase=null;gEle=[];hrSamples=[];lastHr=0;lowSince=0;lowFired=false;trPw=[];trCad=[];trDist=0;trLastT=0;splits=[];lastPt=null;nIdx=0;nextRec=recapKm||0;
+  gRaw=[];gDist=0;gGain=0;gBase=null;gEle=[];hrSamples=[];lastHr=0;lowSince=0;lowFired=false;trPw=[];trCad=[];trRaw=[];trDist=0;trLastT=0;splits=[];lastPt=null;nIdx=0;nextRec=recapKm||0;
   ["gdist","gdp"].forEach(i=>$(i).textContent=i==="gdist"?"0,00":"0");
   $("gpace").textContent=$("gavg").textContent=$("hr").textContent="--";$("hrz").textContent="";
   $("lrecap").classList.add("hidden");setBad();
@@ -1725,6 +1726,7 @@ $("cfm-save").onclick=async()=>{
   const hasG=gRaw.length>=5&&gDist>=50;
   const rec={id:uid(),date:new Date(t0).toLocaleDateString("sv-SE"),sport:liveSport,min:min,sec:sec,ts:t0,rpe:rpe,hr:avg,kcal:kcalFor(min,rpe,hasG?gDist/1000/(Math.max(1,min)/60):0)};
   if(trPw.length>=10){rec.pw=Math.round(trPw.reduce((a,b)=>a+b,0)/trPw.length);if(trCad.length)rec.cad=Math.round(trCad.reduce((a,b)=>a+b,0)/trCad.length);if(!hasG&&trDist>=100){rec.km=Math.round(trDist/100)/10}}
+  if(!hasG&&trRaw.length>=10){const tp=mkTrace(trRaw.map(p=>({t:p.t,d:p.d,hr:p.hr,cad:p.cad,pw:p.pw})));if(tp)traces[rec.id]=tp}
   let pts=null;
   if(hasG){pts=mkTrace(gRaw.map(p=>({t:p.t,lat:p.lat,lon:p.lon,ele:p.ele,hr:p.hr})));rec.km=Math.round(gDist/100)/10;rec.dplus=Math.round(gGain);if(pts)traces[rec.id]=pts}
   sessions.push(rec);persist();persistT();
@@ -1754,7 +1756,7 @@ $("cfm-save").onclick=async()=>{
 window.onNativeHr=b=>{if(b>0){$("msg").textContent="";lastHr=b;setBad();$("hr").textContent=b}};
 window.onNativeMsg=t=>{$("msg").textContent=t};
 /* Home trainer (Bluetooth FTMS / puissance) : lecture seule */
-let trPw=[],trCad=[],trDist=0,trLastT=0,trOn=false;
+let trPw=[],trCad=[],trRaw=[],trDist=0,trLastT=0,trOn=false;
 function trUI(){const b=$("btr");if(b)b.classList.toggle("hidden",liveSport!=="TRAINER"||!NAT())}
 window.onNativeTrainer=(w,c,v)=>{
   const now=Date.now();trOn=true;
@@ -1771,6 +1773,7 @@ window.onNativeTrainer=(w,c,v)=>{
     $("gdist").textContent=((gDist+trDist)/1000).toFixed(2).replace(".",",");
   }
   if(lastHr>0)hrSamples.push(lastHr);
+  trRaw.push({t:now,d:trDist,hr:lastHr>0?lastHr:null,cad:c>0?c:null,pw:w});
   $("msg").textContent="";
 };
 $("btr").onclick=()=>{const n=NAT();if(!n||!n.connectTrainer){$("msg").textContent="Home trainer : disponible seulement dans l’appli Android.";return}n.connectTrainer();$("msg").textContent="Recherche du home trainer…"};
@@ -2355,7 +2358,7 @@ function mkTrace(raw){
   });
   const d0=raw[0].dd,step=Math.max(1,Math.ceil(raw.length/250)),out=[];
   const alt=i=>{let s=0,c=0;for(let k=Math.max(0,i-2);k<=Math.min(raw.length-1,i+2);k++)if(raw[k].ele!=null&&isFinite(raw[k].ele)){s+=raw[k].ele;c++}return c?Math.round(s/c*10)/10:null};
-  const row=i=>{const p=raw[i];return [Math.round((p.t-t0)/1000),Math.round(p.dd-d0),alt(i),p.hr!=null?Math.round(p.hr):null,p.cad!=null?Math.round(p.cad):null,p.lat!=null&&isFinite(p.lat)?Math.round(p.lat*1e5)/1e5:null,p.lon!=null&&isFinite(p.lon)?Math.round(p.lon*1e5)/1e5:null]};
+  const row=i=>{const p=raw[i];return [Math.round((p.t-t0)/1000),Math.round(p.dd-d0),alt(i),p.hr!=null?Math.round(p.hr):null,p.cad!=null?Math.round(p.cad):null,p.lat!=null&&isFinite(p.lat)?Math.round(p.lat*1e5)/1e5:null,p.lon!=null&&isFinite(p.lon)?Math.round(p.lon*1e5)/1e5:null,p.pw!=null?Math.round(p.pw):null]};
   for(let i=0;i<raw.length;i+=step)out.push(row(i));
   if((raw.length-1)%step!==0)out.push(row(raw.length-1));
   return out;
@@ -2697,7 +2700,7 @@ const IGN="https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0
 function renderDetailSel(){
   const sel=$("d-sel"),list=sessions.filter(s=>traces[s.id]).reverse();
   sel.innerHTML="";
-  if(!list.length){$("d-info").textContent="Aucune activité avec trace. Importez un fichier FIT, GPX ou TCX depuis la roue ⚙.";$("d-body").classList.add("hidden");return}
+  if(!list.length){$("d-info").textContent="Aucune activité avec trace (GPS ou home trainer). Importez un fichier FIT, GPX ou TCX depuis la roue ⚙.";$("d-body").classList.add("hidden");return}
   list.forEach(s=>{const o=document.createElement("option");o.value=s.id;o.textContent=fmtDate(s.date).slice(0,5)+" · "+(SPORTS[s.sport]||"Course")+" · "+durText(s)+(s.km?" · "+dec(s.km)+" km":"");sel.appendChild(o)});
   if(!list.some(s=>s.id===detailId))detailId=list[0].id;
   sel.value=detailId;renderDetail();
@@ -2725,6 +2728,7 @@ function renderDetail(){
   $("d-pace-t").textContent=run?"Allure (min/km)":"Vitesse (km/h)";
   line("c-pace",speed,"#2F6BFF",run?{invert:true,fmt:fmtP}:{fmt:dec});
   line("c-cad",pts.map(p=>p[4]==null?null:(run&&p[4]<120?p[4]*2:p[4])),"#18B26B",{fmt:v=>String(Math.round(v))});
+  line("c-pw",pts.map(p=>p[7]==null?null:p[7]),"#F59E0B",{fmt:v=>String(Math.round(v))});
   detailSummary(s,pts,run);
   drawMap(pts);
 }
