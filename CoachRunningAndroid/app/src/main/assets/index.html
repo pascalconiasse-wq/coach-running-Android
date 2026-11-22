@@ -342,6 +342,8 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
         <div><span class="lk">Allure</span><b id="gpace">--</b><i>/km</i></div>
         <div><span class="lk">Moyenne</span><b id="gavg">--</b><i>/km</i></div>
         <div><span class="lk">FC</span><b id="hr">--</b><i>bpm</i></div>
+        <div id="tpw" class="hidden"><span class="lk">Puissance</span><b id="gpw">--</b><i>W</i></div>
+        <div id="tcad" class="hidden"><span class="lk">Cadence</span><b id="gcad">--</b><i>tr/min</i></div>
       </div>
       <div class="lhz" id="hrz"></div>
       <div class="lhz" id="lgps"></div>
@@ -408,6 +410,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
       </details>
     </div>
     <button class="alt" id="bhr">Connecter la ceinture ou montre (FC)</button>
+    <button class="alt hidden" id="btr">Connecter le home trainer (puissance, cadence)</button>
   </div>
   <button id="lstart" class="hidden">Démarrer la séance</button>
   <button class="stop" id="end">Terminer la séance</button>
@@ -509,6 +512,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Semaine d’une épreuve</b> : la semaine où une course programmée (objectif secondaire, par exemple Polignac) a lieu, la sortie longue est supprimée de la semaine ; la course en tient lieu. La semaine suivante reste allégée.</p>
     <p><b>Couleur de la trace</b> : sur la carte (pendant la sortie, et dans le détail d’une activité après coup), le bouton « Pente / FC » (en bas à gauche de la carte pendant la sortie, au-dessus du bouton SOS ; en haut à droite dans le détail) change les couleurs du tracé : par pente du terrain, ou par zone de fréquence cardiaque (gris si pas de FC). Vous pouvez permuter à tout moment, le choix est mémorisé. <b>Bluetooth</b> : au démarrage d’une sortie, si le Bluetooth est éteint, Android propose de l’activer (pour la ceinture ou la montre cardio).</p>
     <p><b>Alerte cardiaque automatique</b> : si la FC reste sous 40 bpm pendant 15 secondes au cours d’une sortie, l’appli lance seule une alerte comme le SOS (même compte à rebours que le SOS, avec « Envoyer maintenant » et « ANNULER ») : à la fin du compte à rebours, un SMS « URGENCE problème cardiaque » avec votre position et le lien de suivi part vers les destinataires SOS, avec les appels automatiques réglés. La FC s’affiche en rouge dès qu’elle passe sous 40, comme quand elle dépasse la FC max. Il faut des destinataires SOS réglés (⚙, rubrique SOS) et une ceinture ou montre cardio connectée.</p>
+    <p><b>Home trainer connecté</b> : choisissez l’activité « Home trainer », puis touchez « Connecter le home trainer » (Bluetooth ; réveillez-le en pédalant et fermez Zwift ou les autres applis qui y sont reliées). La puissance, la cadence et la vitesse s’affichent en direct ; la distance est calculée d’après la vitesse du home trainer (pas de GPS à l’intérieur) ; la puissance et la cadence moyennes sont enregistrées avec la séance et visibles dans l’Historique. C’est de la lecture seule : l’appli ne pilote pas encore la résistance. Testé avec les home trainers qui diffusent FTMS ou la puissance en Bluetooth (dont le Xpedo APX Pro).</p>
     <p><b>Charge et triathlon</b> (profil) : la charge d’une activité = durée × RPE × un coefficient selon le sport. Le réglage « Triathlon » compte plus le vélo (0,85, VTT 0,9) et la natation (0,8) que le réglage standard (0,7 et 0,6) : utile si vous vous entraînez aussi à vélo et en piscine, car ces séances pèsent alors davantage dans la forme, les courbes et l’allègement des séances.</p>
     <p><b>Terrain « Mixte »</b> (profil, rubrique Terrain de « Mes caractéristiques ») : s’applique aussi avec un objectif, et choisir une course dans le tableau ne le remplace plus. Sans « Mixte », le terrain suit le dénivelé de la course. En mixte, la sortie longue est en terrain varié, le fractionné alterne une semaine en côtes et une semaine sur route, les footings restent sur route, et un renforcement s’ajoute à partir de 4 séances par semaine.</p>
     <p><b>Présentation</b> : fond clair uni, cartes blanches espacées et lisibles, sans bandeau coloré ; seul le cadre de chaque carte est coloré (bleu, vert, orange, rose en alternance) pour bien séparer les rubriques.</p>
@@ -1132,7 +1136,7 @@ const mpv=()=>{const v=$("l-maxpace").value;if(BIKE()){const k=parseFloat(String
 const BIKE=()=>liveSport==="CYCLING"||liveSport==="MTB"||liveSport==="GRAVEL"||liveSport==="TRAINER";
 const PV=sk=>BIKE()?(isFinite(sk)&&sk>0&&sk<1800?(Math.round(3600/sk*10)/10).toFixed(1).replace(".",","):"--"):paceTxt(sk);
 const PU=()=>BIKE()?"km/h":"/km";
-function setUnits(){const u=document.querySelectorAll("#lov .lg i");if(u[2])u[2].textContent=PU();if(u[3])u[3].textContent=PU();const a=document.querySelectorAll("#lov .lg .lk");if(a[2])a[2].textContent=BIKE()?"Vitesse":"Allure";{const lb=document.querySelector('label[for="l-maxpace"]'),ip=$("l-maxpace"),hb=!!BIKE();if(lb){const t=hb?"Vitesse max (la plus rapide autorisée, km/h, vide = aucune)":"Allure max (la plus rapide autorisée, min/km, vide = aucune)";const n=lb.firstChild;if(n&&n.nodeType===3)n.nodeValue=t;ip.placeholder=hb?"ex. 35":"ex. 5:30";ip.inputMode=hb?"decimal":"numeric"}}}
+function setUnits(){try{trUI()}catch(e){}const u=document.querySelectorAll("#lov .lg i");if(u[2])u[2].textContent=PU();if(u[3])u[3].textContent=PU();const a=document.querySelectorAll("#lov .lg .lk");if(a[2])a[2].textContent=BIKE()?"Vitesse":"Allure";{const lb=document.querySelector('label[for="l-maxpace"]'),ip=$("l-maxpace"),hb=!!BIKE();if(lb){const t=hb?"Vitesse max (la plus rapide autorisée, km/h, vide = aucune)":"Allure max (la plus rapide autorisée, min/km, vide = aucune)";const n=lb.firstChild;if(n&&n.nodeType===3)n.nodeValue=t;ip.placeholder=hb?"ex. 35":"ex. 5:30";ip.inputMode=hb?"decimal":"numeric"}}}
 const paceTxt=sk=>!isFinite(sk)||sk<=0||sk>1800?"--":Math.floor(sk/60)+":"+pad(Math.min(59,Math.round(sk%60)));
 function parsePace(v){const m=/^\s*(\d{1,2})\s*[:.'hm]\s*(\d{1,2})?\s*$/.exec(v||"");if(!m)return 0;const s=+m[1]*60+(+m[2]||0);return s>=120&&s<=900?s:0}
 function limits(){
@@ -1304,7 +1308,7 @@ new MutationObserver(()=>{const t=$("gmsg").textContent;$("lgps").textContent=t.
 $("lrec").onclick=()=>{follow=true;if(lmap&&lmark)lmap.setView(lmark.getLatLng(),Math.max(lmap.getZoom(),16))};
 
 function resetLive(){
-  gRaw=[];gDist=0;gGain=0;gBase=null;gEle=[];hrSamples=[];lastHr=0;lowSince=0;lowFired=false;splits=[];lastPt=null;nIdx=0;nextRec=recapKm||0;
+  gRaw=[];gDist=0;gGain=0;gBase=null;gEle=[];hrSamples=[];lastHr=0;lowSince=0;lowFired=false;trPw=[];trCad=[];trDist=0;trLastT=0;splits=[];lastPt=null;nIdx=0;nextRec=recapKm||0;
   ["gdist","gdp"].forEach(i=>$(i).textContent=i==="gdist"?"0,00":"0");
   $("gpace").textContent=$("gavg").textContent=$("hr").textContent="--";$("hrz").textContent="";
   $("lrecap").classList.add("hidden");setBad();
@@ -1433,7 +1437,7 @@ function startSession(){
   /* écran de préparation : réglages puis « Démarrer » */
   liveLoad();livePre(true);show("live");
 }
-(function(){const s=$("l-sport");["RUN_ROUTE","RUN_TRAIL","RUN_MIXED","WALK","MTB","GRAVEL","CYCLING","TRAINER","HORSE","OTHER"].forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=SPORTS[k];s.appendChild(o)});s.onchange=()=>{liveSport=s.value;setUnits()}})();
+(function(){const s=$("l-sport");["RUN_ROUTE","RUN_TRAIL","RUN_MIXED","WALK","MTB","GRAVEL","CYCLING","TRAINER","HORSE","OTHER"].forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=SPORTS[k];s.appendChild(o)});s.onchange=()=>{liveSport=s.value;setUnits();trUI()}})();
 function livePre(on){
   $("lwrap").classList.toggle("hidden",on);$("end").classList.toggle("hidden",on);$("lstart").classList.toggle("hidden",!on);
   $("gmsg").classList.toggle("hidden",on);$("prehd").classList.toggle("hidden",!on);
@@ -1662,7 +1666,7 @@ function endLive(){
   liveOn=false;clearInterval(pollId);clearInterval(clockId);pollId=clockId=null;
   if(gWatch!==null){try{navigator.geolocation.clearWatch(gWatch)}catch(e){}gWatch=null}
   clearInterval(jsTimer);if(!NAT())jsPush(true);
-  const n=NAT();if(n){try{n.stop();n.disconnectHr()}catch(e){}}
+  const n=NAT();if(n){try{n.stop();n.disconnectHr();n.disconnectTrainer&&n.disconnectTrainer()}catch(e){}}
   prefs.liveId="";persistP();
   keepScreen(false);
   try{localStorage.removeItem(LKEY)}catch(e){}
@@ -1715,6 +1719,7 @@ $("cfm-save").onclick=async()=>{
   const avg=hrSamples.length?Math.round(hrSamples.reduce((a,b)=>a+b,0)/hrSamples.length):0;
   const hasG=gRaw.length>=5&&gDist>=50;
   const rec={id:uid(),date:new Date(t0).toLocaleDateString("sv-SE"),sport:liveSport,min:min,sec:sec,ts:t0,rpe:rpe,hr:avg,kcal:kcalFor(min,rpe,hasG?gDist/1000/(Math.max(1,min)/60):0)};
+  if(trPw.length>=10){rec.pw=Math.round(trPw.reduce((a,b)=>a+b,0)/trPw.length);if(trCad.length)rec.cad=Math.round(trCad.reduce((a,b)=>a+b,0)/trCad.length);if(!hasG&&trDist>=100){rec.km=Math.round(trDist/100)/10}}
   let pts=null;
   if(hasG){pts=mkTrace(gRaw.map(p=>({t:p.t,lat:p.lat,lon:p.lon,ele:p.ele,hr:p.hr})));rec.km=Math.round(gDist/100)/10;rec.dplus=Math.round(gGain);if(pts)traces[rec.id]=pts}
   sessions.push(rec);persist();persistT();
@@ -1743,6 +1748,27 @@ $("cfm-save").onclick=async()=>{
 /* Ceinture / montre cardio */
 window.onNativeHr=b=>{if(b>0){$("msg").textContent="";lastHr=b;setBad();$("hr").textContent=b}};
 window.onNativeMsg=t=>{$("msg").textContent=t};
+/* Home trainer (Bluetooth FTMS / puissance) : lecture seule */
+let trPw=[],trCad=[],trDist=0,trLastT=0,trOn=false;
+function trUI(){const b=$("btr");if(b)b.classList.toggle("hidden",liveSport!=="TRAINER"||!NAT())}
+window.onNativeTrainer=(w,c,v)=>{
+  const now=Date.now();trOn=true;
+  $("tpw").classList.remove("hidden");$("tcad").classList.remove("hidden");
+  $("gpw").textContent=w;$("gcad").textContent=c>0?c:"--";
+  if(!t0||typeof liveOn==="undefined"||!liveOn){trLastT=now;return}
+  if(now-trLastT<800&&trLastT)return;           /* un échantillon par seconde environ */
+  const dt=trLastT?Math.min(3,(now-trLastT)/1000):1;trLastT=now;
+  trPw.push(w);if(c>0)trCad.push(c);
+  if(v>=0){
+    $("gpace").textContent=v.toFixed(1).replace(".",",");
+    /* pas de GPS à l'intérieur : la distance vient de la vitesse du home trainer */
+    if(!lastPt||now-lastPt.t>10000)trDist+=v/3.6*dt;
+    $("gdist").textContent=((gDist+trDist)/1000).toFixed(2).replace(".",",");
+  }
+  if(lastHr>0)hrSamples.push(lastHr);
+  $("msg").textContent="";
+};
+$("btr").onclick=()=>{const n=NAT();if(!n||!n.connectTrainer){$("msg").textContent="Home trainer : disponible seulement dans l’appli Android.";return}n.connectTrainer();$("msg").textContent="Recherche du home trainer…"};
 $("bhr").onclick=async()=>{
   const msg=$("msg");
   if(NAT()){NAT().connectHr();msg.textContent="Recherche de la ceinture ou montre (diffusion cardio activée ?)…";return}
@@ -2638,7 +2664,7 @@ function renderActs(){
       b2.onclick=()=>{const i=sessions.indexOf(s);if(i>=0){sessions.splice(i,1);delete traces[s.id];persistT();if(editing===s)endEdit();persist();renderActs()}};
       a.style.cursor="pointer";a.setAttribute("role","button");a.tabIndex=0;
       const more=document.createElement("small");more.className="mute";more.style.display="none";more.style.marginTop="4px";
-      more.textContent=[s.hr?"FC moy. "+s.hr+" bpm":"",s.kcal?s.kcal+" kcal":"",s.rpe?"RPE "+s.rpe+"/10":"",s.km&&s.min?"allure moy. "+fmtP(s.min*60/s.km)+" /km":"","pas de trace GPS"].filter(Boolean).join(" · ");
+      more.textContent=[s.hr?"FC moy. "+s.hr+" bpm":"",s.pw?"puissance moy. "+s.pw+" W":"",s.cad?"cadence moy. "+s.cad+" tr/min":"",s.kcal?s.kcal+" kcal":"",s.rpe?"RPE "+s.rpe+"/10":"",s.km&&s.min?"allure moy. "+fmtP(s.min*60/s.km)+" /km":"","pas de trace GPS"].filter(Boolean).join(" · ");
       a.onclick=()=>{if(traces[s.id]){detailId=s.id;show("stats");$("d-sel").scrollIntoView()}else{more.style.display=more.style.display==="none"?"block":"none"}};
       a.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();a.click()}};
       if(!traces[s.id]){const d=document.createElement("div");d.append(more);a.append(d)}

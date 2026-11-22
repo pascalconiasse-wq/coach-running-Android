@@ -463,6 +463,138 @@ class HrClient(
     }
 }
 
+
+/** Home trainer connecté en Bluetooth : FTMS (Indoor Bike Data) ou, à défaut, Cycling Power. Lecture seule. */
+class TrainerClient(
+    private val ctx: Context,
+    private val onData: (Int, Int, Double) -> Unit,   // puissance (W), cadence (tr/min), vitesse (km/h, -1 si inconnue)
+    private val onMsg: (String) -> Unit
+) {
+    private val ftms = UUID.fromString("00001826-0000-1000-8000-00805f9b34fb")
+    private val bikeData = UUID.fromString("00002ad2-0000-1000-8000-00805f9b34fb")
+    private val cps = UUID.fromString("00001818-0000-1000-8000-00805f9b34fb")
+    private val cpsMeas = UUID.fromString("00002a63-0000-1000-8000-00805f9b34fb")
+    private val ccc = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+    private val handler = Handler(Looper.getMainLooper())
+    private var gatt: BluetoothGatt? = null
+    private var scanner: BluetoothLeScanner? = null
+    private var scanning = false
+    private var stopped = false
+    private var usingFtms = true
+
+    private val scanCb = object : ScanCallback() {
+        @SuppressLint("MissingPermission")
+        override fun onScanResult(callbackType: Int, result: ScanResult) {
+            if (!scanning) return
+            scanning = false
+            try { scanner?.stopScan(this) } catch (e: Exception) { }
+            val d = result.device
+            val nm = d.name ?: "home trainer"
+            onMsg("Connexion à " + nm + "…")
+            gatt = d.connectGatt(ctx, false, gattCb)
+        }
+        override fun onScanFailed(errorCode: Int) {
+            scanning = false
+            onMsg("Recherche Bluetooth impossible (code " + errorCode + ").")
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun start() {
+        stopped = false
+        val mgr = ctx.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        val ad = mgr.adapter
+        if (ad == null || !ad.isEnabled) { onMsg("Active le Bluetooth du téléphone."); return }
+        scanner = ad.bluetoothLeScanner
+        val f1 = ScanFilter.Builder().setServiceUuid(ParcelUuid(ftms)).build()
+        val f2 = ScanFilter.Builder().setServiceUuid(ParcelUuid(cps)).build()
+        val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+        scanning = true
+        onMsg("Recherche du home trainer… (réveillez-le en pédalant, fermez Zwift ou les autres applis)")
+        try { scanner?.startScan(listOf(f1, f2), settings, scanCb) } catch (e: Exception) {
+            scanning = false
+            onMsg("Recherche Bluetooth impossible : autorise « Appareils à proximité ».")
+            return
+        }
+        handler.postDelayed({
+            if (scanning) {
+                scanning = false
+                try { scanner?.stopScan(scanCb) } catch (e: Exception) { }
+                onMsg("Aucun home trainer trouvé : pédalez pour le réveiller, fermez les autres applis qui y sont connectées, puis réessayez.")
+            }
+        }, 20000)
+    }
+
+    private val gattCb = object : BluetoothGattCallback() {
+        @SuppressLint("MissingPermission")
+        override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                g.discoverServices()
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED && !stopped) {
+                onMsg("Home trainer déconnecté, reconnexion…")
+                handler.postDelayed({ try { if (!stopped) g.connect() } catch (e: Exception) { } }, 3000)
+            }
+        }
+
+        @Suppress("DEPRECATION")
+        @SuppressLint("MissingPermission")
+        override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
+            var c = g.getService(ftms)?.getCharacteristic(bikeData)
+            usingFtms = c != null
+            if (c == null) c = g.getService(cps)?.getCharacteristic(cpsMeas)
+            if (c == null) { onMsg("Cet appareil ne diffuse ni FTMS ni puissance."); return }
+            g.setCharacteristicNotification(c, true)
+            val d = c.getDescriptor(ccc)
+            if (d != null) {
+                d.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                g.writeDescriptor(d)
+            }
+            onMsg("")
+        }
+
+        @Suppress("DEPRECATION")
+        override fun onCharacteristicChanged(g: BluetoothGatt, c: BluetoothGattCharacteristic) { parse(c.uuid, c.value) }
+        override fun onCharacteristicChanged(g: BluetoothGatt, c: BluetoothGattCharacteristic, value: ByteArray) { parse(c.uuid, value) }
+    }
+
+    private fun u16(v: ByteArray, i: Int) = (v[i].toInt() and 0xFF) or ((v[i + 1].toInt() and 0xFF) shl 8)
+    private fun s16(v: ByteArray, i: Int) = u16(v, i).toShort().toInt()
+
+    private fun parse(id: UUID, v: ByteArray?) {
+        if (v == null || v.size < 4) return
+        try {
+            if (id == bikeData) {
+                val fl = u16(v, 0)
+                var i = 2
+                var speed = -1.0
+                var cad = 0
+                var pw = -1
+                if ((fl and 0x1) == 0) { speed = u16(v, i) / 100.0; i += 2 }       // vitesse instantanée (0,01 km/h)
+                if ((fl and 0x2) != 0) i += 2                                      // vitesse moyenne
+                if ((fl and 0x4) != 0) { cad = Math.round(u16(v, i) / 2.0).toInt(); i += 2 } // cadence (0,5 tr/min)
+                if ((fl and 0x8) != 0) i += 2                                      // cadence moyenne
+                if ((fl and 0x10) != 0) i += 3                                     // distance totale
+                if ((fl and 0x20) != 0) i += 2                                     // niveau de résistance
+                if ((fl and 0x40) != 0) { pw = s16(v, i); i += 2 }                 // puissance instantanée
+                if (pw >= 0) onData(pw, cad, speed)
+            } else if (id == cpsMeas) {
+                val pw = s16(v, 2)
+                if (pw >= 0) onData(pw, 0, -1.0)
+            }
+        } catch (e: Exception) { }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun stop() {
+        stopped = true
+        scanning = false
+        try { scanner?.stopScan(scanCb) } catch (e: Exception) { }
+        try { gatt?.disconnect() } catch (e: Exception) { }
+        try { gatt?.close() } catch (e: Exception) { }
+        gatt = null
+    }
+}
+
 /** Pont JavaScript "AndroidTrack" : démarre/arrête le suivi, relit les points, gère le cardio. */
 class TrackBridge(
     private val act: ComponentActivity,
@@ -625,6 +757,33 @@ class TrackBridge(
                 hr?.start()
             }
         }
+    }
+
+    private var trainer: TrainerClient? = null
+
+    @JavascriptInterface
+    fun connectTrainer() {
+        val perms = ArrayList<String>()
+        if (Build.VERSION.SDK_INT >= 31) {
+            perms.add(Manifest.permission.BLUETOOTH_SCAN)
+            perms.add(Manifest.permission.BLUETOOTH_CONNECT)
+        } else {
+            perms.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        act.runOnUiThread {
+            askPerms(perms.toTypedArray()) {
+                trainer?.stop()
+                trainer = TrainerClient(act, { w, c, v ->
+                    web.post { web.evaluateJavascript("window.onNativeTrainer && onNativeTrainer(" + w + "," + c + "," + v + ")", null) }
+                }, { t -> msg(t) })
+                trainer?.start()
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun disconnectTrainer() {
+        act.runOnUiThread { trainer?.stop(); trainer = null }
     }
 
     @JavascriptInterface
