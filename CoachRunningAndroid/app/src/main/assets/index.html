@@ -540,6 +540,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>RPE automatique</b> : si la FC a été enregistrée pendant la séance (ceinture ou montre), l’intensité perçue demandée à la fin est déjà réglée d’après votre FC moyenne rapportée à votre FC max ; vous pouvez la corriger. Sans FC, elle reste à 6. Les séances importées sont estimées de la même façon. Au premier lancement de cette version, le RPE des séances passées qui ont une FC a été recalculé une fois d’après leur FC moyenne (la charge et les allègements de séances s’en trouvent ajustés).</p>
     <p><b>Récap annuelle</b> : en haut de l’Historique, choisissez une année pour voir le nombre d’activités, la durée, les kilomètres et le dénivelé positif. Elle suit le filtre par type d’activité. Les récaps mensuels affichent aussi les kilomètres.</p>
     <p><b>Ajouter et trier</b> : le bouton « Ajouter une activité » en haut de l’Historique ouvre le formulaire (il se referme après l’enregistrement ou « Annuler »). Sous le bouton, des filtres par type d’activité (course, trail, VTT, vélo…) n’affichent que le sport choisi ; « Tous » les réaffiche.</p>
+    <p><b>Séances au seuil</b> : le niveau intermédiaire a désormais une séance au seuil (zone 4 de FC) dès la phase Développement, sans avoir besoin du test VMA (avec le test, elle est calée sur la VMA). En phase Fondation, un bloc court au seuil remplace une séance facile une semaine sur deux ; avec moins de 5 séances par semaine, le fractionné alterne avec le seuil en Développement. Le niveau débutant reste sans seuil.</p>
     <p><b>Puissance moyenne</b> : dans le formulaire « Ajouter une activité » (ou « Modifier »), le champ facultatif « Puissance moyenne (W) » enregistre la puissance de la séance (vélo, home trainer). En modification, la durée peut être corrigée librement (le contrôle anti-doublon ne s’applique qu’aux nouvelles activités) et les messages d’erreur s’affichent juste au-dessus du bouton. Elle s’affiche dans l’Historique avec la FC et la cadence. Même principe pour la « Vitesse moyenne (km/h) » : si vous ne renseignez pas la distance, elle est calculée à partir de la vitesse et de la durée.</p>
     <p><b>Compteur Bryton</b> : Bryton Active n’écrit pas dans Health Connect. Deux solutions : (1) Bryton Active → Strava (synchro automatique) puis Strava → Health Connect (durée, distance, calories) ; (2) dans Bryton Active ouvrir la sortie, exporter le fichier .fit ou .gpx et l’importer ici avec « Choisir un ou plusieurs fichiers » (trace GPS, FC et D+ complets).</p>
     <p><b>Pente en couleur</b> : sur la carte, le parcours GPX chargé et le tracé déjà parcouru sont colorés par tronçon de ≈100 m selon la pente (bleu : descente, vert : plat, jaune/orange/rouge : montée, violet : &gt; 12 %). Visible aussi dans le détail d’une sortie de l’Historique.</p>
@@ -779,12 +780,13 @@ function weekPlan(off,raw){
     let s=SEQ[n][i];
     const V=!!profile.vma&&(c.phase==="Développement"||c.phase==="Spécifique");
     if(profile.level==="debutant"&&(s===T||(s===I&&!V)))s=E;
-    if(profile.level==="inter"&&s===T&&!(V&&c.phase==="Spécifique"))s=E;
-    if(c.phase==="Fondation"&&s===I)s=E;
+    if(profile.level==="inter"&&s===T&&c.phase==="Fondation")s=E;
+    if(c.phase==="Fondation"&&s===I)s=profile.level!=="debutant"&&c.wl%2===0?T:E;
+    if(c.phase==="Développement"&&s===I&&n<5&&profile.level!=="debutant"&&c.mp===1)s=T;
     if(c.phase==="Affûtage"&&s===T)s=E;
     if(c.phase==="Course"&&s!==E)s=E;
     if(c.spec&&s===I)s=T;
-    days[d]=sessInfo(s,c);
+    days[d]=sessInfo(s,s===T&&c.phase==="Fondation"?{...c,tMin:Math.max(5,roundTo(c.tMin*.6,5))}:c);
   });
   if((c.kind==="trail"||c.kind==="mixte")&&n>=4&&(c.phase==="Fondation"||c.phase==="Développement"||c.phase==="Spécifique")){
     const es=Object.keys(days).filter(d=>days[d].t===E);

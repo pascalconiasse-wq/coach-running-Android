@@ -15,7 +15,8 @@
    "Home trainer Bluetooth (testé en théorie avec le Xpedo APX Pro) : avec l’activité « Home trainer », bouton « Connecter le home trainer » ; puissance, cadence et vitesse en direct, distance calculée d’après la vitesse, puissance et cadence moyennes enregistrées dans la séance et visibles dans l’Historique. Lecture seule (pas de pilotage de la résistance).",
    "Saisie manuelle : nouveau champ facultatif « Puissance moyenne (W) » et « Vitesse moyenne (km/h) » (la distance est calculée si elle est vide) dans « Ajouter une activité » et « Modifier » (vélo, home trainer), visible dans l’Historique.",
    "Home trainer : la séance enregistre maintenant ses courbes (puissance, FC, cadence, vitesse) ; elle apparaît dans Courbes › Détail d’une activité, avec un nouveau graphique Puissance.",
-   "Modification d’une activité : la durée n’est plus refusée à tort comme « déjà enregistrée » (séance chevauchant une autre, home trainer notamment) ; les messages d’erreur s’affichent au-dessus du bouton."
+   "Modification d’une activité : la durée n’est plus refusée à tort comme « déjà enregistrée » (séance chevauchant une autre, home trainer notamment) ; les messages d’erreur s’affichent au-dessus du bouton.",
+   "Plan : le niveau intermédiaire a maintenant des séances au seuil (zone 4) dès la phase Développement, sans test VMA obligatoire ; en Fondation, un bloc court au seuil une semaine sur deux ; avec moins de 5 séances par semaine, le fractionné alterne avec le seuil. Le niveau débutant reste sans seuil."
   ]
  },
  {
