@@ -543,6 +543,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Séances au seuil</b> : le niveau intermédiaire a désormais une séance au seuil (zone 4 de FC) dès la phase Développement, sans avoir besoin du test VMA (avec le test, elle est calée sur la VMA). En phase Fondation, un bloc court au seuil remplace une séance facile une semaine sur deux ; avec moins de 5 séances par semaine, le fractionné alterne avec le seuil en Développement ; avec 2 séances par semaine, la séance facile devient une séance au seuil (Fondation) ou alterne seuil et fractionné (Développement, Spécifique). Le niveau débutant reste sans seuil.</p>
     <p><b>Carte pendant la sortie</b> : la carte reste centrée sur votre position. Vous pouvez zoomer ou la déplacer avec le doigt ; 8 secondes après avoir lâché la carte, elle se recentre toute seule sur vous. Le bouton de recentrage le fait tout de suite.</p>
     <p><b>Signal de changement de rythme</b> : quand vous démarrez la séance prévue du jour (bouton de démarrage du plan), chaque changement d’étape est signalé par deux vibrations et deux bips, avec l’étape en cours et la suivante affichées en bas de l’écran : échauffement, seuil, retour au calme, et pour le fractionné chaque fraction rapide et chaque trot. Les durées sont celles du programme. L’enregistrement libre n’en a pas. Gardez l’écran allumé (option « garder l’écran allumé ») pour être sûr que le signal parte.</p>
+    <p><b>Séances variées</b> : pour éviter la monotonie, le plan change de forme de semaine en semaine (rotation sur 3 semaines). Séance au seuil : bloc continu, deux blocs séparés par 3 min de trot, ou travail en côte (n × 1 min 30 en côte à effort soutenu). Premier footing facile de la semaine (niveaux intermédiaire et confirmé) : footing normal, footing avec 6 lignes droites de 20 s, ou footing sur terrain vallonné. Les signaux de changement de rythme suivent chaque forme.</p>
     <p><b>Puissance moyenne</b> : dans le formulaire « Ajouter une activité » (ou « Modifier »), le champ facultatif « Puissance moyenne (W) » enregistre la puissance de la séance (vélo, home trainer). En modification, la durée peut être corrigée librement (le contrôle anti-doublon ne s’applique qu’aux nouvelles activités) et les messages d’erreur s’affichent juste au-dessus du bouton. Elle s’affiche dans l’Historique avec la FC et la cadence. Même principe pour la « Vitesse moyenne (km/h) » : si vous ne renseignez pas la distance, elle est calculée à partir de la vitesse et de la durée.</p>
     <p><b>Compteur Bryton</b> : Bryton Active n’écrit pas dans Health Connect. Deux solutions : (1) Bryton Active → Strava (synchro automatique) puis Strava → Health Connect (durée, distance, calories) ; (2) dans Bryton Active ouvrir la sortie, exporter le fichier .fit ou .gpx et l’importer ici avec « Choisir un ou plusieurs fichiers » (trace GPS, FC et D+ complets).</p>
     <p><b>Pente en couleur</b> : sur la carte, le parcours GPX chargé et le tracé déjà parcouru sont colorés par tronçon de ≈100 m selon la pente (bleu : descente, vert : plat, jaune/orange/rouge : montée, violet : &gt; 12 %). Visible aussi dans le détail d’une sortie de l’Historique.</p>
@@ -691,7 +692,11 @@ function segsOf(t,c0){
   const add=(n,m)=>out.push([n,Math.round(m*M)]);
   const reps=(n,fast,fn,slow,sn)=>{for(let i=1;i<=n;i++){add(fn+(n>1?" "+i+"/"+n:""),fast);if(i<n)add(sn,slow)}};
   if(t===LG){add("Échauffement",10);const body=Math.max(5,c.longMin-15);if(c.kind!=="trail"&&c.spec){const rc=roundTo(c.longMin*0.3,5);add("Allure facile",Math.max(1,body-rc));add("Allure course",Math.min(rc,body))}else add(c.kind==="trail"?"Terrain varié":"Allure facile",body);add("Retour au calme",5)}
+  else if(t===E&&c.ev&&c.v===1){add("Échauffement",5);add("Footing facile",Math.max(5,c.easyMin-16));reps(6,1/3,"Ligne droite",2/3,"Trot");add("Retour au calme",5)}
+  else if(t===E&&c.ev&&c.v===2){add("Échauffement",5);add("Footing vallonné",Math.max(5,c.easyMin-10));add("Retour au calme",5)}
   else if(t===E){add("Échauffement",5);add("Footing facile",Math.max(5,c.easyMin-10));add("Retour au calme",5)}
+  else if(t===T&&c.kind!=="trail"&&!c.spec&&c.v===1){const h=Math.max(4,Math.round(c.tMin/2));add("Échauffement",15);add("Seuil 1/2",h);add("Trot",3);add("Seuil 2/2",h);add("Retour au calme",10)}
+  else if(t===T&&c.kind!=="trail"&&!c.spec&&c.v===2){const n=Math.max(4,Math.round(c.tMin/3));add("Échauffement",15);reps(n,1.5,"Côte",1.5,"Descente en trottinant");add("Retour au calme",10)}
   else if(t===T){add("Échauffement",15);add(c.kind==="trail"?"Montée soutenue":c.spec?"Allure course":"Seuil",c.tMin);add("Retour au calme",10)}
   else if(t===I){
     add("Échauffement",15);
@@ -712,6 +717,10 @@ function sessInfo0(t,c){
   if(t==="REST")return {t:t};
   const K=c.kind,tr=K==="trail"||(K==="mixte"&&(t===LG||(t===I&&c.mp===1)));c={...c,kind:tr?"trail":"route"};
   if(t===LG)return {t:t,m:c.longMin,d:"Échauffement 10 min très faciles (marche rapide puis trot lent), puis "+Math.max(5,c.longMin-15)+" min "+(c.kind==="trail"?"en terrain varié"+(c.dpl?" (environ "+c.dpl+" m D+)":"")+", marche rapide dans les fortes pentes, testez votre ravitaillement":"à allure facile"+(c.spec?", dont "+roundTo(c.longMin*0.3,5)+" min à allure course":"")+", hydratez-vous")+", retour au calme 5 min en trottant très lent puis marche. Si la FC dépasse la limite, ralentissez ou marchez"};
+  if(t===E&&c.ev&&c.v===1)return {t:t,m:c.easyMin,d:"Échauffement 5 min très facile (marche rapide puis trot lent), puis "+Math.max(5,c.easyMin-16)+" min de footing facile, puis 6 lignes droites de 20 s en accélérant progressivement (jamais à fond) avec 40 s de trot entre chaque, retour au calme 5 min en marchant"};
+  if(t===E&&c.ev&&c.v===2)return {t:t,m:c.easyMin,d:"Échauffement 5 min très facile, puis "+Math.max(5,c.easyMin-10)+" min de footing facile sur terrain vallonné (chemin ou côtes douces), FC en zone 2 : marchez dans les pentes si elle monte, retour au calme 5 min en marchant"};
+  if(t===T&&c.kind!=="trail"&&!c.spec&&c.v===1){const h=Math.max(4,Math.round(c.tMin/2)),vm=profile&&profile.vma;return {t:t,m:25+2*h+3,d:"15 min d’échauffement, 2 × "+h+" min "+(vm?"à 85–88 % de la VMA ("+vk(.85)+"–"+vk(.88)+" km/h, soit "+vp(.88)+"–"+vp(.85)+" /km)":"à allure seuil")+" avec 3 min de trot entre les deux blocs, retour au calme 10 min (trot lent puis marche)"}}
+  if(t===T&&c.kind!=="trail"&&!c.spec&&c.v===2){const n=Math.max(4,Math.round(c.tMin/3));return {t:t,m:25+n*3,d:"15 min d’échauffement, travail en côte : "+n+" × 1 min 30 en côte (5 à 8 %) à effort soutenu, zone 4 de FC, descente en trottinant pour récupérer, retour au calme 10 min (trot lent puis marche)"}}
   if(t===E)return {t:t,m:c.easyMin,d:"Échauffement 5 min très facile (marche rapide puis trot lent), puis "+Math.max(5,c.easyMin-10)+" min "+(c.kind==="trail"?"de footing facile sur chemin, terrain varié":"à allure conversationnelle (vous devez pouvoir parler)")+", retour au calme 5 min en marchant"};
   if(t===T&&profile&&profile.vma&&c.kind!=="trail"&&!c.spec)return {t:t,m:25+c.tMin,d:"15 min d’échauffement, "+c.tMin+" min à 85–88 % de la VMA ("+vk(.85)+"–"+vk(.88)+" km/h, soit "+vp(.88)+"–"+vp(.85)+" /km), retour au calme 10 min (trot lent puis marche)"};
   if(t===I&&profile&&profile.vma&&c.kind!=="trail"){
@@ -754,7 +763,7 @@ function weekCtx(mon){
   let xr=null;
   if(!taper)(profile.extra||[]).forEach(e=>{const w=Math.round((mondayOf(new Date(e.date+"T00:00:00"))-mon)/(7*DAY));if((w===0||w===1)&&(!xr||w<xr.w))xr={name:e.name,km:e.km,w:w,date:e.date}});
   if(xr)frac*=xr.w===0?.6:.85;
-  return {xr:xr,phase:phase,wl:wl,dpl:dpl,kind:kind,mp:Math.round(mon.getTime()/(7*DAY))%2,spec:spec,longMin:roundTo(longMax*frac,5),
+  return {v:Math.round(mon.getTime()/(7*DAY))%3,xr:xr,phase:phase,wl:wl,dpl:dpl,kind:kind,mp:Math.round(mon.getTime()/(7*DAY))%2,spec:spec,longMin:roundTo(longMax*frac,5),
     easyMin:phase==="Course"?25:roundTo({debutant:30,inter:40,confirme:50}[lvl]*(taper?.8:1),5),
     reps:{debutant:5,inter:6,confirme:8}[lvl]+(phase==="Spécifique"?2:0),
     tMin:{debutant:10,inter:15,confirme:20}[lvl]+(phase==="Spécifique"?5:0)};
@@ -801,6 +810,7 @@ function weekPlan(off,raw){
   const c=weekCtx(mon),n=profile.days,days={};
   if(!raw&&off>=1)applyAdapt(c,off);
   for(let d=1;d<=7;d++)days[d]={t:"REST"};
+  let evDone=false;
   WEEK[n].forEach((d,i)=>{
     let s=SEQ[n][i];
     const V=!!profile.vma&&(c.phase==="Développement"||c.phase==="Spécifique");
@@ -811,7 +821,9 @@ function weekPlan(off,raw){
     if(c.phase==="Affûtage"&&s===T)s=E;
     if(c.phase==="Course"&&s!==E)s=E;
     if(c.spec&&s===I)s=T;
-    days[d]=sessInfo(s,s===T&&c.phase==="Fondation"?{...c,tMin:Math.max(5,roundTo(c.tMin*.6,5))}:c);
+    let cc=s===T&&c.phase==="Fondation"?{...c,tMin:Math.max(5,roundTo(c.tMin*.6,5))}:c;
+    if(s===E&&!evDone&&profile.level!=="debutant"&&(c.phase==="Fondation"||c.phase==="Développement"||c.phase==="Spécifique")){evDone=true;cc={...cc,ev:1}}
+    days[d]=sessInfo(s,cc);
   });
   if((c.kind==="trail"||c.kind==="mixte")&&n>=4&&(c.phase==="Fondation"||c.phase==="Développement"||c.phase==="Spécifique")){
     const es=Object.keys(days).filter(d=>days[d].t===E);
