@@ -542,6 +542,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Ajouter et trier</b> : le bouton « Ajouter une activité » en haut de l’Historique ouvre le formulaire (il se referme après l’enregistrement ou « Annuler »). Sous le bouton, des filtres par type d’activité (course, trail, VTT, vélo…) n’affichent que le sport choisi ; « Tous » les réaffiche.</p>
     <p><b>Séances au seuil</b> : le niveau intermédiaire a désormais une séance au seuil (zone 4 de FC) dès la phase Développement, sans avoir besoin du test VMA (avec le test, elle est calée sur la VMA). En phase Fondation, un bloc court au seuil remplace une séance facile une semaine sur deux ; avec moins de 5 séances par semaine, le fractionné alterne avec le seuil en Développement ; avec 2 séances par semaine, la séance facile devient une séance au seuil (Fondation) ou alterne seuil et fractionné (Développement, Spécifique). Le niveau débutant reste sans seuil.</p>
     <p><b>Carte pendant la sortie</b> : la carte reste centrée sur votre position. Vous pouvez zoomer ou la déplacer avec le doigt ; 8 secondes après avoir lâché la carte, elle se recentre toute seule sur vous. Le bouton de recentrage le fait tout de suite.</p>
+    <p><b>Signal de changement de rythme</b> : quand vous démarrez la séance prévue du jour (bouton de démarrage du plan), chaque changement d’étape est signalé par deux vibrations et deux bips, avec l’étape en cours et la suivante affichées en bas de l’écran : échauffement, seuil, retour au calme, et pour le fractionné chaque fraction rapide et chaque trot. Les durées sont celles du programme. L’enregistrement libre n’en a pas. Gardez l’écran allumé (option « garder l’écran allumé ») pour être sûr que le signal parte.</p>
     <p><b>Puissance moyenne</b> : dans le formulaire « Ajouter une activité » (ou « Modifier »), le champ facultatif « Puissance moyenne (W) » enregistre la puissance de la séance (vélo, home trainer). En modification, la durée peut être corrigée librement (le contrôle anti-doublon ne s’applique qu’aux nouvelles activités) et les messages d’erreur s’affichent juste au-dessus du bouton. Elle s’affiche dans l’Historique avec la FC et la cadence. Même principe pour la « Vitesse moyenne (km/h) » : si vous ne renseignez pas la distance, elle est calculée à partir de la vitesse et de la durée.</p>
     <p><b>Compteur Bryton</b> : Bryton Active n’écrit pas dans Health Connect. Deux solutions : (1) Bryton Active → Strava (synchro automatique) puis Strava → Health Connect (durée, distance, calories) ; (2) dans Bryton Active ouvrir la sortie, exporter le fichier .fit ou .gpx et l’importer ici avec « Choisir un ou plusieurs fichiers » (trace GPS, FC et D+ complets).</p>
     <p><b>Pente en couleur</b> : sur la carte, le parcours GPX chargé et le tracé déjà parcouru sont colorés par tronçon de ≈100 m selon la pente (bleu : descente, vert : plat, jaune/orange/rouge : montée, violet : &gt; 12 %). Visible aussi dans le détail d’une sortie de l’Historique.</p>
@@ -684,7 +685,30 @@ function interp(tb,k){
 const GNAMES={5:"5 km",10:"10 km",21.0975:"semi-marathon",42.195:"marathon"};
 const goalName=()=>{const g=profile&&profile.goal;if(!g)return "";if(!g.custom)return GNAMES[g.km]||"course";return (g.dplus?"trail ":"course de ")+g.km+" km"+(g.dplus?" · "+g.dplus+" m D+":"")};
 const vk=f=>dec(profile.vma*f),vp=f=>fmtP(3600/(profile.vma*f));
+/* Étapes chronométrées d'une séance [nom, secondes] : servent aux signaux de changement de rythme pendant la sortie */
+function segsOf(t,c0){
+  const K=c0.kind,tr=K==="trail"||(K==="mixte"&&(t===LG||(t===I&&c0.mp===1))),c={...c0,kind:tr?"trail":"route"},M=60,out=[];
+  const add=(n,m)=>out.push([n,Math.round(m*M)]);
+  const reps=(n,fast,fn,slow,sn)=>{for(let i=1;i<=n;i++){add(fn+(n>1?" "+i+"/"+n:""),fast);if(i<n)add(sn,slow)}};
+  if(t===LG){add("Échauffement",10);const body=Math.max(5,c.longMin-15);if(c.kind!=="trail"&&c.spec){const rc=roundTo(c.longMin*0.3,5);add("Allure facile",Math.max(1,body-rc));add("Allure course",Math.min(rc,body))}else add(c.kind==="trail"?"Terrain varié":"Allure facile",body);add("Retour au calme",5)}
+  else if(t===E){add("Échauffement",5);add("Footing facile",Math.max(5,c.easyMin-10));add("Retour au calme",5)}
+  else if(t===T){add("Échauffement",15);add(c.kind==="trail"?"Montée soutenue":c.spec?"Allure course":"Seuil",c.tMin);add("Retour au calme",10)}
+  else if(t===I){
+    add("Échauffement",15);
+    if(c.kind==="trail"){reps(c.reps,1.5,"Côte",1.5,"Descente en trottinant")}
+    else if(profile&&profile.vma){
+      if(profile.level==="debutant")reps(6,1,"Rapide",1.5,"Trot");
+      else if(c.wl%2===0){for(let k=1;k<=2;k++){reps(8,.5,"Rapide",.5,"Trot");if(k<2)add("Récupération",3)}}
+      else reps(Math.min(c.reps,6),3,"Rapide",2,"Trot");
+    }else reps(c.reps,3,"Rapide",2,"Trot");
+    add("Retour au calme",10);
+  }
+  return out.length?out:null;
+}
 function sessInfo(t,c){
+  const o=sessInfo0(t,c);try{if(o&&o.t!=="REST"&&o.t!=="STRENGTH"&&o.t!=="RACE"){const g=segsOf(t,c);if(g)o.seg=g}}catch(e){}return o;
+}
+function sessInfo0(t,c){
   if(t==="REST")return {t:t};
   const K=c.kind,tr=K==="trail"||(K==="mixte"&&(t===LG||(t===I&&c.mp===1)));c={...c,kind:tr?"trail":"route"};
   if(t===LG)return {t:t,m:c.longMin,d:"Échauffement 10 min très faciles (marche rapide puis trot lent), puis "+Math.max(5,c.longMin-15)+" min "+(c.kind==="trail"?"en terrain varié"+(c.dpl?" (environ "+c.dpl+" m D+)":"")+", marche rapide dans les fortes pentes, testez votre ravitaillement":"à allure facile"+(c.spec?", dont "+roundTo(c.longMin*0.3,5)+" min à allure course":"")+", hydratez-vous")+", retour au calme 5 min en trottant très lent puis marche. Si la FC dépasse la limite, ralentissez ou marchez"};
@@ -1139,7 +1163,7 @@ const NAT=()=>typeof window.AndroidTrack!=="undefined"&&window.AndroidTrack;
 let liveOn=false,t0=0,pollId=null,clockId=null,gWatch=null,lock=null,nIdx=0;
 let gRaw=[],gDist=0,gGain=0,gBase=null,gEle=[],hrSamples=[],lastHr=0,splits=[],nextRec=0,lastPt=null,lastRecapT=0,recapTimer=null;
 let doneT=0,doneLayers=[];
-let lmap=null,lline=null,lmark=null,follow=true,liveCapHr=0,maxPaceS=0,recapKm=0,lastVib=0;
+let liveSegs=null,segB=[],segIdx=0,lmap=null,lline=null,lmark=null,follow=true,liveCapHr=0,maxPaceS=0,recapKm=0,lastVib=0;
 const pad=n=>String(n).padStart(2,"0");
 const clock=s=>(s>=3600?Math.floor(s/3600)+":"+pad(Math.floor(s/60)%60):pad(Math.floor(s/60)))+":"+pad(Math.floor(s%60));
 const mpv=()=>{const v=$("l-maxpace").value;if(BIKE()){const k=parseFloat(String(v).replace(",","."));return k>0?3600/k:0}return parsePace(v)};
@@ -1163,7 +1187,7 @@ function keepScreen(on){
   try{window.AndroidBle&&AndroidBle.keepScreen(on)}catch(e){}
   try{if(on){navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>lock=l).catch(()=>{})}else{lock&&lock.release();lock=null}}catch(e){}
 }
-function saveLive(){if(!liveOn)return;try{localStorage.setItem(LKEY,JSON.stringify({t0:t0,sport:liveSport,recap:recapKm,maxPace:$("l-maxpace").value,cap:liveCapHr,dur:$("l-dur").value,live:prefs.liveId||"",tgt:$("livetgt").textContent}))}catch(e){}}
+function saveLive(){if(!liveOn)return;try{localStorage.setItem(LKEY,JSON.stringify({t0:t0,sport:liveSport,recap:recapKm,maxPace:$("l-maxpace").value,cap:liveCapHr,dur:$("l-dur").value,live:prefs.liveId||"",tgt:$("livetgt").textContent,seg:liveSegs}))}catch(e){}}
 let liveSport="RUN_ROUTE",targetMin=0,targetShown=false;
 
 /* ===== Parcours GPX à suivre ===== */
@@ -1401,8 +1425,23 @@ function drawAlt(){
   const step=Math.max(1,Math.floor(o.length/150)),r=o.filter((q,i)=>i%step===0||i===o.length-1);
   drawProf($("lalt"),r,"#fff","rgba(46,196,196,.35)","#2ec4c4");
 }
+function segInit(){
+  segB=[];let a=0;(liveSegs||[]).forEach(g=>{a+=g[1];segB.push(a)});
+  const s=Math.floor((Date.now()-t0)/1000);segIdx=0;while(segIdx<segB.length&&s>=segB[segIdx])segIdx++;
+}
+const segTxt=g=>g[0]+" · "+(g[1]>=60?(g[1]%60?Math.floor(g[1]/60)+" min "+g[1]%60+" s":Math.floor(g[1]/60)+" min"):g[1]+" s");
+function segCheck(s){
+  if(!liveSegs||!liveOn)return;
+  let ch=false;while(segIdx<segB.length&&s>=segB[segIdx]){segIdx++;ch=true}
+  if(!ch||segIdx>=liveSegs.length)return;
+  const g=liveSegs[segIdx],nx=liveSegs[segIdx+1];
+  /* changement de rythme : deux vibrations et deux bips */
+  sosBuzz([350,200,350]);sosBeep();setTimeout(sosBeep,500);
+  showRecap("▶ Maintenant : "+segTxt(g)+(nx?" — ensuite : "+nx[0]:""));
+}
 function paint(){
   const s=Math.floor((Date.now()-t0)/1000);
+  segCheck(s);
   if(liveOn&&targetMin>0&&!targetShown&&s>=targetMin*60){targetShown=true;showRecap("⏱ Durée prévue atteinte : "+targetMin+" min. L’enregistrement continue.");if(!NAT()){try{navigator.vibrate&&navigator.vibrate([500,250,500,250,500,250,500])}catch(e){}}}
   $("timer").textContent=clock(s);
   $("gdist").textContent=(gDist/1000).toFixed(2).replace(".",",");
@@ -1434,7 +1473,7 @@ function startSession(){
   if(profile.free){
     liveSport=prefs.sport||"RUN_ROUTE";$("l-sport").value=liveSport;setUnits();
     $("l-recap").value=String(prefs.recap||0);$("l-keep").checked=!!prefs.keep;$("l-maxpace").value="";$("l-cap").value="";$("l-dur").value="";
-    $("livetgt").textContent="Enregistrement libre";
+    $("livetgt").textContent="Enregistrement libre";liveSegs=null;
     liveLoad();livePre(true);show("live");return;
   }
   const W=weekPlan(0),t=recommend(W.days[todayIdx()].t).session;
@@ -1444,6 +1483,7 @@ function startSession(){
   const planned=W.days[todayIdx()].t,inf=t===planned?W.days[todayIdx()]:sessInfo(t,W.ctx),pm=inf&&inf.m;$("l-dur").value=t!=="REST"&&pm>0?pm:"";
   const tt=t==="REST"?"restez en zone 2":target(t,W.ctx.kind);
   $("livetgt").textContent=NAMES[t]+(tt?" · "+tt:"");
+  liveSegs=t!=="REST"&&inf&&inf.seg?inf.seg:null;
   /* écran de préparation : réglages puis « Démarrer » */
   liveLoad();livePre(true);show("live");
 }
@@ -1457,9 +1497,9 @@ function beginSession(){
   livePre(false);
   t0=Date.now();liveOn=true;$("msg").textContent="";$("gmsg").textContent="GPS : recherche du signal…";
   recapKm=+$("l-recap").value;maxPaceS=mpv();liveCapHr=+$("l-cap").value||0;curPace=0;
-  resetLive();
+  resetLive();segInit();try{if(!sosAud)sosAud=new (window.AudioContext||window.webkitAudioContext)();if(sosAud.resume)sosAud.resume()}catch(e){}
   show("live");setFull(true);liveMap();
-  showRecap(recapKm?"Récap tous les "+recapKm+" km":"Pas de récap kilométrique réglé");
+  showRecap(liveSegs?"▶ "+segTxt(liveSegs[0])+(liveSegs[1]?" — ensuite : "+liveSegs[1][0]:""):recapKm?"Récap tous les "+recapKm+" km":"Pas de récap kilométrique réglé");
   const n=NAT();
   if(n){try{if(n.ensureBluetooth)n.ensureBluetooth()}catch(e){}}
   if(n){try{n.start(recapKm*1000,maxPaceS,liveCapHr);if(n.setTarget)n.setTarget((+$("l-dur").value||0)*60)}catch(e){$("msg").textContent="Suivi impossible : "+e.message}}
@@ -1646,10 +1686,10 @@ function resumeLive(){
   let run=false;try{run=n.running()}catch(e){}
   if(!st||!run){if(st&&!run&&n.count&&n.count()>20){/* service arrêté mais données encore là */}else{if(!run)try{localStorage.removeItem(LKEY)}catch(e){}return}}
   t0=st.t0;liveSport=st.sport||"RUN_ROUTE";liveOn=true;
-  $("l-recap").value=String(st.recap||0);$("l-maxpace").value=st.maxPace||"";$("l-cap").value=st.cap||"";$("l-dur").value=st.dur||"";targetMin=+st.dur||0;targetShown=targetMin>0&&(Date.now()-t0)/60000>=targetMin;$("livetgt").textContent=st.tgt||"";
+  $("l-recap").value=String(st.recap||0);$("l-maxpace").value=st.maxPace||"";$("l-cap").value=st.cap||"";$("l-dur").value=st.dur||"";targetMin=+st.dur||0;targetShown=targetMin>0&&(Date.now()-t0)/60000>=targetMin;$("livetgt").textContent=st.tgt||"";liveSegs=Array.isArray(st.seg)?st.seg:null;
   $("l-keep").checked=!!prefs.keep;
   recapKm=+st.recap||0;maxPaceS=parsePace(st.maxPace);liveCapHr=+st.cap||0;
-  if(st.live)prefs.liveId=st.live;liveLoad();livePre(false);resetLive();show("live");setFull(true);liveMap();poll();startTimers();liveApply();
+  if(st.live)prefs.liveId=st.live;liveLoad();livePre(false);resetLive();segInit();show("live");setFull(true);liveMap();poll();startTimers();liveApply();
 }
 
 /* Sortie : jamais sans confirmation */

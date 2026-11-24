@@ -17,7 +17,8 @@
    "Home trainer : la séance enregistre maintenant ses courbes (puissance, FC, cadence, vitesse) ; elle apparaît dans Courbes › Détail d’une activité, avec un nouveau graphique Puissance.",
    "Modification d’une activité : la durée n’est plus refusée à tort comme « déjà enregistrée » (séance chevauchant une autre, home trainer notamment) ; les messages d’erreur s’affichent au-dessus du bouton.",
    "Plan : le niveau intermédiaire a maintenant des séances au seuil (zone 4) dès la phase Développement, sans test VMA obligatoire ; en Fondation, un bloc court au seuil une semaine sur deux ; avec moins de 5 séances par semaine, le fractionné alterne avec le seuil. Le niveau débutant reste sans seuil. Avec 2 séances par semaine, la séance facile devient une séance au seuil (Fondation) ou alterne seuil et fractionné (Développement, Spécifique).",
-   "Carte pendant la sortie : après un déplacement du doigt, la carte se recentre toute seule sur votre position au bout de 8 secondes (le zoom reste libre)."
+   "Carte pendant la sortie : après un déplacement du doigt, la carte se recentre toute seule sur votre position au bout de 8 secondes (le zoom reste libre).",
+   "Séances du plan : chaque changement de rythme (échauffement, seuil, fraction rapide, trot, retour au calme, allure course…) est signalé pendant la sortie par deux vibrations et deux bips, avec l’étape en cours et la suivante."
   ]
  },
  {
