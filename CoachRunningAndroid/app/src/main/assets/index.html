@@ -544,6 +544,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Carte pendant la sortie</b> : la carte reste centrée sur votre position. Vous pouvez zoomer ou la déplacer avec le doigt ; 8 secondes après avoir lâché la carte, elle se recentre toute seule sur vous. Le bouton de recentrage le fait tout de suite.</p>
     <p><b>Signal de changement de rythme</b> : quand vous démarrez la séance prévue du jour (bouton de démarrage du plan), chaque changement d’étape est signalé par deux vibrations et deux bips, avec l’étape en cours et la suivante affichées en bas de l’écran : échauffement, seuil, retour au calme, et pour le fractionné chaque fraction rapide et chaque trot. Les durées sont celles du programme. L’enregistrement libre n’en a pas. Gardez l’écran allumé (option « garder l’écran allumé ») pour être sûr que le signal parte.</p>
     <p><b>Séances variées</b> : pour éviter la monotonie, le plan change de forme de semaine en semaine (rotation sur 3 semaines). Séance au seuil : bloc continu, deux blocs séparés par 3 min de trot, ou travail en côte (n × 1 min 30 en côte à effort soutenu). Premier footing facile de la semaine (niveaux intermédiaire et confirmé) : footing normal, footing avec 6 lignes droites de 20 s, ou footing sur terrain vallonné. Les signaux de changement de rythme suivent chaque forme.</p>
+    <p><b>Trace pour une sortie longue</b> : dans « Programme » (et sur l’écran du jour quand la sortie longue est prévue), le bouton « Associer une trace GPX à cette sortie » mémorise un parcours pour ce jour précis. En démarrant la séance ce jour-là, la trace est chargée et « Suivre ce parcours » passe sur OUI. « Changer » la remplace, « Retirer » l’enlève. Les traces des jours passés sont effacées au bout de 14 jours.</p>
     <p><b>Puissance moyenne</b> : dans le formulaire « Ajouter une activité » (ou « Modifier »), le champ facultatif « Puissance moyenne (W) » enregistre la puissance de la séance (vélo, home trainer). En modification, la durée peut être corrigée librement (le contrôle anti-doublon ne s’applique qu’aux nouvelles activités) et les messages d’erreur s’affichent juste au-dessus du bouton. Elle s’affiche dans l’Historique avec la FC et la cadence. Même principe pour la « Vitesse moyenne (km/h) » : si vous ne renseignez pas la distance, elle est calculée à partir de la vitesse et de la durée.</p>
     <p><b>Compteur Bryton</b> : Bryton Active n’écrit pas dans Health Connect. Deux solutions : (1) Bryton Active → Strava (synchro automatique) puis Strava → Health Connect (durée, distance, calories) ; (2) dans Bryton Active ouvrir la sortie, exporter le fichier .fit ou .gpx et l’importer ici avec « Choisir un ou plusieurs fichiers » (trace GPS, FC et D+ complets).</p>
     <p><b>Pente en couleur</b> : sur la carte, le parcours GPX chargé et le tracé déjà parcouru sont colorés par tronçon de ≈100 m selon la pente (bleu : descente, vert : plat, jaune/orange/rouge : montée, violet : &gt; 12 %). Visible aussi dans le détail d’une sortie de l’Historique.</p>
@@ -1094,6 +1095,8 @@ function renderPlan(){
   const info=r.session===planned?plan[todayIdx()]:sessInfo(r.session,W.ctx);
   $("tgt").textContent=[info.m?info.m+" min":"",info.d,target(r.session,W.ctx.kind)].filter(Boolean).join(" · ");
   if(planned==="RACE")$("sess").textContent="Jour de course : "+goalName();
+  {let lb=$("lr-trace");if(!lb){lb=document.createElement("div");lb.id="lr-trace";$("tgt").insertAdjacentElement("afterend",lb)}
+   lb.innerHTML="";if(planned==="LONG_RUN"||r.session==="LONG_RUN"){const bx=lrBox(today(),renderPlan);bx.style.marginTop="8px";lb.appendChild(bx)}}
   renderGoal(W);renderZones();renderVma();renderExtras();planWeekly();
   $("today").style.setProperty("--tc",TCOL[r.session]||"#2F6BFF");
   $("sub").textContent=new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
@@ -1337,6 +1340,37 @@ $("l-rfile").onchange=async e=>{
 $("l-rclr").onclick=()=>{try{localStorage.removeItem("coach_route");localStorage.removeItem("coach_routeon")}catch(e){}route=routeStored=null;routeInfo();drawRoute();$("lroute").classList.add("hidden");pushRoute(true)};
 $("l-rtog").onclick=()=>{try{localStorage.setItem("coach_routeon",routeOn()?"0":"1")}catch(e){}loadRoute();routeInfo();drawRoute();if(!route)$("lroute").classList.add("hidden");pushRoute(true)};
 loadRoute();routeInfo();
+/* Trace associée à une sortie longue du programme (une par date) */
+const LRK="coach_lrroutes";
+function lrGet(){let o={};try{o=JSON.parse(localStorage.getItem(LRK))||{}}catch(e){}const lim=iso(new Date(Date.now()-14*864e5));Object.keys(o).forEach(k=>{if(k<lim)delete o[k]});return o}
+function lrSet(o){try{localStorage.setItem(LRK,JSON.stringify(o));return true}catch(e){return false}}
+function lrPick(date,after){
+  const inp=document.createElement("input");inp.type="file";inp.accept=".gpx,.xml,text/xml,application/gpx+xml,application/octet-stream";
+  inp.onchange=async()=>{
+    const f=inp.files[0];if(!f)return;
+    try{
+      const rt=parseRouteGpx(await f.text());
+      if(!rt){alert("Fichier GPX illisible (aucune trace trouvée).");return}
+      if(!rt.name)rt.name=f.name.replace(/\.gpx$/i,"");
+      const o=lrGet();o[date]=rt;
+      if(!lrSet(o)){delete o[date];alert("Trace trop volumineuse pour être mémorisée : choisissez-la plutôt au départ de la séance.");return}
+      after()
+    }catch(err){alert("Fichier GPX illisible.")}
+  };inp.click();
+}
+function lrStat(rt){let k=0,g=0;const P=rt.pts;for(let i=1;i<P.length;i++){k+=hav(P[i-1][0],P[i-1][1],P[i][0],P[i][1]);if(P[i][2]!=null&&P[i-1][2]!=null&&P[i][2]>P[i-1][2])g+=P[i][2]-P[i-1][2]}return {km:k,gain:g}}
+function lrBox(date,after){
+  const d=document.createElement("div");d.style.cssText="flex-basis:100%;margin-top:4px";
+  const o=lrGet(),rt=o[date];
+  const b=document.createElement("button");b.type="button";b.className="alt";b.style.cssText="margin:0 6px 0 0;padding:6px 10px;font-size:14px";
+  if(rt){
+    const st=lrStat(rt);b.textContent="🗺 "+(rt.name||"Trace")+" · "+st.km.toFixed(1).replace(".",",")+" km"+(st.gain>0?" · D+ "+Math.round(st.gain)+" m":"")+" (changer)";
+    const c=document.createElement("button");c.type="button";c.className="alt";c.style.cssText="margin:0;padding:6px 10px;font-size:14px";c.textContent="Retirer";
+    c.onclick=e=>{e.stopPropagation();const q=lrGet();delete q[date];lrSet(q);after()};d.append(b,c);
+  }else{b.textContent="📂 Associer une trace GPX à cette sortie";d.append(b)}
+  b.onclick=e=>{e.stopPropagation();lrPick(date,after)};
+  return d;
+}
 function liveMap(){
   try{
     if(!lmap&&typeof L!=="undefined"&&L.map){
@@ -1496,6 +1530,7 @@ function startSession(){
   const tt=t==="REST"?"restez en zone 2":target(t,W.ctx.kind);
   $("livetgt").textContent=NAMES[t]+(tt?" · "+tt:"");
   liveSegs=t!=="REST"&&inf&&inf.seg?inf.seg:null;
+  if(t==="LONG_RUN"){const lr=lrGet()[today()];if(lr){try{localStorage.setItem("coach_route",JSON.stringify(lr));localStorage.setItem("coach_routeon","1");loadRoute();routeInfo()}catch(e){}}}
   /* écran de préparation : réglages puis « Démarrer » */
   liveLoad();livePre(true);show("live");
 }
@@ -2924,6 +2959,7 @@ function renderProg(){
       if(x.t==="REST")b.className="mute";
       li.append(a,b);
       if(x.d){const n=document.createElement("div");n.className="mute";n.style.cssText="flex-basis:100%;font-size:14px";n.textContent=x.d+(SESSZ[x.t]?" · Zone "+SESSZ[x.t]+", FC max "+hrZones().z[SESSZ[x.t]-1].hi+" bpm":"");li.appendChild(n)}
+      if(x.t==="LONG_RUN"&&iso(dd)>=today())li.appendChild(lrBox(iso(dd),renderProg));
       ul.appendChild(li);
     }
     const e6=new Date(W.mon);e6.setDate(e6.getDate()+6);const dn=sessions.filter(s=>s.date>=iso(W.mon)&&s.date<=iso(e6)&&s.date<=today()).reduce((a,s)=>a+s.min,0);if(dn)sm.textContent+=" · fait "+Math.floor(dn/60)+" h "+pad2(dn%60);
