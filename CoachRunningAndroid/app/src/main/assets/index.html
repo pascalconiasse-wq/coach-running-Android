@@ -545,6 +545,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Signal de changement de rythme</b> : quand vous démarrez la séance prévue du jour (bouton de démarrage du plan), chaque changement d’étape est signalé par deux vibrations et deux bips, avec l’étape en cours et la suivante affichées en bas de l’écran : échauffement, seuil, retour au calme, et pour le fractionné chaque fraction rapide et chaque trot. Les durées sont celles du programme. L’enregistrement libre n’en a pas. Gardez l’écran allumé (option « garder l’écran allumé ») pour être sûr que le signal parte.</p>
     <p><b>Séances variées</b> : pour éviter la monotonie, le plan change de forme de semaine en semaine (rotation sur 3 semaines). Séance au seuil : bloc continu, deux blocs séparés par 3 min de trot, ou travail en côte (n × 1 min 30 en côte à effort soutenu). Premier footing facile de la semaine (niveaux intermédiaire et confirmé) : footing normal, footing avec 6 lignes droites de 20 s, ou footing sur terrain vallonné. Les signaux de changement de rythme suivent chaque forme.</p>
     <p><b>Trace pour une sortie longue</b> : dans « Programme » (et sur l’écran du jour quand la sortie longue est prévue), le bouton « Associer une trace GPX à cette sortie » mémorise un parcours pour ce jour précis. En démarrant la séance ce jour-là, la trace est chargée et « Suivre ce parcours » passe sur OUI. « Changer » la remplace, « Retirer » l’enlève. Les traces des jours passés sont effacées au bout de 14 jours.</p>
+    <p><b>Sauvegarde complète</b> : en plus des séances, du profil et du partage/SOS, la sauvegarde contient maintenant tous vos réglages de sortie (activité par défaut, récap, écran allumé, distance d’alerte hors parcours, alertes), le parcours GPX chargé, les traces associées aux sorties longues, le mode de trace (pente ou FC) et le choix année civile ou saison. La restauration ne remplace pas ce que vous avez déjà réglé sur le téléphone.</p>
     <p><b>Puissance moyenne</b> : dans le formulaire « Ajouter une activité » (ou « Modifier »), le champ facultatif « Puissance moyenne (W) » enregistre la puissance de la séance (vélo, home trainer). En modification, la durée peut être corrigée librement (le contrôle anti-doublon ne s’applique qu’aux nouvelles activités) et les messages d’erreur s’affichent juste au-dessus du bouton. Elle s’affiche dans l’Historique avec la FC et la cadence. Même principe pour la « Vitesse moyenne (km/h) » : si vous ne renseignez pas la distance, elle est calculée à partir de la vitesse et de la durée.</p>
     <p><b>Compteur Bryton</b> : Bryton Active n’écrit pas dans Health Connect. Deux solutions : (1) Bryton Active → Strava (synchro automatique) puis Strava → Health Connect (durée, distance, calories) ; (2) dans Bryton Active ouvrir la sortie, exporter le fichier .fit ou .gpx et l’importer ici avec « Choisir un ou plusieurs fichiers » (trace GPS, FC et D+ complets).</p>
     <p><b>Pente en couleur</b> : sur la carte, le parcours GPX chargé et le tracé déjà parcouru sont colorés par tronçon de ≈100 m selon la pente (bleu : descente, vert : plat, jaune/orange/rouge : montée, violet : &gt; 12 %). Visible aussi dans le détail d’une sortie de l’Historique.</p>
@@ -2109,6 +2110,8 @@ if(window.addEventListener)window.addEventListener("resize",()=>{if(!$("stats").
 function renderStats(){
   renderCharts();renderDetailSel();
 }
+const BKEYS=["coach_route","coach_routeon","coach_lrroutes","coach_tracemode","coach_yearmode"];
+const bkExtra=()=>{const o={};BKEYS.forEach(k=>{try{const v=localStorage.getItem(k);if(v!==null)o[k]=v}catch(e){}});return o};
 const shareData=()=>({name:prefs.name||"",tels:prefs.tels||"",db:prefs.db||"",sosTels:prefs.sosTels||"",sosDelay:prefs.sosDelay===undefined?"":prefs.sosDelay,sosCall:prefs.sosCall===undefined?"":prefs.sosCall,sosNext:prefs.sosNext===undefined?"":prefs.sosNext,share:!!prefs.share});
 /* Sauvegarde */
 const bmsg=t=>$("bmsg").textContent=t;
@@ -2124,7 +2127,7 @@ function autoBackup(force){
   if(!window.AndroidBle||!AndroidBle.saveBackup||!sessions.length||liveOn)return;
   if(!force&&Date.now()-lastAutoT<30000)return;
   try{
-    const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces,maps:maps,share:shareData()});
+    const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces,maps:maps,share:shareData(),prefs:prefs,extra:bkExtra()});
     if(data===lastAuto)return;
     if(AndroidBle.saveBackup("Coach-Running_sauvegarde.json",data)){
       lastAuto=data;lastAutoT=Date.now();
@@ -2137,7 +2140,7 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden)autoBackup(
 window.addEventListener("pagehide",()=>autoBackup(true));
 setTimeout(showAutoBk,500);
 $("exp").onclick=async()=>{
-  const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces,maps:maps,share:shareData()},null,1),name="coach-running-"+today()+".json";
+  const data=JSON.stringify({app:"coach-running",version:4,profile:profile,moves:moves,swaps:swaps,sessions:sessions,traces:traces,maps:maps,share:shareData(),prefs:prefs,extra:bkExtra()},null,1),name="coach-running-"+today()+".json";
   $("copybk").classList.add("hidden");$("paste").classList.add("hidden");$("pasteok").classList.add("hidden");
   if(window.AndroidBle&&AndroidBle.saveBackup){bmsg(AndroidBle.saveBackup("Coach-Running_sauvegarde.json",data)?"Sauvegarde enregistrée dans Téléchargements/Coach Running (Coach-Running_sauvegarde.json, remplace la précédente).":"Enregistrement impossible.");return}
   if(window.AndroidBle&&AndroidBle.saveFile){bmsg(AndroidBle.saveFile(name,data)?"Sauvegarde enregistrée dans le dossier Téléchargements.":"Enregistrement impossible.");return}
@@ -2179,6 +2182,8 @@ function doImport(text){
     if(o&&o.moves&&typeof o.moves==="object"){Object.keys(o.moves).forEach(k=>{if(!(k in moves)&&isDate(k)&&o.moves[k]>=1&&o.moves[k]<=7)moves[k]=o.moves[k]});saveMoves()}
     if(o&&o.swaps&&typeof o.swaps==="object"){Object.keys(o.swaps).forEach(k=>{if(!(k in swaps)&&isDate(k)&&Array.isArray(o.swaps[k]))swaps[k]=o.swaps[k].filter(q=>Array.isArray(q)&&q[0]>=1&&q[0]<=7&&q[1]>=1&&q[1]<=7)});saveSwaps()}
     if(o&&o.share&&typeof o.share==="object"){["name","tels","db","sosTels","sosDelay","sosCall","sosNext"].forEach(k=>{if(!prefs[k]&&(typeof o.share[k]==="string"||typeof o.share[k]==="number"))prefs[k]=o.share[k]});if(prefs.share===undefined)prefs.share=!!o.share.share;persistP();liveLoad()}
+    if(o&&o.prefs&&typeof o.prefs==="object"){Object.keys(o.prefs).forEach(k=>{const v=o.prefs[k];if((typeof v==="string"||typeof v==="number"||typeof v==="boolean")&&(prefs[k]===undefined||prefs[k]===""))prefs[k]=v});persistP();try{liveLoad()}catch(e){}}
+    if(o&&o.extra&&typeof o.extra==="object"){BKEYS.forEach(k=>{try{if(typeof o.extra[k]==="string"&&localStorage.getItem(k)===null)localStorage.setItem(k,o.extra[k])}catch(e){}});try{loadRoute();routeInfo()}catch(e){}}
     persist();persistT();renderStats();
     bmsg(n+" séance(s) importée(s) sur "+list.length+".");
   }catch(e){bmsg("Import impossible : choisissez une sauvegarde Coach Running (.json).")}

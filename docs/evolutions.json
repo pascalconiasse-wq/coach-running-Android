@@ -20,7 +20,8 @@
    "Carte pendant la sortie : après un déplacement du doigt, la carte se recentre toute seule sur votre position au bout de 8 secondes (le zoom reste libre).",
    "Séances du plan : chaque changement de rythme (échauffement, seuil, fraction rapide, trot, retour au calme, allure course…) est signalé pendant la sortie par deux vibrations et deux bips, avec l’étape en cours et la suivante.",
    "Plan : séances variées sur une rotation de 3 semaines : seuil en bloc continu, en deux blocs ou en travail de côte ; premier footing facile avec lignes droites ou sur terrain vallonné (niveaux intermédiaire et confirmé). Les signaux de changement de rythme suivent chaque forme.",
-   "Sortie longue du programme : possibilité d’associer une trace GPX à une sortie précise (Programme et écran du jour) ; elle est chargée et suivie automatiquement en démarrant la séance ce jour-là."
+   "Sortie longue du programme : possibilité d’associer une trace GPX à une sortie précise (Programme et écran du jour) ; elle est chargée et suivie automatiquement en démarrant la séance ce jour-là.",
+   "Sauvegarde complète : tous les réglages de sortie, le parcours GPX chargé, les traces des sorties longues, le mode de trace et le choix année civile/saison sont maintenant sauvegardés et restaurés (avec le partage et le SOS déjà inclus)."
   ]
  },
  {
