@@ -352,6 +352,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
         <div><span class="lk">Distance</span><b id="gdist">0,00</b><i>km</i></div>
         <div><span class="lk">D+</span><b id="gdp">0</b><i>m</i></div>
         <div><span class="lk">Allure</span><b id="gpace">--</b><i>/km</i></div>
+        <div><span class="lk">Pente</span><b id="gsl">--</b><i>%</i></div>
         <div><span class="lk">Moyenne</span><b id="gavg">--</b><i>/km</i></div>
         <div><span class="lk">FC</span><b id="hr">--</b><i>bpm</i></div>
         <div id="tpw" class="hidden"><span class="lk">Puissance</span><b id="gpw">--</b><i>W</i></div>
@@ -569,6 +570,7 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Carte pendant la sortie</b> (suite) : le bouton « N » (sous ⚙) alterne entre nord en haut (N) et carte orientée dans le sens du déplacement (↑). Dès que vous déplacez la carte avec le doigt, elle repasse nord en haut le temps de la regarder, puis reprend l’orientation choisie au recentrage. Le bouton ▴ en haut à droite de la fenêtre des données la replie (chrono, distance, FC et allure sur une ligne) ; ▾ la redéplie.</p>
     <p><b>Virages</b> : en suivant un parcours GPX, un bandeau jaune annonce le prochain virage dans les 150 m (« ↱ Tournez à droite dans 80 m ») avec une vibration à 120 m : 1 vibration pour la droite, 2 pour la gauche. Les virages sont déduits de la forme du tracé, sans nom de rue ; cases « Indications aux virages » dans « Avant de partir » pour les couper.</p>
     <p><b>Rappel de ravitaillement</b> : dans « Avant de partir », cochez « Rappel de ravitaillement » et réglez le premier rappel (minutes depuis le départ) et le rythme suivant (vide = une seule fois). À chaque échéance : 2 vibrations, 2 bips et un message « Ravitaillement ».</p>
+    <p><b>Pente</b> : pendant la sortie, la case « Pente » affiche le pourcentage de pente sur les 50 derniers mètres environ (+ en montée, − en descente ; orange au-delà de +8 %, bleu en dessous de −8 %). Elle vient de l’altitude du GPS, lissée : elle réagit avec un peu de retard et reste approximative. « -- » tant que 30 m n’ont pas été parcourus ou sans altitude.</p>
     <p><b>Puissance moyenne</b> : dans le formulaire « Ajouter une activité » (ou « Modifier »), le champ facultatif « Puissance moyenne (W) » enregistre la puissance de la séance (vélo, home trainer). En modification, la durée peut être corrigée librement (le contrôle anti-doublon ne s’applique qu’aux nouvelles activités) et les messages d’erreur s’affichent juste au-dessus du bouton. Elle s’affiche dans l’Historique avec la FC et la cadence. Même principe pour la « Vitesse moyenne (km/h) » : si vous ne renseignez pas la distance, elle est calculée à partir de la vitesse et de la durée.</p>
     <p><b>Compteur Bryton</b> : Bryton Active n’écrit pas dans Health Connect. Deux solutions : (1) Bryton Active → Strava (synchro automatique) puis Strava → Health Connect (durée, distance, calories) ; (2) dans Bryton Active ouvrir la sortie, exporter le fichier .fit ou .gpx et l’importer ici avec « Choisir un ou plusieurs fichiers » (trace GPS, FC et D+ complets).</p>
     <p><b>Pente en couleur</b> : sur la carte, le parcours GPX chargé et le tracé déjà parcouru sont colorés par tronçon de ≈100 m selon la pente (bleu : descente, vert : plat, jaune/orange/rouge : montée, violet : &gt; 12 %). Visible aussi dans le détail d’une sortie de l’Historique.</p>
@@ -1467,7 +1469,7 @@ $("lrec").onclick=()=>{follow=true;if(lmap&&lmark)lmap.setView(lmark.getLatLng()
 function resetLive(){
   turnIdx=0;turnSaid=-1;hdgOk=false;gRaw=[];gDist=0;gGain=0;gBase=null;gEle=[];hrSamples=[];lastHr=0;lowSince=0;lowFired=false;trPw=[];trCad=[];trRaw=[];trDist=0;trLastT=0;splits=[];lastPt=null;nIdx=0;nextRec=recapKm||0;
   ["gdist","gdp"].forEach(i=>$(i).textContent=i==="gdist"?"0,00":"0");
-  $("gpace").textContent=$("gavg").textContent=$("hr").textContent="--";$("hrz").textContent="";
+  $("gpace").textContent=$("gavg").textContent=$("hr").textContent=$("gsl").textContent="--";$("hrz").textContent="";
   $("lrecap").classList.add("hidden");setBad();
 }
 function setBad(){
@@ -1504,6 +1506,10 @@ function addPt(t,la,lo,alt,hr){
   let j=gRaw.length-1;while(j>0&&t-gRaw[j].t<15000)j--;
   curPace=0;
   if(j<gRaw.length-1){let dd=0;for(let k=j+1;k<gRaw.length;k++)dd+=hav(gRaw[k-1].lat,gRaw[k-1].lon,gRaw[k].lat,gRaw[k].lon)*1000;const v=dd/((t-gRaw[j].t)/1000);if(v>0.5)curPace=1000/v}
+  /* pente sur les ~50 derniers mètres */
+  {let sl=null;if(p.ele!=null){let k=gRaw.length-1,dd=0;while(k>0&&dd<50){dd+=hav(gRaw[k-1].lat,gRaw[k-1].lon,gRaw[k].lat,gRaw[k].lon)*1000;k--}
+    if(dd>=30&&gRaw[k].ele!=null)sl=Math.max(-40,Math.min(40,(p.ele-gRaw[k].ele)/dd*100))}
+   const g=$("gsl");if(sl==null){g.textContent="--";g.style.color=""}else{const v=Math.round(sl);g.textContent=(v>0?"+":v<0?"−":"")+Math.abs(v);g.style.color=v>=8?"#ff9f43":v<=-8?"#6ab0ff":""}}
   /* récap */
   if(recapKm&&gDist/1000>=nextRec){
     const km=nextRec;nextRec+=recapKm;
