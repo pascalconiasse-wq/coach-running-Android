@@ -1,7 +1,7 @@
 [
  {
-  "v": "1.131 · préversion",
-  "d": "17 nov. 2026",
+  "v": "1.131",
+  "d": "27 nov. 2026",
   "items": [
    "Numérotation des versions : les préversions de test ne consomment plus de numéro. La version publiée est toujours la suivante de la dernière publiée (1.131 après 1.130), quel que soit le nombre de préversions intermédiaires ; elles sont supprimées à la publication et la liste des évolutions ne montre qu’une seule ligne, qui reprend tout.",
    "Terrain « Mixte » : le choix du profil est maintenant appliqué même quand un objectif est défini (le plan suivait seulement le dénivelé de la course), et choisir une course dans le tableau ne le remplace plus.",
@@ -24,7 +24,8 @@
    "Sauvegarde complète : tous les réglages de sortie, le parcours GPX chargé, les traces des sorties longues, le mode de trace et le choix année civile/saison sont maintenant sauvegardés et restaurés (avec le partage et le SOS déjà inclus).",
    "Carte en sortie : orientation au choix (nord en haut ou sens du déplacement) ; fenêtre des données repliable ; indications aux virages sur un parcours GPX (bandeau + 1 vibration droite / 2 gauche) ; rappel de ravitaillement réglable (premier rappel et rythme).",
    "Sortie en direct : nouvelle case « Pente » (% sur les 50 derniers mètres, + montée / − descente, orange au-delà de +8 %, bleu sous −8 %)."
-  ]
+  ],
+  "rel": "v1.131"
  },
  {
   "v": "1.130",
