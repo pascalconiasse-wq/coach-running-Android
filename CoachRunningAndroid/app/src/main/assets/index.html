@@ -119,7 +119,17 @@ h3.dt{font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin:16px 0 4
 #lwrap:not(.full) #lend2{display:none}
 #lwrap.full #lrecap{bottom:92px}
 #lalt{position:absolute;left:8px;right:8px;bottom:8px;height:72px;width:calc(100% - 16px);z-index:1000;background:rgba(12,18,34,.84);border-radius:12px}
-#lmap .leaflet-bottom.leaflet-left{bottom:150px}
+#lwrap>.leaflet-control-container{position:absolute;inset:0;pointer-events:none;z-index:1000}
+#lwrap>.leaflet-control-container .leaflet-control{pointer-events:auto}
+#lwrap>.leaflet-control-container .leaflet-bottom.leaflet-left{bottom:150px}
+#lwrap.rot #lmap{inset:auto;width:160%;height:160%;left:-30%;top:-30%;transform-origin:50% 50%;transition:transform .5s linear}
+#lov{padding-right:40px}
+#lov .fb{position:absolute;top:4px;right:4px;width:32px;height:32px;padding:0;margin:0;border-radius:8px;background:rgba(255,255,255,.14);color:#fff;font-size:16px}
+#lov .lsum{display:none;font:700 17px "Barlow Semi Condensed",system-ui,sans-serif;margin-top:2px}
+#lov.fold .lg,#lov.fold #lgps{display:none}
+#lov.fold .lsum{display:block}
+#lturn{position:absolute;left:8px;right:62px;bottom:92px;z-index:1000;background:rgba(255,196,0,.97);color:#14203A;border-radius:12px;padding:8px 12px;font:800 22px "Barlow Semi Condensed",system-ui,sans-serif}
+#lturn.hidden{display:none}
 #lwrap.full #lalt{width:calc(100% - 124px)}
 #lwrap{position:relative;height:calc(100vh - 360px);min-height:340px;border-radius:16px;overflow:hidden;margin-bottom:10px;border:1px solid var(--line)}
 #lmap{position:absolute;inset:0;background:#dfe6f3}
@@ -335,7 +345,9 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
   <div id="lwrap">
     <div id="lmap"></div>
     <div id="lov">
+      <button id="lfold" class="fb" aria-label="Replier ou déplier les données">▴</button>
       <div class="timer2" id="timer">00:00</div>
+      <div class="lsum" id="lsum"></div>
       <div class="lg">
         <div><span class="lk">Distance</span><b id="gdist">0,00</b><i>km</i></div>
         <div><span class="lk">D+</span><b id="gdp">0</b><i>m</i></div>
@@ -349,7 +361,9 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
       <div class="lhz" id="lgps"></div>
       <div class="lhz hidden" id="lroute"></div>
     </div>
+    <div id="lturn" class="hidden" role="status"></div>
     <button id="lrec" class="lbtn" aria-label="Recentrer la carte">⌖</button>
+    <button id="lori" class="lbtn" style="top:112px" aria-label="Orientation de la carte">N</button>
     <button id="lfull" class="lbtn" style="top:60px" aria-label="Réglages / plein écran">⚙</button>
     <button id="sosb" class="sosb" aria-label="SOS : touchez 2 fois">SOS</button>
     <button id="lend2" class="stop" style="position:absolute;right:8px;bottom:8px;z-index:1001;width:auto;margin:0;padding:10px 16px">Terminer</button>
@@ -372,6 +386,12 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <input type="file" id="l-rfile" class="hidden" accept=".gpx,.xml,text/xml,application/gpx+xml,application/octet-stream">
     <label class="f" for="l-offm">Alerte si je m’écarte du parcours de plus de (mètres, 0 = aucune)</label>
     <input type="number" id="l-offm" inputmode="numeric" min="0" max="2000" placeholder="50">
+    <label class="chk"><input type="checkbox" id="l-turn" checked> Indications aux virages quand je suis un parcours</label>
+    <label class="chk"><input type="checkbox" id="l-ref"> Rappel de ravitaillement (2 vibrations + 2 bips)</label>
+    <label class="f" for="l-ref1">Premier rappel après (minutes)</label>
+    <input type="number" id="l-ref1" inputmode="numeric" min="1" max="600" placeholder="ex. 30">
+    <label class="f" for="l-ref2">Puis tous les (minutes, vide = une seule fois)</label>
+    <input type="number" id="l-ref2" inputmode="numeric" min="0" max="600" placeholder="ex. 30">
     <label class="f" for="l-recap">Récap avec vibration tous les</label>
     <select id="l-recap"><option value="0">Aucun</option><option value="1">1 km</option><option value="5">5 km</option></select>
     <label class="f" for="l-dur">Durée prévue (min) : 4 vibrations à l’échéance, l’enregistrement continue</label>
@@ -546,6 +566,9 @@ nav{box-shadow:0 -2px 10px rgba(0,0,0,.06)}
     <p><b>Séances variées</b> : pour éviter la monotonie, le plan change de forme de semaine en semaine (rotation sur 3 semaines). Séance au seuil : bloc continu, deux blocs séparés par 3 min de trot, ou travail en côte (n × 1 min 30 en côte à effort soutenu). Premier footing facile de la semaine (niveaux intermédiaire et confirmé) : footing normal, footing avec 6 lignes droites de 20 s, ou footing sur terrain vallonné. Les signaux de changement de rythme suivent chaque forme.</p>
     <p><b>Trace pour une sortie longue</b> : dans « Programme » (et sur l’écran du jour quand la sortie longue est prévue), le bouton « Associer une trace GPX à cette sortie » mémorise un parcours pour ce jour précis. En démarrant la séance ce jour-là, la trace est chargée et « Suivre ce parcours » passe sur OUI. « Changer » la remplace, « Retirer » l’enlève. Les traces des jours passés sont effacées au bout de 14 jours.</p>
     <p><b>Sauvegarde complète</b> : en plus des séances, du profil et du partage/SOS, la sauvegarde contient maintenant tous vos réglages de sortie (activité par défaut, récap, écran allumé, distance d’alerte hors parcours, alertes), le parcours GPX chargé, les traces associées aux sorties longues, le mode de trace (pente ou FC) et le choix année civile ou saison. La restauration ne remplace pas ce que vous avez déjà réglé sur le téléphone.</p>
+    <p><b>Carte pendant la sortie</b> (suite) : le bouton « N » (sous ⚙) alterne entre nord en haut (N) et carte orientée dans le sens du déplacement (↑). Dès que vous déplacez la carte avec le doigt, elle repasse nord en haut le temps de la regarder, puis reprend l’orientation choisie au recentrage. Le bouton ▴ en haut à droite de la fenêtre des données la replie (chrono, distance, FC et allure sur une ligne) ; ▾ la redéplie.</p>
+    <p><b>Virages</b> : en suivant un parcours GPX, un bandeau jaune annonce le prochain virage dans les 150 m (« ↱ Tournez à droite dans 80 m ») avec une vibration à 120 m : 1 vibration pour la droite, 2 pour la gauche. Les virages sont déduits de la forme du tracé, sans nom de rue ; cases « Indications aux virages » dans « Avant de partir » pour les couper.</p>
+    <p><b>Rappel de ravitaillement</b> : dans « Avant de partir », cochez « Rappel de ravitaillement » et réglez le premier rappel (minutes depuis le départ) et le rythme suivant (vide = une seule fois). À chaque échéance : 2 vibrations, 2 bips et un message « Ravitaillement ».</p>
     <p><b>Puissance moyenne</b> : dans le formulaire « Ajouter une activité » (ou « Modifier »), le champ facultatif « Puissance moyenne (W) » enregistre la puissance de la séance (vélo, home trainer). En modification, la durée peut être corrigée librement (le contrôle anti-doublon ne s’applique qu’aux nouvelles activités) et les messages d’erreur s’affichent juste au-dessus du bouton. Elle s’affiche dans l’Historique avec la FC et la cadence. Même principe pour la « Vitesse moyenne (km/h) » : si vous ne renseignez pas la distance, elle est calculée à partir de la vitesse et de la durée.</p>
     <p><b>Compteur Bryton</b> : Bryton Active n’écrit pas dans Health Connect. Deux solutions : (1) Bryton Active → Strava (synchro automatique) puis Strava → Health Connect (durée, distance, calories) ; (2) dans Bryton Active ouvrir la sortie, exporter le fichier .fit ou .gpx et l’importer ici avec « Choisir un ou plusieurs fichiers » (trace GPS, FC et D+ complets).</p>
     <p><b>Pente en couleur</b> : sur la carte, le parcours GPX chargé et le tracé déjà parcouru sont colorés par tronçon de ≈100 m selon la pente (bleu : descente, vert : plat, jaune/orange/rouge : montée, violet : &gt; 12 %). Visible aussi dans le détail d’une sortie de l’Historique.</p>
@@ -1150,6 +1173,10 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if(liveOn){if(b.data
    "f-fcmax":"Fréquence cardiaque maximale : sert aux zones et aux alertes. Estimée si vous ne la connaissez pas.",
    "l-sport":"Type d’activité de cette sortie, préréglé sur votre objectif. Le VTT, le gravel et le vélo affichent la vitesse en km/h ; l’équitation, le home trainer et « Autre » sont proposés aussi.",
    "l-rgpx":"Charge un parcours GPX : il apparaît en bleu sur la carte (et sur la page de suivi des proches), votre tracé fait est en rouge.",
+   "l-turn":"Quand vous suivez un parcours GPX, l’appli affiche et fait vibrer à l’approche d’un virage : 1 vibration = à droite, 2 = à gauche. Les virages sont déduits de la forme du tracé (pas de nom de rue).",
+   "l-ref":"Rappelle de boire et manger par 2 vibrations et 2 bips. Réglez le premier rappel et le rythme ci-dessous.",
+   "l-ref1":"Minutes écoulées depuis le départ avant le premier rappel.",
+   "l-ref2":"Intervalle entre deux rappels. Vide : un seul rappel.",
    "l-offm":"Si vous vous éloignez du parcours GPX de plus de cette distance (3 positions de suite), le téléphone vibre et un message s’affiche. Le tracé fait est en rouge, le parcours prévu en bleu.",
    "l-stel":"Numéros qui reçoivent l’alerte SOS avec votre position. Vide : les numéros du suivi.",
    "l-scall":"Après ce délai sans annulation, l’appli appelle le 1er numéro SOS en haut-parleur (autorisation d’appel requise).",
@@ -1179,7 +1206,7 @@ const NAT=()=>typeof window.AndroidTrack!=="undefined"&&window.AndroidTrack;
 let liveOn=false,t0=0,pollId=null,clockId=null,gWatch=null,lock=null,nIdx=0;
 let gRaw=[],gDist=0,gGain=0,gBase=null,gEle=[],hrSamples=[],lastHr=0,splits=[],nextRec=0,lastPt=null,lastRecapT=0,recapTimer=null;
 let doneT=0,doneLayers=[];
-let liveSegs=null,segB=[],segIdx=0,lmap=null,lline=null,lmark=null,follow=true,liveCapHr=0,maxPaceS=0,recapKm=0,lastVib=0;
+let turnIdx=0,turnSaid=-1,refNext=1e9,liveSegs=null,segB=[],segIdx=0,lmap=null,lline=null,lmark=null,follow=true,liveCapHr=0,maxPaceS=0,recapKm=0,lastVib=0;
 const pad=n=>String(n).padStart(2,"0");
 const clock=s=>(s>=3600?Math.floor(s/3600)+":"+pad(Math.floor(s/60)%60):pad(Math.floor(s/60)))+":"+pad(Math.floor(s%60));
 const mpv=()=>{const v=$("l-maxpace").value;if(BIKE()){const k=parseFloat(String(v).replace(",","."));return k>0?3600/k:0}return parsePace(v)};
@@ -1219,7 +1246,23 @@ function prepRoute(){
     route.gc.push(g);
   }
   route.km=route.cum[P.length-1];route.gain=g;
+  route.turns=turnsOf(P,route.cum);
 }
+/* Virages déduits de la forme du tracé : changement de cap sur ~30 m de part et d'autre */
+function brg(a,b){const y=Math.sin((b[1]-a[1])*Math.PI/180)*Math.cos(b[0]*Math.PI/180),x=Math.cos(a[0]*Math.PI/180)*Math.sin(b[0]*Math.PI/180)-Math.sin(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.cos((b[1]-a[1])*Math.PI/180);return (Math.atan2(y,x)*180/Math.PI+360)%360}
+function turnsOf(P,cum){
+  const W=.03,n=P.length,c=[];
+  for(let i=1;i<n-1;i++){
+    let j=i;while(j>0&&cum[i]-cum[j]<W)j--;let k=i;while(k<n-1&&cum[k]-cum[i]<W)k++;
+    if(j===i||k===i||cum[i]-cum[j]<W*.5||cum[k]-cum[i]<W*.5)continue;
+    const dl=((brg(P[i],P[k])-brg(P[j],P[i])+540)%360)-180;
+    if(Math.abs(dl)>=40)c.push({d:cum[i],a:dl});
+  }
+  const out=[];
+  c.forEach(t=>{const l=out[out.length-1];if(l&&t.d-l.d<.05){if(Math.abs(t.a)>Math.abs(l.a))out[out.length-1]=t}else out.push(t)});
+  return out;
+}
+const turnTxt=a=>{const m=Math.abs(a),sd=a>0?"à droite":"à gauche";return (a>0?"↱ ":"↰ ")+(m>=130?"Demi-tour "+sd:m>=70?"Tournez "+sd:"Légèrement "+sd)};
 function parseRouteGpx(txt){
   const doc=new DOMParser().parseFromString(txt,"application/xml");
   let el=[...doc.getElementsByTagName("trkpt")];if(el.length<2)el=[...doc.getElementsByTagName("rtept")];
@@ -1324,6 +1367,16 @@ function routeFix(la,lo){
   el.classList.remove("hidden");
   el.textContent=out?"⚠ HORS PARCOURS : "+Math.round(n.d)+" m · reste "+rest.toFixed(1).replace(".",",")+" km":"Parcours : reste "+rest.toFixed(1).replace(".",",")+" km · D+ "+gr+" m";
   el.style.color=out?"#ff6b6b":"";el.style.fontWeight=out?"800":"";
+  const tn=$("lturn");
+  if(prefs.turns!==false&&!out&&route.turns){
+    while(turnIdx<route.turns.length&&route.turns[turnIdx].d<prog-.01)turnIdx++;
+    const t=route.turns[turnIdx];
+    if(t&&(t.d-prog)*1000<=150){
+      const m=Math.max(0,Math.round((t.d-prog)*1000/10)*10);
+      tn.textContent=turnTxt(t.a)+" dans "+m+" m";tn.classList.remove("hidden");
+      if(turnSaid!==turnIdx&&m<=120){turnSaid=turnIdx;sosBuzz(t.a>0?[0,250]:[0,150,120,150])}
+    }else tn.classList.add("hidden");
+  }else tn.classList.add("hidden");
   const now=Date.now();
   if(out&&now-offAlertT>45000){offAlertT=now;wasOff=true;sosBuzz([0,400,150,400,150,400]);showRecap("⚠ Vous êtes hors du parcours ("+Math.round(n.d)+" m). Le tracé fait est en rouge, le parcours prévu en bleu.")}
   if(!off&&wasOff&&offCnt===0){wasOff=false;sosBuzz([0,120,80,120]);showRecap("✔ De retour sur le parcours")}
@@ -1372,12 +1425,35 @@ function lrBox(date,after){
   b.onclick=e=>{e.stopPropagation();lrPick(date,after)};
   return d;
 }
+/* Orientation de la carte : nord en haut (N) ou sens du déplacement (↑) */
+let hdg=0,hdgOk=false;
+const headMode=()=>!!prefs.mapHead;
+function rotApply(north){
+  const w=$("lwrap"),m=$("lmap"),on=headMode();
+  const was=w.classList.contains("rot");
+  w.classList.toggle("rot",on);
+  m.style.transform=on&&!north&&hdgOk?"rotate("+(-hdg).toFixed(1)+"deg)":"rotate(0deg)";
+  if(was!==on&&lmap){setTimeout(()=>{try{lmap.invalidateSize()}catch(e){}},60)}
+  $("lori").textContent=on?"↑":"N";
+}
+function hdgUpd(a,b){
+  const d=hav(a.lat,a.lon,b.lat,b.lon)*1000;if(d<6)return false;
+  const y=Math.sin((b.lon-a.lon)*Math.PI/180)*Math.cos(b.lat*Math.PI/180),x=Math.cos(a.lat*Math.PI/180)*Math.sin(b.lat*Math.PI/180)-Math.sin(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.cos((b.lon-a.lon)*Math.PI/180);
+  const br=(Math.atan2(y,x)*180/Math.PI+360)%360;
+  if(!hdgOk){hdg=br;hdgOk=true}else{let df=((br-hdg+540)%360)-180;hdg=(hdg+df*.4+360)%360}
+  return true;
+}
+$("lori").onclick=()=>{prefs.mapHead=!prefs.mapHead;persistP();rotApply();if(lmap&&lmark&&follow)lmap.panTo(lmark.getLatLng(),{animate:false});showRecap(prefs.mapHead?"Carte orientée dans le sens du déplacement":"Carte : nord en haut")};
+/* Fenêtre des données repliable */
+function foldApply(){const o=$("lov"),f=!!prefs.ovFold;o.classList.toggle("fold",f);$("lfold").textContent=f?"▾":"▴"}
+$("lfold").onclick=e=>{e.stopPropagation();prefs.ovFold=!prefs.ovFold;persistP();foldApply();sumUpd()};
+function sumUpd(){$("lsum").textContent=$("gdist").textContent+" km · "+($("hr").textContent!=="--"?$("hr").textContent+" bpm · ":"")+$("gpace").textContent+" /km"}
 function liveMap(){
   try{
     if(!lmap&&typeof L!=="undefined"&&L.map){
-      lmap=L.map("lmap",{zoomControl:false,attributionControl:false}).addControl(L.control.attribution({prefix:false,position:"bottomleft"}));lmap=lmap.setView([46.6,2.4],6);slopeCtl(lmap,liveRedraw,"bottomleft");
-      L.tileLayer(OSM,{maxZoom:19,attribution:OSMA}).addTo(lmap);
-      let fT=null;lmap.on("dragstart",()=>{follow=false;clearTimeout(fT)});lmap.on("dragend",()=>{clearTimeout(fT);fT=setTimeout(()=>{follow=true;if(lmark)lmap.panTo(lmark.getLatLng(),{animate:true})},8000)});
+      lmap=L.map("lmap",{zoomControl:false,attributionControl:false}).addControl(L.control.attribution({prefix:false,position:"bottomleft"}));lmap=lmap.setView([46.6,2.4],6);slopeCtl(lmap,liveRedraw,"bottomleft");try{const cc=lmap.getContainer().querySelector(".leaflet-control-container");if(cc)$("lwrap").appendChild(cc)}catch(e){}
+      L.tileLayer(OSM,{maxZoom:19,attribution:OSMA}).addTo(lmap);rotApply();
+      let fT=null;lmap.on("dragstart",()=>{follow=false;clearTimeout(fT);rotApply(true)});lmap.on("dragend",()=>{clearTimeout(fT);fT=setTimeout(()=>{follow=true;rotApply();if(lmark)lmap.panTo(lmark.getLatLng(),{animate:true})},8000)});
     }
     if(lmap){doneLayers.forEach(l=>lmap.removeLayer(l));doneLayers=[];doneT=0;if(lline)lmap.removeLayer(lline);if(lmark)lmap.removeLayer(lmark);lline=lmark=null;follow=true;offCnt=0;wasOff=false;drawRoute();$("lroute").classList.toggle("hidden",!route);if(route)$("lroute").textContent="Parcours : reste "+route.km.toFixed(1).replace(".",",")+" km · D+ "+Math.round(route.gain)+" m";setTimeout(()=>lmap.invalidateSize(),200)}
   }catch(e){}
@@ -1389,7 +1465,7 @@ new MutationObserver(()=>{const t=$("gmsg").textContent;$("lgps").textContent=t.
 $("lrec").onclick=()=>{follow=true;if(lmap&&lmark)lmap.setView(lmark.getLatLng(),Math.max(lmap.getZoom(),16))};
 
 function resetLive(){
-  gRaw=[];gDist=0;gGain=0;gBase=null;gEle=[];hrSamples=[];lastHr=0;lowSince=0;lowFired=false;trPw=[];trCad=[];trRaw=[];trDist=0;trLastT=0;splits=[];lastPt=null;nIdx=0;nextRec=recapKm||0;
+  turnIdx=0;turnSaid=-1;hdgOk=false;gRaw=[];gDist=0;gGain=0;gBase=null;gEle=[];hrSamples=[];lastHr=0;lowSince=0;lowFired=false;trPw=[];trCad=[];trRaw=[];trDist=0;trLastT=0;splits=[];lastPt=null;nIdx=0;nextRec=recapKm||0;
   ["gdist","gdp"].forEach(i=>$(i).textContent=i==="gdist"?"0,00":"0");
   $("gpace").textContent=$("gavg").textContent=$("hr").textContent="--";$("hrz").textContent="";
   $("lrecap").classList.add("hidden");setBad();
@@ -1440,6 +1516,7 @@ function addPt(t,la,lo,alt,hr){
   if(lmap){
     const ll=[la,lo];
     routeFix(la,lo);
+    {const pv=gRaw.length>1?gRaw[gRaw.length-2]:null;if(pv&&hdgUpd(pv,p)&&follow)rotApply()}
     if(!lline){lline=L.polyline([ll],{color:"#E5484D",weight:4}).addTo(lmap);lmark=L.circleMarker(ll,{radius:8,color:"#fff",weight:3,fillColor:"#FFC400",fillOpacity:1}).addTo(lmap);lmap.setView(ll,16)}
     else{lline.addLatLng(ll);lmark.setLatLng(ll);if(follow)lmap.panTo(ll,{animate:false})}
     if(t-doneT>10000&&gRaw.length>2){doneT=t;liveRedraw()}
@@ -1472,6 +1549,18 @@ function drawAlt(){
   const step=Math.max(1,Math.floor(o.length/150)),r=o.filter((q,i)=>i%step===0||i===o.length-1);
   drawProf($("lalt"),r,"#fff","rgba(46,196,196,.35)","#2ec4c4");
 }
+function refInit(){
+  const f=Math.round((+prefs.refFirst||30)*60),e=Math.round((+prefs.refEvery||0)*60),s=Math.floor((Date.now()-t0)/1000);
+  if(!prefs.refOn){refNext=1e9;return}
+  refNext=f;while(refNext<=s)refNext=e>0?refNext+e:1e9;
+}
+function refCheck(s){
+  if(!liveOn||!prefs.refOn||s<refNext)return;
+  const e=Math.round((+prefs.refEvery||0)*60);
+  refNext=e>0?refNext+e:1e9;while(refNext<=s)refNext=e>0?refNext+e:1e9;
+  sosBuzz([350,200,350]);sosBeep();setTimeout(sosBeep,500);
+  showRecap("🍌 Ravitaillement : pensez à boire et à manger");
+}
 function segInit(){
   segB=[];let a=0;(liveSegs||[]).forEach(g=>{a+=g[1];segB.push(a)});
   const s=Math.floor((Date.now()-t0)/1000);segIdx=0;while(segIdx<segB.length&&s>=segB[segIdx])segIdx++;
@@ -1488,7 +1577,7 @@ function segCheck(s){
 }
 function paint(){
   const s=Math.floor((Date.now()-t0)/1000);
-  segCheck(s);
+  segCheck(s);refCheck(s);if(prefs.ovFold)sumUpd();
   if(liveOn&&targetMin>0&&!targetShown&&s>=targetMin*60){targetShown=true;showRecap("⏱ Durée prévue atteinte : "+targetMin+" min. L’enregistrement continue.");if(!NAT()){try{navigator.vibrate&&navigator.vibrate([500,250,500,250,500,250,500])}catch(e){}}}
   $("timer").textContent=clock(s);
   $("gdist").textContent=(gDist/1000).toFixed(2).replace(".",",");
@@ -1545,7 +1634,7 @@ function beginSession(){
   livePre(false);
   t0=Date.now();liveOn=true;$("msg").textContent="";$("gmsg").textContent="GPS : recherche du signal…";
   recapKm=+$("l-recap").value;maxPaceS=mpv();liveCapHr=+$("l-cap").value||0;curPace=0;
-  resetLive();segInit();try{if(!sosAud)sosAud=new (window.AudioContext||window.webkitAudioContext)();if(sosAud.resume)sosAud.resume()}catch(e){}
+  resetLive();segInit();refInit();foldApply();try{if(!sosAud)sosAud=new (window.AudioContext||window.webkitAudioContext)();if(sosAud.resume)sosAud.resume()}catch(e){}
   show("live");setFull(true);liveMap();
   showRecap(liveSegs?"▶ "+segTxt(liveSegs[0])+(liveSegs[1]?" — ensuite : "+liveSegs[1][0]:""):recapKm?"Récap tous les "+recapKm+" km":"Pas de récap kilométrique réglé");
   const n=NAT();
@@ -1573,12 +1662,15 @@ const LIVE_PAGE="https://pascalconiasse-wq.github.io/coach-running-Android/live.
 const DB_DEF="coach-running-4f54f-default-rtdb.europe-west1.firebasedatabase.app";
 const dbHost=v=>String(v||"").trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"")||DB_DEF;
 function liveSave(){
+  prefs.turns=$("l-turn").checked;prefs.refOn=$("l-ref").checked;prefs.refFirst=$("l-ref1").value.trim();prefs.refEvery=$("l-ref2").value.trim();
   prefs.share=$("l-share").checked;prefs.name=$("l-name").value.trim();prefs.tels=$("l-tels").value.trim();prefs.db=dbHost($("l-db").value);prefs.sosTels=$("l-stel").value.trim();prefs.sosDelay=$("l-sdel").value.trim();prefs.offM=$("l-offm").value.trim();prefs.sosCall=$("l-scall").value.trim();prefs.sosNext=$("l-snext").value.trim();persistP();
   $("l-sharebox").classList.toggle("hidden",!prefs.share);
 }
-["l-name","l-tels","l-db","l-stel","l-sdel","l-scall","l-snext","l-offm"].forEach(i=>$(i).addEventListener("input",liveSave));
+["l-name","l-tels","l-db","l-stel","l-sdel","l-scall","l-snext","l-offm","l-ref1","l-ref2"].forEach(i=>$(i).addEventListener("input",liveSave));
+["l-turn","l-ref"].forEach(i=>$(i).onchange=liveSave);
 ["l-share","l-name","l-tels","l-db"].forEach(i=>$(i).onchange=()=>{liveSave();if(i==="l-share")liveApply();if(i==="l-tels"&&prefs.tels){try{AndroidApp.sendSms("","")}catch(e){}}});
 function liveLoad(){
+  $("l-turn").checked=prefs.turns!==false;$("l-ref").checked=!!prefs.refOn;$("l-ref1").value=prefs.refFirst||"";$("l-ref2").value=prefs.refEvery||"";
   $("l-share").checked=!!prefs.share;$("l-name").value=prefs.name||"";$("l-tels").value=prefs.tels||"";$("l-db").value=dbHost(prefs.db);$("l-stel").value=prefs.sosTels||"";$("l-sdel").value=prefs.sosDelay===undefined?"":prefs.sosDelay;$("l-offm").value=prefs.offM===undefined?"":prefs.offM;$("l-scall").value=prefs.sosCall===undefined?"":prefs.sosCall;$("l-snext").value=prefs.sosNext===undefined?"":prefs.sosNext;
   $("l-sharebox").classList.toggle("hidden",!prefs.share);$("l-shmsg").textContent="";
 }
@@ -1737,7 +1829,7 @@ function resumeLive(){
   $("l-recap").value=String(st.recap||0);$("l-maxpace").value=st.maxPace||"";$("l-cap").value=st.cap||"";$("l-dur").value=st.dur||"";targetMin=+st.dur||0;targetShown=targetMin>0&&(Date.now()-t0)/60000>=targetMin;$("livetgt").textContent=st.tgt||"";liveSegs=Array.isArray(st.seg)?st.seg:null;
   $("l-keep").checked=!!prefs.keep;
   recapKm=+st.recap||0;maxPaceS=parsePace(st.maxPace);liveCapHr=+st.cap||0;
-  if(st.live)prefs.liveId=st.live;liveLoad();livePre(false);resetLive();segInit();show("live");setFull(true);liveMap();poll();startTimers();liveApply();
+  if(st.live)prefs.liveId=st.live;liveLoad();livePre(false);resetLive();segInit();refInit();foldApply();show("live");setFull(true);liveMap();poll();startTimers();liveApply();
 }
 
 /* Sortie : jamais sans confirmation */
